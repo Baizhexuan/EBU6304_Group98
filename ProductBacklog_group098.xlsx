@@ -1,0 +1,15 @@
+Story ID	Story Name	Description	Priority	Iteration (Sprint) number	Acceptance Criteria	Estimation	Notes	Date started (or planned)	Date finished (or planned)
+		"This is an example.
+As a <>
+I want <>
+So that <>"			"This is an example.
+This is a new line
+
+1. List 1
+2. List 2
+3. List 3
+"				
+US01	Upload CV	As a TA Applicant, I want to upload my CV in PDF format, so that the MO can review my qualifications.	Must +1	1 +1	1. Accepts PDF/TXT files. 2. Success message appears. 3. Data saved in text file.+2	3	Core hiring function.	2026/3/14	2026/3/22
+US02	Post Job	As a Module Organiser (MO), I want to post a new TA job, so that I can find assistants for my module.+1	Must +1	1 +1	1. Fields: Module Name, Job Description. 2. Job visible in list immediately.	5	Required for basic workflow.	2026/3/14	2026/3/22
+US03	Apply for Job	As a TA Applicant, I want to apply for available jobs, so that I can be considered for the role.	Must +1	1 +1	1. User can click "Apply". 2. System records application details in text file.	3	Essential for recruitment.	2026/3/14	2026/3/22
+US04	Skill Matching	As an MO, I want to match applicant skills with job requirements, so that I can select the best candidate.	Could +1	3 +1	1. Compare CV text with job keywords. 2. Use AI to provide match score.	8	AI-powered feature.	2026/4/14	2026/4/26
