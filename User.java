@@ -14,7 +14,7 @@ public class User {
         this.role = role;
     }
 
-    // Getters 和 Setters (篇幅原因省略，请自行生成)
+    // Getters 和 Setters 
     public String getUsername() { return username; }
     public String getPassword() { return password; }
     public String getRole() { return role; }
