@@ -1,0 +1,4 @@
+id,moId,title,module,description,requiredSkills,maxHours,status
+1,4,Java Lab Assistant,EBU6304,Help students in Java lab sessions,Java;OOP,10,OPEN
+2,4,Exam Invigilator,General,Assist with exam invigilation,Communication;Reliability,5,OPEN
+3,5,Python Tutor,EBU5476,Tutor students in Python programming,Python;Data Structures,8,OPEN
