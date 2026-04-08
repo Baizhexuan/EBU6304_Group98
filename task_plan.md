@@ -224,3 +224,7 @@
 | Code Review | 所有代码至少 1 人审查通过 |
 | JavaDoc | 新增 public 类/方法必须有文档注释 |
 | 提交规范 | 遵循 `COMMIT_STANDARD.md` |
+
+---
+
+*文档版本：v2.0 — 2026-04-08*
