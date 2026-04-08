@@ -1,0 +1,7 @@
+id,username,password,role,displayName
+1,admin,admin123,ADMIN,System Admin
+2,ta1,ta123,TA,Li Ming
+3,ta2,ta456,TA,Wang Yue
+4,mo1,mo123,MO,Dr Chen
+5,mo2,mo456,MO,Prof Zhao
+6,Yuki,123456,TA,yuki

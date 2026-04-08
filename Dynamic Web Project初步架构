@@ -1,0 +1,15 @@
+TA_Recruitment_System/
+├── src/
+│   ├── models/           # 模型层：存放实体类 (如 User.java, Job.java)
+│   ├── dao/              # 数据访问层 (Data Access Object)：专门负责读写 CSV 文件
+│   ├── servlets/         # 控制层：处理请求和业务逻辑
+│   └── utils/            # 工具类：放一些公用的方法 (如 AI 匹配度计算假数据)
+├── WebContent/ (或 webapp/)
+│   ├── WEB-INF/
+│   │   └── web.xml       # Web 应用配置文件 (如果使用 Servlet 3.0 注解可省略)
+│   ├── css/              # 存放样式表
+│   ├── login.jsp         # 登录视图
+│   └── dashboard.jsp     # 面板视图
+└── data/                 # 🌟 特别创建：存放你们的 .csv 和 .json 文件
+    ├── users.csv
+    └── jobs.csv
