@@ -8,7 +8,6 @@ import java.awt.Insets;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -22,7 +21,7 @@ public class LoginFrame extends JFrame {
     private JPasswordField passwordField;
 
     public LoginFrame() {
-        setTitle("BUPT TA Recruitment System");
+        setTitle(DemoMetadata.APP_TITLE + " - " + DemoMetadata.VERSION_LABEL);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(500, 320);
         setLocationRelativeTo(null);
@@ -34,7 +33,7 @@ public class LoginFrame extends JFrame {
         JPanel titlePanel = new JPanel(new GridLayout(2, 1));
         JLabel title = new JLabel("BUPT International School", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 18));
-        JLabel subtitle = new JLabel("Teaching Assistant Recruitment Demo", SwingConstants.CENTER);
+        JLabel subtitle = new JLabel(DemoMetadata.APP_SUBTITLE + " (" + DemoMetadata.VERSION_LABEL + ")", SwingConstants.CENTER);
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
         titlePanel.add(title);
         titlePanel.add(subtitle);
@@ -61,9 +60,11 @@ public class LoginFrame extends JFrame {
 
         JButton loginButton = new JButton("Login");
         JButton registerButton = new JButton("Register Demo Account");
+        JButton aboutButton = new JButton("About");
         JPanel buttonRow = new JPanel();
         buttonRow.add(loginButton);
         buttonRow.add(registerButton);
+        buttonRow.add(aboutButton);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -82,6 +83,10 @@ public class LoginFrame extends JFrame {
 
         loginButton.addActionListener(e -> attemptLogin());
         registerButton.addActionListener(e -> new RegisterFrame(this));
+        aboutButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                DemoMetadata.buildAboutMessage(),
+                "About This Demo",
+                JOptionPane.INFORMATION_MESSAGE));
         passwordField.addActionListener(e -> attemptLogin());
 
         setVisible(true);
