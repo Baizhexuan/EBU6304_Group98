@@ -1,0 +1,5 @@
+job_id,module_name,module_code,organiser_name,required_skills,hours_per_week,description,status
+J001,Software Engineering,EBU6304,Dr Chen,"Python, teamwork, communication",6,"Support workshops, answer student questions, and mark practice tasks.",Open
+J002,Database Systems,EBU6201,Dr Wang,"SQL, data modelling, Excel",4,Assist with lab sessions and help maintain teaching materials.,Open
+J003,1,1,1,1,1,1,Open
+J004,EWF,FWE,EWF,EWF,EWF,EWFE,Open

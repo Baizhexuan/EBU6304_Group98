@@ -1,0 +1,3 @@
+application_id,job_id,student_id,ta_name,ta_email,skills_snapshot,motivation,status
+A001,J001,1,1,1,1,,Pending
+A002,J001,12,12,12,12,23WQ,Pending
