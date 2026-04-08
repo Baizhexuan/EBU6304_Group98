@@ -39,10 +39,12 @@ public class MODashboard extends JFrame {
     private JTextArea descriptionArea;
     private JTable myJobsTable;
     private DefaultTableModel myJobsModel;
+    private JTextField myJobsSearchField;
     private JComboBox<String> jobSelector;
     private List<Integer> selectorJobIds = new ArrayList<Integer>();
     private JTable applicantsTable;
     private DefaultTableModel applicantsModel;
+    private JTextField applicantSearchField;
 
     public MODashboard(User currentUser) {
         this.currentUser = currentUser;
@@ -125,6 +127,11 @@ public class MODashboard extends JFrame {
         };
         myJobsTable = new JTable(myJobsModel);
         myJobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JPanel topBar = new JPanel(new BorderLayout(6, 6));
+        topBar.add(new JLabel("Search My Jobs:"), BorderLayout.WEST);
+        myJobsSearchField = new JTextField();
+        topBar.add(myJobsSearchField, BorderLayout.CENTER);
+        panel.add(topBar, BorderLayout.NORTH);
         panel.add(new JScrollPane(myJobsTable), BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -136,6 +143,7 @@ public class MODashboard extends JFrame {
 
         refreshButton.addActionListener(e -> refreshMyJobs());
         toggleButton.addActionListener(e -> toggleSelectedJob());
+        myJobsSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshMyJobs));
         return panel;
     }
 
@@ -148,6 +156,9 @@ public class MODashboard extends JFrame {
         jobSelector = new JComboBox<String>();
         jobSelector.addActionListener(e -> refreshApplicants());
         top.add(jobSelector);
+        top.add(new JLabel("Filter Applicant:"));
+        applicantSearchField = new JTextField(18);
+        top.add(applicantSearchField);
         panel.add(top, BorderLayout.NORTH);
 
         applicantsModel = new DefaultTableModel(
@@ -171,6 +182,7 @@ public class MODashboard extends JFrame {
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
+        applicantSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshApplicants));
         return panel;
     }
 
@@ -226,8 +238,12 @@ public class MODashboard extends JFrame {
 
     private void refreshMyJobs() {
         myJobsModel.setRowCount(0);
+        String keyword = myJobsSearchField == null ? "" : myJobsSearchField.getText().trim().toLowerCase();
         for (Job job : FileStorage.loadJobs()) {
             if (job.moId != currentUser.id) {
+                continue;
+            }
+            if (!matchesJobKeyword(job, keyword)) {
                 continue;
             }
             myJobsModel.addRow(new Object[] {job.id, job.title, job.module, job.requiredSkills, job.maxHours, job.status});
@@ -273,6 +289,7 @@ public class MODashboard extends JFrame {
         if (selectedJobId < 0) {
             return;
         }
+        String keyword = applicantSearchField == null ? "" : applicantSearchField.getText().trim().toLowerCase();
 
         Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
         for (TAProfile profile : FileStorage.loadProfiles()) {
@@ -285,6 +302,9 @@ public class MODashboard extends JFrame {
             }
             User taUser = FileStorage.findUserById(app.taId);
             TAProfile profile = profiles.get(app.taId);
+            if (!matchesApplicantKeyword(taUser, profile, app, keyword)) {
+                continue;
+            }
             applicantsModel.addRow(new Object[] {
                     app.id,
                     taUser == null ? "Unknown" : taUser.getSafeDisplayName(),
@@ -317,6 +337,32 @@ public class MODashboard extends JFrame {
             }
         }
         return hours;
+    }
+
+    private boolean matchesJobKeyword(Job job, String keyword) {
+        if (keyword.isEmpty()) {
+            return true;
+        }
+        return contains(job.title, keyword)
+                || contains(job.module, keyword)
+                || contains(job.requiredSkills, keyword)
+                || contains(job.status, keyword)
+                || contains(job.location, keyword);
+    }
+
+    private boolean matchesApplicantKeyword(User taUser, TAProfile profile, Application app, String keyword) {
+        if (keyword.isEmpty()) {
+            return true;
+        }
+        return contains(taUser == null ? null : taUser.getSafeDisplayName(), keyword)
+                || contains(profile == null ? null : profile.email, keyword)
+                || contains(profile == null ? null : profile.skills, keyword)
+                || contains(app.status, keyword)
+                || contains(app.matchSummary, keyword);
+    }
+
+    private boolean contains(String text, String keyword) {
+        return text != null && text.toLowerCase().contains(keyword);
     }
 
     private void reviewSelectedApplicant(String decision) {
@@ -378,6 +424,29 @@ public class MODashboard extends JFrame {
                 }
             }
             return component;
+        }
+    }
+
+    private static class SimpleDocumentListener implements DocumentListener {
+        private final Runnable action;
+
+        private SimpleDocumentListener(Runnable action) {
+            this.action = action;
+        }
+
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+            action.run();
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+            action.run();
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+            action.run();
         }
     }
 }

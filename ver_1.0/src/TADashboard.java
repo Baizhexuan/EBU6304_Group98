@@ -24,6 +24,8 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
@@ -39,6 +41,7 @@ public class TADashboard extends JFrame {
     private JTextArea statementArea;
     private JTable jobsTable;
     private DefaultTableModel jobsModel;
+    private JTextField jobSearchField;
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
 
@@ -129,6 +132,11 @@ public class TADashboard extends JFrame {
         jobsTable = new JTable(jobsModel);
         jobsTable.setRowHeight(24);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JPanel topBar = new JPanel(new BorderLayout(6, 6));
+        topBar.add(new JLabel("Search Jobs:"), BorderLayout.WEST);
+        jobSearchField = new JTextField();
+        topBar.add(jobSearchField, BorderLayout.CENTER);
+        panel.add(topBar, BorderLayout.NORTH);
         panel.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -140,6 +148,7 @@ public class TADashboard extends JFrame {
 
         refreshButton.addActionListener(e -> refreshJobs());
         applyButton.addActionListener(e -> applyForSelectedJob());
+        jobSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshJobs));
         return panel;
     }
 
@@ -277,8 +286,12 @@ public class TADashboard extends JFrame {
     private void refreshJobs() {
         jobsModel.setRowCount(0);
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
+        String keyword = jobSearchField == null ? "" : jobSearchField.getText().trim().toLowerCase();
         for (Job job : FileStorage.loadJobs()) {
             if (!job.isOpen()) {
+                continue;
+            }
+            if (!matchesJobKeyword(job, keyword)) {
                 continue;
             }
             MatchResult match = MatchingService.evaluate(profile, job);
@@ -293,6 +306,21 @@ public class TADashboard extends JFrame {
                     match.summary
             });
         }
+    }
+
+    private boolean matchesJobKeyword(Job job, String keyword) {
+        if (keyword.isEmpty()) {
+            return true;
+        }
+        return contains(job.title, keyword)
+                || contains(job.module, keyword)
+                || contains(job.requiredSkills, keyword)
+                || contains(job.location, keyword)
+                || contains(job.description, keyword);
+    }
+
+    private boolean contains(String text, String keyword) {
+        return text != null && text.toLowerCase().contains(keyword);
     }
 
     private void applyForSelectedJob() {
@@ -411,6 +439,29 @@ public class TADashboard extends JFrame {
                 }
             }
             return component;
+        }
+    }
+
+    private static class SimpleDocumentListener implements DocumentListener {
+        private final Runnable action;
+
+        private SimpleDocumentListener(Runnable action) {
+            this.action = action;
+        }
+
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+            action.run();
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+            action.run();
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+            action.run();
         }
     }
 }

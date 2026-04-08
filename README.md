@@ -49,6 +49,8 @@ This folder is the main demo build for the later iteration. It contains the more
 - compile and run scripts
 - smoke test entry for quick verification
 
+The latest pushed update continues this demo into `ver_1.1`, adding search/filter tools for TA and MO workflows plus clearer Admin workload export/reporting.
+
 If you want to run the more complete demo, this is the folder that should be used.
 
 ### `ver_1.0_tess_picture/`
@@ -68,6 +70,16 @@ This folder contains screenshot assets for the `ver_1.0` demo. These images are 
 - CSV report export
 - File-based persistence without a database
 - Simple skill match scoring for demo purposes
+
+## Latest Iteration Update
+
+The latest `ver_1.0` follow-up iteration adds:
+
+- TA job search/filter support
+- MO search/filter support for job posts and applicant review
+- Admin workload export with timestamped filenames
+- clearer workload warnings for near-limit and overload cases
+- updated demo metadata and version notes in documentation
 
 ## How to Run the Complete Demo
 

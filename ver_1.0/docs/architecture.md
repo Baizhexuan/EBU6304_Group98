@@ -4,6 +4,7 @@
 software_engine/
 ├── src/
 │   ├── Main.java
+│   ├── DemoMetadata.java
 │   ├── LoginFrame.java
 │   ├── RegisterFrame.java
 │   ├── TADashboard.java
@@ -38,3 +39,10 @@ software_engine/
 - Service layer: `MatchingService`, `ValidationUtils`
 - Persistence layer: `FileStorage`
 - Verification entry: `SystemSmokeTest`
+
+## Iteration 1.1 Additions
+
+- `TADashboard`: added search/filter support for the TA job browsing table
+- `MODashboard`: added search/filter support for MO job posts and applicant review
+- `AdminDashboard`: export filenames now include timestamps and workload labels are more descriptive
+- `DemoMetadata`: centralised demo version and iteration notes for the login/about flow

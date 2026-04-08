@@ -156,7 +156,7 @@ public class AdminDashboard extends JFrame {
                 }
             }
             TAProfile profile = profiles.get(user.id);
-            String status = currentHours > FileStorage.getOverloadLimit() ? "OVERLOAD" : "OK";
+            String status = buildWorkloadStatus(currentHours);
             workloadModel.addRow(new Object[] {
                     user.username,
                     profile == null ? user.getSafeDisplayName() : profile.fullName,
@@ -205,8 +205,10 @@ public class AdminDashboard extends JFrame {
 
     private void exportWorkloadReport() {
         refreshWorkload();
-        String path = "data/admin_workload_report.csv";
+        String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String path = "data/admin_workload_report_" + timestamp + ".csv";
         try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
+            writer.println("exportedAt," + timestamp);
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
                 writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","
@@ -219,6 +221,16 @@ public class AdminDashboard extends JFrame {
             JOptionPane.showMessageDialog(this, "Failed to export report: " + e.getMessage(), "Export Error",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private String buildWorkloadStatus(int currentHours) {
+        if (currentHours > FileStorage.getOverloadLimit()) {
+            return "OVERLOAD - review allocation immediately";
+        }
+        if (currentHours >= FileStorage.getOverloadLimit() - 2) {
+            return "NEAR LIMIT - monitor closely";
+        }
+        return "OK";
     }
 
     private void logout() {
@@ -234,8 +246,10 @@ public class AdminDashboard extends JFrame {
                     column);
             if (!isSelected) {
                 String status = String.valueOf(table.getValueAt(row, 5));
-                if ("OVERLOAD".equalsIgnoreCase(status)) {
+                if (status.startsWith("OVERLOAD")) {
                     component.setBackground(new Color(255, 221, 221));
+                } else if (status.startsWith("NEAR LIMIT")) {
+                    component.setBackground(new Color(255, 242, 204));
                 } else {
                     component.setBackground(Color.WHITE);
                 }
