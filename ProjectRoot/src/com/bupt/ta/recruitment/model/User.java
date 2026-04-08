@@ -6,7 +6,7 @@ import java.util.Objects;
  * User Model - 存储用户基础账户信息
  * 对应 L1 基础架构层
  */
-public class User {
+public class User implements CsvSerializable{
     
     // 定义用户角色枚举，避免使用字符串导致拼写错误
     public enum UserRole {

@@ -6,7 +6,7 @@ import java.util.Objects;
  * TAProfile Model - 存储助教申请人的详细个人资料
  * 对应 L1 基础架构层
  */
-public class TAProfile {
+public class TAProfile implements CsvSerializable{
 
     private String id;            // 个人资料唯一标识符
     private String userId;        // 关联的 User ID (外键)

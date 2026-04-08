@@ -6,7 +6,7 @@ import java.util.Objects;
  * Job Model - 存储助教岗位信息
  * 对应 L1 基础架构层
  */
-public class Job {
+public class Job implements CsvSerializable{
 
     public enum JobStatus {
         OPEN,   // 开放申请

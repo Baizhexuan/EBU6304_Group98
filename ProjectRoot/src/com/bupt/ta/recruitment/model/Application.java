@@ -6,7 +6,7 @@ import java.util.Objects;
  * Application Model - 存储 TA 对岗位的申请记录
  * 对应 L1 基础架构层
  */
-public class Application {
+public class Application implements CsvSerializable{
 
     public enum AppStatus {
         PENDING,   // 待审核 (橙色)
