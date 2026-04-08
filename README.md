@@ -1,6 +1,5 @@
 # TA Recruitment System Prototype
 
-This prototype was created for the second assessment of the EBU6304 group project.
 It focuses on the iteration-2 recruitment workflow while still including the basic
 iteration-1 TA profile functionality needed to make the workflow runnable.
 
@@ -18,11 +17,9 @@ Module Organiser marks an applicant as `Selected`, `Rejected`, or `Pending`
 
 Language: Python 3
 GUI: `tkinter` from the standard library
-Storage: CSV files inside [`data`](C:\Users\ASUS\Documents\New project\data)
+Storage: CSV files inside [`data`]
 External dependencies: none
 
-The project deliberately avoids databases and third-party packages so it remains
-aligned with the assignment restriction and easy to run on another machine.
 
 ## How to run
 
@@ -32,15 +29,12 @@ python app.py
 
 ## Data files
 
-The application will create these files automatically on first run:
+[`data/profiles.csv`](data\profiles.csv)
+[`data/jobs.csv`](data\jobs.csv)
+[`data/applications.csv`](data\applications.csv)
 
-[`data/profiles.csv`](C:\Users\ASUS\Documents\New project\data\profiles.csv)
-[`data/jobs.csv`](C:\Users\ASUS\Documents\New project\data\jobs.csv)
-[`data/applications.csv`](C:\Users\ASUS\Documents\New project\data\applications.csv)
 
-Two sample jobs are also inserted automatically so the TA workflow can be tested immediately.
-
-## Suggested demo flow
+## Suggested flow
 
 1. Open the TA portal and save a TA profile.
 2. Select one of the available jobs and submit an application.
