@@ -1,6 +1,5 @@
 ﻿BusinessLogicTest run summary
 Date: 2026-04-09
-Source repo: C:\Users\ASUS\Documents\New project\EBU6304_Group98-main
 
 Result:
 - Passed: 23
