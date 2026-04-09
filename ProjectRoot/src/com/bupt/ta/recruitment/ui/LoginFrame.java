@@ -1,115 +1,127 @@
-﻿package com.bupt.ta.recruitment.ui;
+package com.bupt.ta.recruitment.ui;
 
 import com.bupt.ta.recruitment.model.User;
 import com.bupt.ta.recruitment.service.AuthService;
 import com.bupt.ta.recruitment.util.CsvStorage;
-
-import javax.swing.*;
-import java.awt.*;
+import com.bupt.ta.recruitment.util.DataSeeder;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.util.Optional;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 public class LoginFrame extends JFrame {
-
     private final AuthService authService;
-    private JTextField usernameField;
-    private JPasswordField passwordField;
+    private final JTextField usernameField = new JTextField(20);
+    private final JPasswordField passwordField = new JPasswordField(20);
 
     public LoginFrame() {
-        this.authService = new AuthService(new CsvStorage<>("data/users.csv", User.class));
+        seedDataIfNeeded();
+        this.authService = new AuthService(new CsvStorage<>("data/users.csv", User::fromCsvRow));
 
         setTitle("TA Recruitment System - Login");
-        setSize(400, 250);
+        setSize(420, 250);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Main panel
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Username
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(new JLabel("Username:"), gbc);
-
         gbc.gridx = 1;
-        usernameField = new JTextField(20);
         panel.add(usernameField, gbc);
 
-        // Password
         gbc.gridx = 0;
         gbc.gridy = 1;
         panel.add(new JLabel("Password:"), gbc);
-
         gbc.gridx = 1;
-        passwordField = new JPasswordField(20);
         panel.add(passwordField, gbc);
 
-        // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         JButton loginButton = new JButton("Login");
         JButton registerButton = new JButton("Register");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
         panel.add(buttonPanel, gbc);
-
         add(panel);
 
-        // Action Listeners
         loginButton.addActionListener(e -> handleLogin());
         registerButton.addActionListener(e -> {
             new RegisterFrame().setVisible(true);
-            this.dispose();
+            dispose();
         });
     }
 
-    private void handleLogin() {
-        String username = usernameField.getText();
-        String password = new String(passwordField.getPassword());
+    private void seedDataIfNeeded() {
+        CsvStorage<User> storage = new CsvStorage<>("data/users.csv", User::fromCsvRow);
+        if (storage.loadAll().isEmpty()) {
+            DataSeeder.main(new String[0]);
+        }
+    }
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Login Error", JOptionPane.ERROR_MESSAGE);
+    private void handleLogin() {
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
+
+        if (username.isEmpty() && password.isEmpty()) {
+            showError("Username and password cannot be empty.");
+            return;
+        }
+        if (username.isEmpty()) {
+            showError("Username cannot be empty.");
+            return;
+        }
+        if (password.isEmpty()) {
+            showError("Password cannot be empty.");
             return;
         }
 
         Optional<User> userOpt = authService.login(username, password);
-
         if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            JOptionPane.showMessageDialog(this, "Login successful! Welcome, " + user.getUsername(), "Success", JOptionPane.INFORMATION_MESSAGE);
-            openDashboard(user);
-            this.dispose();
+            openDashboard(userOpt.get());
+            dispose();
+            return;
+        }
+
+        if (authService.findUserByUsername(username).isPresent()) {
+            showError("Invalid password.");
         } else {
-            // Check if user exists to give a more specific error
-            if (authService.findUserByUsername(username).isPresent()) {
-                JOptionPane.showMessageDialog(this, "Invalid password.", "Login Error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "User not found.", "Login Error", JOptionPane.ERROR_MESSAGE);
-            }
+            showError("User not found.");
         }
     }
 
     private void openDashboard(User user) {
-        // Open the corresponding dashboard based on the user's role
         switch (user.getRole()) {
-            case "Admin":
+            case ADMIN:
                 new AdminDashboard(user).setVisible(true);
                 break;
-            case "MO":
+            case MO:
                 new MODashboard(user).setVisible(true);
                 break;
-            case "TA":
+            case TA:
                 new TADashboard(user).setVisible(true);
                 break;
             default:
-                JOptionPane.showMessageDialog(this, "Unknown role. Cannot open dashboard.", "Error", JOptionPane.ERROR_MESSAGE);
-                break;
+                showError("Unknown role. Cannot open dashboard.");
         }
+    }
+
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Login Error", JOptionPane.ERROR_MESSAGE);
     }
 }

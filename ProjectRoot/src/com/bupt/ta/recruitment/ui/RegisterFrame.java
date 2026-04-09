@@ -1,23 +1,30 @@
-﻿package com.bupt.ta.recruitment.ui;
+package com.bupt.ta.recruitment.ui;
 
+import com.bupt.ta.recruitment.model.User;
 import com.bupt.ta.recruitment.service.AuthService;
 import com.bupt.ta.recruitment.util.CsvStorage;
-import com.bupt.ta.recruitment.model.User;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.Arrays;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 public class RegisterFrame extends JFrame {
-
     private final AuthService authService;
-    private JTextField usernameField;
-    private JPasswordField passwordField;
-    private JPasswordField confirmPasswordField;
-    private JComboBox<String> roleComboBox;
+    private final JTextField usernameField = new JTextField(20);
+    private final JPasswordField passwordField = new JPasswordField(20);
+    private final JPasswordField confirmPasswordField = new JPasswordField(20);
+    private final JComboBox<User.UserRole> roleComboBox = new JComboBox<>(new User.UserRole[] {User.UserRole.TA, User.UserRole.MO});
 
     public RegisterFrame() {
-        this.authService = new AuthService(new CsvStorage<>("data/users.csv", User.class));
+        this.authService = new AuthService(new CsvStorage<>("data/users.csv", User::fromCsvRow));
 
         setTitle("TA Recruitment System - Register");
         setSize(450, 300);
@@ -29,85 +36,75 @@ public class RegisterFrame extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Username
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(new JLabel("Username:"), gbc);
         gbc.gridx = 1;
-        usernameField = new JTextField(20);
         panel.add(usernameField, gbc);
 
-        // Password
         gbc.gridx = 0;
         gbc.gridy = 1;
         panel.add(new JLabel("Password:"), gbc);
         gbc.gridx = 1;
-        passwordField = new JPasswordField(20);
         panel.add(passwordField, gbc);
 
-        // Confirm Password
         gbc.gridx = 0;
         gbc.gridy = 2;
         panel.add(new JLabel("Confirm Password:"), gbc);
         gbc.gridx = 1;
-        confirmPasswordField = new JPasswordField(20);
         panel.add(confirmPasswordField, gbc);
 
-        // Role
         gbc.gridx = 0;
         gbc.gridy = 3;
         panel.add(new JLabel("Role:"), gbc);
         gbc.gridx = 1;
-        String[] roles = {"TA", "MO", "Admin"};
-        roleComboBox = new JComboBox<>(roles);
         panel.add(roleComboBox, gbc);
 
-        // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         JButton registerButton = new JButton("Register");
-        JButton backToLoginButton = new JButton("Back to Login");
-        buttonPanel.add(registerButton);
-        buttonPanel.add(backToLoginButton);
+        JButton backButton = new JButton("Back to Login");
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        buttons.add(registerButton);
+        buttons.add(backButton);
 
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
-        panel.add(buttonPanel, gbc);
-
+        panel.add(buttons, gbc);
         add(panel);
 
-        // Action Listeners
         registerButton.addActionListener(e -> handleRegister());
-        backToLoginButton.addActionListener(e -> {
+        backButton.addActionListener(e -> {
             new LoginFrame().setVisible(true);
-            this.dispose();
+            dispose();
         });
     }
 
     private void handleRegister() {
-        String username = usernameField.getText();
-        String password = new String(passwordField.getPassword());
-        String confirmPassword = new String(confirmPasswordField.getPassword());
-        String role = (String) roleComboBox.getSelectedItem();
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword()).trim();
+        String confirmPassword = new String(confirmPasswordField.getPassword()).trim();
+        User.UserRole role = (User.UserRole) roleComboBox.getSelectedItem();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Registration Error", JOptionPane.ERROR_MESSAGE);
+        if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            showError("All fields are required.");
             return;
         }
-
         if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "Passwords do not match.", "Registration Error", JOptionPane.ERROR_MESSAGE);
+            showError("Passwords do not match.");
+            return;
+        }
+        if (!authService.register(username, password, role)) {
+            showError("Username already exists. Please choose another one.");
             return;
         }
 
-        boolean success = authService.register(username, password, role);
+        JOptionPane.showMessageDialog(this, "Registration successful. Please log in.", "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+        new LoginFrame().setVisible(true);
+        dispose();
+    }
 
-        if (success) {
-            JOptionPane.showMessageDialog(this, "Registration successful! Please log in.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            new LoginFrame().setVisible(true);
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "Username already exists. Please choose another one.", "Registration Error", JOptionPane.ERROR_MESSAGE);
-        }
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Registration Error", JOptionPane.ERROR_MESSAGE);
     }
 }

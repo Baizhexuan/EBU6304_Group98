@@ -1,13 +1,16 @@
-﻿package com.bupt.ta.recruitment;
+package com.bupt.ta.recruitment;
 
 import com.bupt.ta.recruitment.ui.LoginFrame;
-
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
-        // Ensure the UI is created on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ignored) {
+            }
             new LoginFrame().setVisible(true);
         });
     }
