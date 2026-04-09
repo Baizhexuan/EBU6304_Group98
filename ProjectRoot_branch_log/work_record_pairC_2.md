@@ -2,7 +2,7 @@
 
 **项目名称**：BUPT International School TA Recruitment System  
 **记录时间**：2026-04-09  
-**参与人员**：程嘉桦 (Cheng Jiahua)  
+**参与人员**：程嘉华 (Cheng Jiahua)  
 **开发阶段**：L2 — 认证与 UI 框架层 (Authentication & UI Framework Layer)
 
 ---
@@ -69,5 +69,5 @@
 - **支持测试与文档**：为后续 Pair A / Pair B 的测试与代码评审提供明确的页面结构和文件划分依据。
 
 ---
-**记录人**：程嘉桦  
+**记录人**：程嘉华  
 **审核状态**：已完成 ✅
