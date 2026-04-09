@@ -1,0 +1,12 @@
+﻿BusinessLogicTest run summary
+Date: 2026-04-09
+Source repo: C:\Users\ASUS\Documents\New project\EBU6304_Group98-main
+
+Result:
+- Passed: 23
+- Failed: 0
+- Skipped: 2
+
+Blocked items:
+- US-5 MO posting/closing flow is not implemented in MODashboard.java
+- US-6 MO applicant select/reject flow is not implemented in MODashboard.java
