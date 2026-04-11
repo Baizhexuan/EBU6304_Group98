@@ -7,19 +7,25 @@ import com.bupt.ta.recruitment.model.User;
 import com.bupt.ta.recruitment.util.CsvStorage;
 import com.bupt.ta.recruitment.util.UIHelper;
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 public class MODashboard extends BaseDashboard {
@@ -101,21 +107,53 @@ public class MODashboard extends BaseDashboard {
             }
         };
         JTable table = new JTable(model);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        reloadApplicantTable(model);
+
+        JButton approveButton = new JButton("Approve Selected");
+        approveButton.addActionListener(e -> updateApplicationStatus(table, model, Application.AppStatus.SELECTED));
+
+        JButton rejectButton = new JButton("Reject Selected");
+        rejectButton.addActionListener(e -> updateApplicationStatus(table, model, Application.AppStatus.REJECTED));
+
+        JButton refreshButton = new JButton("Refresh");
+        refreshButton.addActionListener(e -> reloadApplicantTable(model));
+
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> {
+            new LoginFrame().setVisible(true);
+            dispose();
+        });
+
+        UIHelper.installSorter(table, 4);
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actionPanel.add(approveButton);
+        actionPanel.add(rejectButton);
+        actionPanel.add(refreshButton);
+        actionPanel.add(logoutButton);
+
+        panel.add(new JLabel("Select an applicant, then approve or reject. Changes are saved immediately."), BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(actionPanel, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void reloadApplicantTable(DefaultTableModel model) {
+        model.setRowCount(0);
 
         Map<String, User> userMap = new HashMap<>();
         for (User user : userStorage.loadAll()) {
             userMap.put(user.getId(), user);
         }
+
         Map<String, TAProfile> profileMap = new HashMap<>();
         for (TAProfile profile : profileStorage.loadAll()) {
             profileMap.put(profile.getUserId(), profile);
         }
 
-        for (Application app : applicationStorage.loadAll()) {
+        for (Application app : loadMoApplications()) {
             Job job = jobStorage.findById(app.getJobId(), Job::getId);
-            if (job == null || !currentUser.getId().equals(job.getMoId())) {
-                continue;
-            }
             User taUser = userMap.get(app.getTaId());
             TAProfile profile = profileMap.get(app.getTaId());
             model.addRow(new Object[] {
@@ -123,14 +161,62 @@ public class MODashboard extends BaseDashboard {
                     taUser == null ? "Unknown" : taUser.getUsername(),
                     profile == null ? "Not set" : profile.getEmail(),
                     profile == null ? "Not set" : profile.getSkills(),
-                    job.getTitle(),
+                    job == null ? "Unknown" : job.getTitle(),
                     app.getStatus()
             });
         }
-        UIHelper.installSorter(table, 4);
-        panel.add(new JLabel("Applicant overview is ready for later review actions."), BorderLayout.NORTH);
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        return panel;
+    }
+
+    private List<Application> loadMoApplications() {
+        List<Application> applications = new ArrayList<>();
+        for (Application app : applicationStorage.loadAll()) {
+            Job job = jobStorage.findById(app.getJobId(), Job::getId);
+            if (job != null && currentUser.getId().equals(job.getMoId())) {
+                applications.add(app);
+            }
+        }
+        return applications;
+    }
+
+    private void updateApplicationStatus(JTable table, DefaultTableModel model, Application.AppStatus newStatus) {
+        int viewRow = table.getSelectedRow();
+        if (viewRow < 0) {
+            JOptionPane.showMessageDialog(this, "Please select an application first.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        String applicationId = String.valueOf(model.getValueAt(modelRow, 0));
+        Application application = applicationStorage.findById(applicationId, Application::getId);
+        if (application == null) {
+            JOptionPane.showMessageDialog(this, "The selected application no longer exists.", "Application Missing", JOptionPane.ERROR_MESSAGE);
+            reloadApplicantTable(model);
+            return;
+        }
+
+        if (application.getStatus() == newStatus) {
+            JOptionPane.showMessageDialog(this, "This application is already marked as " + newStatus + ".", "No Change", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Confirm marking this application as " + newStatus + "?",
+                "Confirm Decision",
+                JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        application.setStatus(newStatus);
+        applicationStorage.update(application, Application::getId);
+        model.setValueAt(newStatus, modelRow, 5);
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Application status updated to " + newStatus + ".",
+                "Decision Saved",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void addField(JPanel panel, GridBagConstraints gbc, int row, String label) {
