@@ -5,6 +5,7 @@ C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruit
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\model\TAProfile.java
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\model\User.java
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\service\AuthService.java
+C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\service\MOService.java
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\test\AuthTest.java
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\test\BusinessLogicTest.java
 C:\Users\果\Documents\GitHub\EBU6304_Group98\ProjectRoot\src\com\bupt\ta\recruitment\test\CsvStorageTest.java

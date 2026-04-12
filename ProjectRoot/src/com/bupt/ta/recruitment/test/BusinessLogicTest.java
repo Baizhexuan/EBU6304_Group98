@@ -10,75 +10,107 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * L3 Pair B deliverable.
- *
- * <p>This project does not yet expose the L3 flows through a dedicated service layer, so this
- * test exercises the same persistence and validation rules currently implemented in the dashboard
- * classes. TA-side flows are executable; MO-side flows are reported as blocked because the current
- * repository only contains UI skeletons for them.
+ * Integration-style test harness for the executable Pair B L3 business flows.
+ * It verifies TA-side validation, browsing, and application persistence without
+ * requiring an external test framework.
  */
 public class BusinessLogicTest {
+    // 记录通过用例数量。
     private static int passed = 0;
+    // 记录失败用例数量。
     private static int failed = 0;
+    // 记录跳过用例数量。
     private static int skipped = 0;
 
+    // 临时测试数据目录。
     private static File tempDir;
+    // 测试使用的档案存储。
     private static CsvStorage<TAProfile> profileStorage;
+    // 测试使用的岗位存储。
     private static CsvStorage<Job> jobStorage;
+    // 测试使用的申请存储。
     private static CsvStorage<Application> applicationStorage;
 
     public static void main(String[] args) {
+        // 输出测试标题，便于在命令行识别当前测试套件。
         System.out.println("========== BusinessLogicTest (L3 Pair B) ==========");
         try {
+            // 执行邮箱格式校验测试。
             testProfileRejectsInvalidEmail();
+            // 执行 GPA 范围校验测试。
             testProfileRejectsInvalidGpa();
+            // 执行资料新增与更新测试。
             testProfileSaveCreatesAndUpdatesProfile();
+            // 执行只浏览开放岗位的测试。
             testBrowseOnlyReturnsOpenJobs();
+            // 执行模块与技能过滤测试。
             testBrowseSupportsModuleAndSkillFilters();
+            // 执行申请创建测试。
             testApplyCreatesPendingApplication();
+            // 执行重复申请拦截测试。
             testApplyRejectsDuplicateApplication();
+            // 执行三种申请状态持久化测试。
             testApplicationStatusViewDataKeepsAllThreeStates();
+            // MO 发布岗位流程目前仍按阻塞项跳过。
             skipBlockedMoPostingFlow();
+            // MO 审核申请流程目前仍按阻塞项跳过。
             skipBlockedMoDecisionFlow();
         } finally {
+            // 无论测试是否异常，都尝试清理临时目录。
             tearDown();
         }
 
+        // 输出空行分隔测试明细与总结。
         System.out.println();
+        // 输出通过数量。
         System.out.println("Passed: " + passed);
+        // 输出失败数量。
         System.out.println("Failed: " + failed);
+        // 输出跳过数量。
         System.out.println("Skipped: " + skipped);
+        // 只要存在失败项，就以非零退出码结束进程。
         if (failed > 0) {
             System.exit(1);
         }
     }
 
     private static void setUp() {
+        // 每个测试开始前先清理上一次留下的临时数据。
         tearDown();
+        // 创建本测试专用的数据目录。
         tempDir = new File("data/test_l3_pairb");
         tempDir.mkdirs();
+        // 初始化临时档案存储。
         profileStorage = new CsvStorage<>(new File(tempDir, "profiles.csv").getPath(), TAProfile::fromCsvRow);
+        // 初始化临时岗位存储。
         jobStorage = new CsvStorage<>(new File(tempDir, "jobs.csv").getPath(), Job::fromCsvRow);
+        // 初始化临时申请存储。
         applicationStorage = new CsvStorage<>(new File(tempDir, "applications.csv").getPath(), Application::fromCsvRow);
+        // 先写入空列表，保证 CSV 文件实际存在。
         profileStorage.saveAll(new ArrayList<>());
         jobStorage.saveAll(new ArrayList<>());
         applicationStorage.saveAll(new ArrayList<>());
     }
 
     private static void tearDown() {
+        // 只有临时目录存在时才执行递归删除。
         if (tempDir != null && tempDir.exists()) {
             deleteRecursively(tempDir);
+            // 删除完成后清空目录引用。
             tempDir = null;
         }
     }
 
     private static void deleteRecursively(File file) {
+        // 读取当前目录下的所有子文件和子目录。
         File[] children = file.listFiles();
         if (children != null) {
+            // 递归删除所有子节点。
             for (File child : children) {
                 deleteRecursively(child);
             }
         }
+        // 最后删除当前文件或目录本身。
         file.delete();
     }
 
@@ -193,11 +225,13 @@ public class BusinessLogicTest {
     }
 
     private static void skipBlockedMoPostingFlow() {
+        // 将当前阻塞项记为跳过。
         skipped++;
         System.out.println("  [SKIP] US-5 MO posting flow is blocked: MODashboard has no publish/close action or service-layer API yet.");
     }
 
     private static void skipBlockedMoDecisionFlow() {
+        // 将当前阻塞项记为跳过。
         skipped++;
         System.out.println("  [SKIP] US-6 MO applicant decision flow is blocked: repository does not yet provide select/reject handlers.");
     }
@@ -209,15 +243,19 @@ public class BusinessLogicTest {
             String skills,
             String gpaText,
             String cvPath) {
+        // 任一资料字段为空都视为校验失败。
         if (isBlank(fullName) || isBlank(email) || isBlank(studentId) || isBlank(skills) || isBlank(gpaText) || isBlank(cvPath)) {
             return ValidationResult.failure("All profile fields are required.");
         }
+        // 邮箱格式不合法时返回失败结果。
         if (!UIHelper.isValidEmail(email)) {
             return ValidationResult.failure("Invalid email.");
         }
+        // GPA 不合法时返回失败结果。
         if (!UIHelper.isValidGpa(gpaText)) {
             return ValidationResult.failure("Invalid GPA.");
         }
+        // 所有规则通过时返回成功结果。
         return ValidationResult.success();
     }
 
@@ -229,12 +267,15 @@ public class BusinessLogicTest {
             String skills,
             String gpaText,
             String cvPath) {
+        // 先复用统一资料校验逻辑。
         ValidationResult validation = validateProfile(fullName, email, studentId, skills, gpaText, cvPath);
         if (!validation.success) {
             return validation;
         }
 
+        // 读取现有档案，准备更新或新增。
         List<TAProfile> profiles = profileStorage.loadAll();
+        // target 表示当前用户的目标档案记录。
         TAProfile target = null;
         for (TAProfile profile : profiles) {
             if (userId.equals(profile.getUserId())) {
@@ -242,6 +283,7 @@ public class BusinessLogicTest {
                 break;
             }
         }
+        // 如果还没有档案，则先创建一条新记录。
         if (target == null) {
             target = new TAProfile();
             target.setId(java.util.UUID.randomUUID().toString());
@@ -249,26 +291,35 @@ public class BusinessLogicTest {
             profiles.add(target);
         }
 
+        // 将输入值逐项回写到档案对象。
         target.setFullName(fullName);
         target.setEmail(email);
         target.setStudentId(studentId);
         target.setSkills(skills);
         target.setGpa(Double.parseDouble(gpaText));
         target.setCvPath(cvPath);
+        // 保存整个档案集合。
         profileStorage.saveAll(profiles);
+        // 返回成功结果。
         return ValidationResult.success();
     }
 
     private static List<Job> browseJobs(String moduleKeyword, String skillKeyword) {
+        // 收集符合条件的岗位列表。
         List<Job> result = new ArrayList<>();
+        // 预处理模块关键字，避免空指针并统一小写比较。
         String normalizedModule = moduleKeyword == null ? "" : moduleKeyword.trim().toLowerCase();
+        // 预处理技能关键字，避免空指针并统一小写比较。
         String normalizedSkill = skillKeyword == null ? "" : skillKeyword.trim().toLowerCase();
 
+        // 遍历全部岗位，只保留开放且匹配过滤条件的记录。
         for (Job job : jobStorage.loadAll()) {
             if (job.getStatus() != Job.JobStatus.OPEN) {
                 continue;
             }
+            // 模块关键字为空时自动匹配，否则要求模块名包含关键字。
             boolean moduleMatched = normalizedModule.isEmpty() || job.getModule().toLowerCase().contains(normalizedModule);
+            // 技能关键字为空时自动匹配，否则要求技能串包含关键字。
             boolean skillMatched = normalizedSkill.isEmpty() || job.getRequiredSkills().toLowerCase().contains(normalizedSkill);
             if (moduleMatched && skillMatched) {
                 result.add(job);
@@ -278,90 +329,116 @@ public class BusinessLogicTest {
     }
 
     private static ApplyResult applyForJob(String taId, String jobId) {
+        // 默认认为当前 TA 还没有完善档案。
         boolean hasProfile = false;
+        // 遍历档案列表，检查当前 TA 是否已经创建资料。
         for (TAProfile profile : profileStorage.loadAll()) {
             if (taId.equals(profile.getUserId())) {
                 hasProfile = true;
                 break;
             }
         }
+        // 没有档案时拒绝申请。
         if (!hasProfile) {
             return ApplyResult.failure("Profile required.");
         }
 
+        // 再次遍历申请列表，拦截重复申请。
         for (Application application : applicationStorage.loadAll()) {
             if (taId.equals(application.getTaId()) && jobId.equals(application.getJobId())) {
                 return ApplyResult.failure("Duplicate application.");
             }
         }
 
+        // 读取已有申请并追加新的待处理申请记录。
         List<Application> applications = applicationStorage.loadAll();
         applications.add(new Application(taId, jobId, Application.AppStatus.PENDING));
+        // 持久化新的申请集合。
         applicationStorage.saveAll(applications);
+        // 返回成功结果。
         return ApplyResult.success();
     }
 
     private static boolean isBlank(String value) {
+        // null 或去空格后为空字符串都视为 blank。
         return value == null || value.trim().isEmpty();
     }
 
     private static void assertEquals(String label, Object expected, Object actual) {
+        // 统一比较期望值和实际值是否相等。
         boolean ok = expected == null ? actual == null : expected.equals(actual);
         if (ok) {
+            // 断言成功时增加通过计数并输出通过日志。
             passed++;
             System.out.println("  [PASS] " + label);
         } else {
+            // 断言失败时增加失败计数并输出详细差异。
             failed++;
             System.out.println("  [FAIL] " + label + " expected=<" + expected + "> actual=<" + actual + ">");
         }
     }
 
     private static void assertTrue(String label, boolean condition) {
+        // 条件为真时判定断言通过。
         if (condition) {
             passed++;
             System.out.println("  [PASS] " + label);
         } else {
+            // 条件为假时判定断言失败。
             failed++;
             System.out.println("  [FAIL] " + label + " expected=true actual=false");
         }
     }
 
     private static void assertFalse(String label, boolean condition) {
+        // 通过复用 assertTrue 简化“应为假”的判断逻辑。
         assertTrue(label, !condition);
     }
 
     private static final class ValidationResult {
+        // 标记当前校验是否成功。
         private final boolean success;
+        // 保存校验结果的附带消息。
         private final String message;
 
         private ValidationResult(boolean success, String message) {
+            // 记录成功标记。
             this.success = success;
+            // 记录结果消息。
             this.message = message;
         }
 
         private static ValidationResult success() {
+            // 构造一个标准成功结果。
             return new ValidationResult(true, "OK");
         }
 
         private static ValidationResult failure(String message) {
+            // 构造一个携带错误消息的失败结果。
             return new ValidationResult(false, message);
         }
     }
 
     private static final class ApplyResult {
+        // 标记申请动作是否成功。
         private final boolean success;
+        // 保存申请动作的结果消息。
         private final String message;
 
         private ApplyResult(boolean success, String message) {
+            // 记录申请是否成功。
             this.success = success;
+            // 记录申请结果消息。
             this.message = message;
         }
 
         private static ApplyResult success() {
+            // 返回标准成功结果。
             return new ApplyResult(true, "OK");
         }
 
         private static ApplyResult failure(String message) {
+            // 返回携带失败原因的结果。
             return new ApplyResult(false, message);
         }
     }
