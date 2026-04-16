@@ -276,7 +276,7 @@ public class TADashboard extends BaseDashboard {
             if (!matchesJobKeyword(job, keyword)) {
                 continue;
             }
-            MatchResult match = MatchingService.evaluate(profile, job);
+            MatchResult match = ScoringService.evaluate(profile, job);
             jobsModel.addRow(new Object[] {
                     job.id,
                     job.title,
@@ -331,7 +331,7 @@ public class TADashboard extends BaseDashboard {
         }
 
         Job job = FileStorage.findJobById(jobId);
-        MatchResult match = MatchingService.evaluate(profile, job);
+        MatchResult match = ScoringService.evaluate(profile, job);
 
         Application app = new Application();
         app.id = FileStorage.nextApplicationId();

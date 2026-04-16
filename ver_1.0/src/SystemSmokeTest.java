@@ -11,7 +11,7 @@ public class SystemSmokeTest {
 
         TAProfile profile = FileStorage.findProfileByUserId(2);
         Job job = FileStorage.findJobById(1);
-        MatchResult result = MatchingService.evaluate(profile, job);
+        MatchResult result = ScoringService.evaluate(profile, job);
 
         if (result.score <= 0) {
             throw new IllegalStateException("Expected a positive match score.");
@@ -22,5 +22,6 @@ public class SystemSmokeTest {
         System.out.println("Jobs: " + FileStorage.loadJobs().size());
         System.out.println("Applications: " + FileStorage.loadApplications().size());
         System.out.println("Sample match: " + result.score + "% - " + result.summary);
+        System.out.println(AIIntegrationPlan.buildReadinessSummary());
     }
 }

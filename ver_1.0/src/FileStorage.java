@@ -258,6 +258,18 @@ public class FileStorage {
         return null;
     }
 
+    public static User findUserByDisplayName(String displayName) {
+        if (displayName == null) {
+            return null;
+        }
+        for (User user : loadUsers()) {
+            if (user.getSafeDisplayName().equalsIgnoreCase(displayName.trim())) {
+                return user;
+            }
+        }
+        return null;
+    }
+
     public static TAProfile findProfileByUserId(int userId) {
         for (TAProfile profile : loadProfiles()) {
             if (profile.userId == userId) {

@@ -1,49 +1,51 @@
-# EBU6304 Group 98 Demo Version 1.2
+# EBU6304 Group 98 Demo Version 1.3
 
 BUPT International School Teaching Assistant Recruitment System.
 
 ## Implemented Features
 
 - TA profile creation and editing
-- CV path recording
-- Job browsing and application submission
-- Application status tracking
-- MO job posting and applicant review
-- Admin workload monitoring and CSV export
+- CV path recording and local file browsing
+- Job browsing, keyword filtering, and application submission
+- Application status tracking and pending-application withdrawal
+- MO job posting, applicant review, and shortlist decisions
+- Admin workload monitoring with filters, editable overview tables, save and undo flows, and CSV export
 - CSV file persistence without any database
-- Simple skill-match scoring for demo use
+- AI-ready scoring abstraction with a rule-based provider as the current default
 
 ## Task Plan Alignment Check
 
-This demo now aligns most clearly with:
+This demo aligns most clearly with:
 
 - L2 authentication and dashboard framework
 - L3 core TA and MO workflow in a simplified integrated form
-- part of L4 admin workload monitoring
-- part of L5 skill matching
+- a stronger subset of L4 admin management and reporting
+- an AI-ready foundation for L5 skill matching integration
 
 Current gaps against `task_plan.md`:
 
 - no dedicated service-layer split such as `TAService`, `MOService`, `AdminService`
 - no notification module for `US-8`
 - no formal JUnit test suite / JavaDoc package delivery yet
-- data persistence is CSV-based but still uses a simplified flat source layout instead of the fully packaged MVC structure in `ProjectRoot`
+- data persistence is still CSV-based with a flat demo layout instead of the full packaged `ProjectRoot` structure
+- no external AI model is connected yet; the provider layer is prepared for that next step
 
-## Iteration 1.2 Update
+## Iteration 1.3 Update
 
-This iteration continues the `ver_1.0` demo and improves compliance with the task plan for the intermediate product build.
+This iteration continues `ver_1.0` toward a near-final demo build and improves the admin-facing workflow while preparing the system for future AI integration.
 
 New updates in this version:
 
-- added a shared `BaseDashboard` so TA / MO / Admin screens reuse a common dashboard shell
-- login now distinguishes missing username, missing password, and wrong credentials more clearly
-- registration now includes password confirmation, matching the L2 requirement more closely
-- TA job board search/filter for faster browsing
-- MO job list search/filter
-- MO applicant filtering by name, email, skills, status, or match summary
-- Admin workload export files now include a timestamp in the filename
-- Admin workload status is clearer, with `OK`, `NEAR LIMIT`, and `OVERLOAD - review allocation immediately`
-- README and architecture notes updated to reflect the newer demo iteration more clearly
+- added an AI-ready scoring layer with `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, and `ScoringService`
+- updated TA matching calls to use the central scoring service instead of calling the rule-based matcher directly
+- added `AIIntegrationPlan` so the current readiness state can be surfaced in the UI and smoke test output
+- upgraded `AdminDashboard` with workload search and status filters
+- added admin summary labels for visible TA count, allocated hours, overload cases, and current scoring provider readiness
+- made the admin applications table editable for status and reviewer notes, with save and undo support
+- made the admin jobs table editable for MO assignment, title, module, skills, hours, location, and status, with validation plus save and undo support
+- added unsaved-change warnings when the admin tries to log out or close the dashboard
+- workload export files now include the active scoring provider for auditability
+- README and architecture notes updated to reflect the `ver_1.3` build
 
 ## Run
 
@@ -65,6 +67,7 @@ New updates in this version:
 - `src/`: Java source code
 - `data/`: CSV data files
 - `docs/architecture.md`: structure overview
+- `docs/task_plan_alignment.md`: task plan comparison notes
 - `compile.sh`: compile script
 - `run.sh`: run script
 
@@ -73,3 +76,4 @@ New updates in this version:
 - `ver_1.0`: first complete integrated demo build
 - `ver_1.1`: usability-focused iteration with filtering and improved admin monitoring feedback
 - `ver_1.2`: task-plan alignment update with shared dashboard base and stronger L2 authentication checks
+- `ver_1.3`: stronger admin operations and AI-ready scoring abstraction for the next integration stage

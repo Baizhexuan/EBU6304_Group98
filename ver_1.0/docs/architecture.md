@@ -7,11 +7,16 @@ software_engine/
 │   ├── DemoMetadata.java
 │   ├── LoginFrame.java
 │   ├── RegisterFrame.java
+│   ├── BaseDashboard.java
 │   ├── TADashboard.java
 │   ├── MODashboard.java
 │   ├── AdminDashboard.java
 │   ├── FileStorage.java
 │   ├── MatchingService.java
+│   ├── SkillScoringProvider.java
+│   ├── RuleBasedSkillScoringProvider.java
+│   ├── ScoringService.java
+│   ├── AIIntegrationPlan.java
 │   ├── MatchResult.java
 │   ├── ValidationUtils.java
 │   ├── User.java
@@ -24,9 +29,10 @@ software_engine/
 │   ├── profiles.csv
 │   ├── jobs.csv
 │   ├── applications.csv
-│   └── admin_workload_report.csv
+│   └── admin_workload_report_*.csv
 ├── docs/
-│   └── architecture.md
+│   ├── architecture.md
+│   └── task_plan_alignment.md
 ├── compile.sh
 ├── run.sh
 └── README.md
@@ -36,16 +42,17 @@ software_engine/
 
 - UI layer: `LoginFrame`, `RegisterFrame`, `BaseDashboard`, `TADashboard`, `MODashboard`, `AdminDashboard`
 - Domain layer: `User`, `TAProfile`, `Job`, `Application`, `MatchResult`
-- Service layer: `MatchingService`, `ValidationUtils`
+- Service layer: `MatchingService`, `ScoringService`, `ValidationUtils`
+- AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIIntegrationPlan`
 - Persistence layer: `FileStorage`
 - Verification entry: `SystemSmokeTest`
 
-## Iteration 1.2 Additions
+## Iteration 1.3 Additions
 
-- `BaseDashboard`: shared logout menu, title template, and tab container for all role dashboards
-- `LoginFrame`: clearer empty-field validation to better match the L2 task-plan requirements
-- `RegisterFrame`: added password confirmation to align better with the L2 registration requirement
-- `TADashboard`: added search/filter support for the TA job browsing table
-- `MODashboard`: added search/filter support for MO job posts and applicant review
-- `AdminDashboard`: export filenames now include timestamps and workload labels are more descriptive
-- `DemoMetadata`: centralised demo version and iteration notes for the login/about flow
+- `AdminDashboard`: expanded from read-only monitoring into filtered admin operations with editable applications and jobs, save and undo actions, and unsaved-change warnings
+- `SkillScoringProvider`: interface for future external AI or LLM-backed recommendation logic
+- `RuleBasedSkillScoringProvider`: current default provider that wraps the existing rule-based matcher
+- `ScoringService`: single entry point so UI code stays stable when the scoring backend changes later
+- `AIIntegrationPlan`: lightweight readiness summary used in the admin UI and smoke test output
+- `TADashboard`: now reads scores through `ScoringService` rather than binding directly to `MatchingService`
+- `FileStorage`: added helper lookup by display name to support admin-side job reassignment
