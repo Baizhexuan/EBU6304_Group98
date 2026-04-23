@@ -4,6 +4,7 @@ import javax.swing.UIManager;
 public class Main {
     public static void main(String[] args) {
         FileStorage.initialise();
+        ScoringService.resetProviderFromEnvironment();
 
         SwingUtilities.invokeLater(() -> {
             try {

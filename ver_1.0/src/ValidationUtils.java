@@ -3,6 +3,10 @@ public class ValidationUtils {
         return value == null || value.trim().isEmpty();
     }
 
+    public static boolean notBlank(String value) {
+        return !isBlank(value);
+    }
+
     public static boolean isEmail(String value) {
         return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     }

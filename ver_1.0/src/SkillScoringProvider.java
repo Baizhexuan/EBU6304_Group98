@@ -4,4 +4,8 @@ public interface SkillScoringProvider {
     String getProviderName();
 
     boolean isExternalModel();
+
+    boolean isReady();
+
+    String getStatusDescription();
 }

@@ -1,6 +1,7 @@
 public class SystemSmokeTest {
     public static void main(String[] args) {
         FileStorage.initialise();
+        ScoringService.resetProviderFromEnvironment();
 
         if (FileStorage.loadUsers().size() < 5) {
             throw new IllegalStateException("Expected seeded demo users.");
@@ -23,5 +24,6 @@ public class SystemSmokeTest {
         System.out.println("Applications: " + FileStorage.loadApplications().size());
         System.out.println("Sample match: " + result.score + "% - " + result.summary);
         System.out.println(AIIntegrationPlan.buildReadinessSummary());
+        System.out.println("Admin alert preview: " + AdminRecommendationService.buildGlobalAlertSummary());
     }
 }

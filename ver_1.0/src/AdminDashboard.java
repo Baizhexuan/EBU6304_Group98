@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -22,7 +23,9 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
@@ -40,6 +43,8 @@ public class AdminDashboard extends BaseDashboard {
     private JComboBox<String> workloadStatusFilter;
     private JLabel adminSummaryLabel;
     private JLabel aiReadinessLabel;
+    private JLabel recommendationTitleLabel;
+    private JTextArea recommendationArea;
 
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
@@ -54,7 +59,7 @@ public class AdminDashboard extends BaseDashboard {
     private List<Job> jobSnapshot = new ArrayList<Job>();
 
     public AdminDashboard(User currentUser) {
-        super(currentUser, "Admin Dashboard", 1180, 760);
+        super(currentUser, "Admin Dashboard", 1240, 780);
         addTab("Workload Monitor", createWorkloadPanel());
         addTab("Applications Overview", createApplicationsPanel());
         addTab("Jobs Overview", createJobsPanel());
@@ -85,14 +90,18 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private JPanel createWorkloadPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
-        JPanel summaryPanel = new JPanel(new GridLayout(2, 1, 0, 6));
-        adminSummaryLabel = new JLabel("Refreshing admin summary...");
-        aiReadinessLabel = new JLabel(AIIntegrationPlan.buildReadinessSummary());
-        summaryPanel.add(adminSummaryLabel);
-        summaryPanel.add(aiReadinessLabel);
+        JPanel summaryPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        summaryPanel.setOpaque(false);
+        adminSummaryLabel = buildCardLabel("Refreshing admin summary...");
+        aiReadinessLabel = buildCardLabel(AIIntegrationPlan.buildReadinessSummary());
+        recommendationTitleLabel = buildCardLabel("Recommendation focus: Global risk overview");
+        summaryPanel.add(buildCard("Allocation Overview", adminSummaryLabel, new Color(231, 240, 228)));
+        summaryPanel.add(buildCard("AI Scoring Status", aiReadinessLabel, new Color(225, 236, 241)));
+        summaryPanel.add(buildCard("Recommendation Focus", recommendationTitleLabel, new Color(243, 234, 221)));
         panel.add(summaryPanel, BorderLayout.NORTH);
 
         workloadModel = new DefaultTableModel(
@@ -104,13 +113,44 @@ public class AdminDashboard extends BaseDashboard {
         };
         workloadTable = new JTable(workloadModel);
         workloadTable.setDefaultRenderer(Object.class, new WorkloadRenderer());
-        workloadTable.setRowHeight(24);
-        panel.add(new JScrollPane(workloadTable), BorderLayout.CENTER);
+        workloadTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        workloadTable.setRowHeight(26);
+        workloadTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                refreshRecommendationPanel();
+            }
+        });
+
+        recommendationArea = new JTextArea();
+        recommendationArea.setEditable(false);
+        recommendationArea.setLineWrap(true);
+        recommendationArea.setWrapStyleWord(true);
+        recommendationArea.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        recommendationArea.setBackground(SURFACE_COLOR);
+        recommendationArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel recommendationPanel = new JPanel(new BorderLayout(8, 8));
+        recommendationPanel.setBackground(SURFACE_COLOR);
+        recommendationPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+        JLabel recommendationHeader = new JLabel("Reallocation Advice");
+        recommendationHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
+        recommendationPanel.add(recommendationHeader, BorderLayout.NORTH);
+        recommendationPanel.add(new JScrollPane(recommendationArea), BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                new JScrollPane(workloadTable), recommendationPanel);
+        splitPane.setResizeWeight(0.66);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        panel.add(splitPane, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new BorderLayout(8, 8));
+        bottom.setOpaque(false);
         JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filters.setOpaque(false);
         filters.add(new JLabel("Search:"));
-        workloadSearchField = new JTextField(22);
+        workloadSearchField = new JTextField(18);
         filters.add(workloadSearchField);
         filters.add(new JLabel("Status:"));
         workloadStatusFilter = new JComboBox<String>(new String[] {"ALL", "OK", "NEAR LIMIT", "OVERLOAD"});
@@ -118,14 +158,21 @@ public class AdminDashboard extends BaseDashboard {
         bottom.add(filters, BorderLayout.WEST);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
+        JButton recommendationButton = new JButton("Refresh Advice");
         JButton exportButton = new JButton("Export CSV Report");
+        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
+        styleButton(recommendationButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleButton(exportButton, new Color(33, 76, 95), Color.WHITE);
         actions.add(refreshButton);
+        actions.add(recommendationButton);
         actions.add(exportButton);
         bottom.add(actions, BorderLayout.EAST);
         panel.add(bottom, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshWorkload());
+        recommendationButton.addActionListener(e -> refreshRecommendationPanel());
         exportButton.addActionListener(e -> exportWorkloadReport());
         workloadSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshWorkload));
         workloadStatusFilter.addActionListener(e -> refreshWorkload());
@@ -134,9 +181,11 @@ public class AdminDashboard extends BaseDashboard {
 
     private JPanel createApplicationsPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topBar.setOpaque(false);
         topBar.add(new JLabel("Search applications:"));
         applicationSearchField = new JTextField(28);
         topBar.add(applicationSearchField);
@@ -162,9 +211,13 @@ public class AdminDashboard extends BaseDashboard {
         panel.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
+        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
+        styleButton(saveButton, new Color(33, 76, 95), Color.WHITE);
+        styleButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -179,9 +232,11 @@ public class AdminDashboard extends BaseDashboard {
 
     private JPanel createJobsPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topBar.setOpaque(false);
         topBar.add(new JLabel("Search jobs:"));
         jobSearchField = new JTextField(28);
         topBar.add(jobSearchField);
@@ -207,9 +262,13 @@ public class AdminDashboard extends BaseDashboard {
         panel.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
+        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
+        styleButton(saveButton, new Color(33, 76, 95), Color.WHITE);
+        styleButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -220,6 +279,31 @@ public class AdminDashboard extends BaseDashboard {
         undoButton.addActionListener(e -> undoJobChanges());
         jobSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshJobs));
         return panel;
+    }
+
+    private JLabel buildCardLabel(String text) {
+        JLabel label = new JLabel("<html><div style='width:300px;'>" + text + "</div></html>");
+        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        return label;
+    }
+
+    private JPanel buildCard(String title, JLabel content, Color background) {
+        JPanel card = new JPanel(new BorderLayout(6, 6));
+        card.setBackground(background);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)));
+        JLabel heading = new JLabel(title);
+        heading.setFont(new Font("SansSerif", Font.BOLD, 14));
+        card.add(heading, BorderLayout.NORTH);
+        card.add(content, BorderLayout.CENTER);
+        return card;
+    }
+
+    private void styleButton(JButton button, Color background, Color foreground) {
+        button.setBackground(background);
+        button.setForeground(foreground);
+        button.setFocusPainted(false);
     }
 
     private void refreshVisibleTab() {
@@ -284,9 +368,38 @@ public class AdminDashboard extends BaseDashboard {
             workloadModel.addRow(new Object[] {user.username, fullName, email, selectedJobs, currentHours, status});
         }
 
-        adminSummaryLabel.setText("Visible TAs: " + taCount + " | Total allocated hours: " + totalHours
-                + " | Overload cases: " + overloadCount + " | Overload limit: " + FileStorage.getOverloadLimit() + "h");
-        aiReadinessLabel.setText(AIIntegrationPlan.buildReadinessSummary());
+        adminSummaryLabel.setText("<html><div style='width:300px;'>Visible TAs: " + taCount
+                + " | Total allocated hours: " + totalHours
+                + " | Overload cases: " + overloadCount
+                + " | Overload limit: " + FileStorage.getOverloadLimit() + "h</div></html>");
+        aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary() + "</div></html>");
+        if (workloadModel.getRowCount() > 0 && workloadTable.getSelectedRow() < 0) {
+            workloadTable.setRowSelectionInterval(0, 0);
+        }
+        refreshRecommendationPanel();
+    }
+
+    private void refreshRecommendationPanel() {
+        if (recommendationArea == null) {
+            return;
+        }
+        int selectedRow = workloadTable == null ? -1 : workloadTable.getSelectedRow();
+        if (selectedRow < 0 || selectedRow >= workloadModel.getRowCount()) {
+            recommendationTitleLabel.setText("<html><div style='width:300px;'>Recommendation focus: Global risk overview</div></html>");
+            recommendationArea.setText(AdminRecommendationService.buildGlobalAlertSummary());
+            recommendationArea.setCaretPosition(0);
+            return;
+        }
+        String username = String.valueOf(workloadModel.getValueAt(selectedRow, 0));
+        User user = FileStorage.findUserByUsername(username);
+        if (user == null) {
+            recommendationArea.setText(AdminRecommendationService.buildGlobalAlertSummary());
+            recommendationArea.setCaretPosition(0);
+            return;
+        }
+        recommendationTitleLabel.setText("<html><div style='width:300px;'>Recommendation focus: " + user.getSafeDisplayName() + "</div></html>");
+        recommendationArea.setText(AdminRecommendationService.buildRecommendationReportForTa(user.id));
+        recommendationArea.setCaretPosition(0);
     }
 
     private boolean matchesWorkloadFilters(User user, String fullName, String email, String status, String keyword,
@@ -432,6 +545,7 @@ public class AdminDashboard extends BaseDashboard {
         try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
             writer.println("exportedAt," + timestamp);
             writer.println("provider," + ScoringService.getActiveProvider().getProviderName());
+            writer.println("providerReady," + ScoringService.getActiveProvider().isReady());
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
                 writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","

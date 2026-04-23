@@ -1,7 +1,7 @@
 # Demo Architecture
 
 ```text
-software_engine/
+software_engineering/
 ├── src/
 │   ├── Main.java
 │   ├── DemoMetadata.java
@@ -11,10 +11,12 @@ software_engine/
 │   ├── TADashboard.java
 │   ├── MODashboard.java
 │   ├── AdminDashboard.java
+│   ├── AdminRecommendationService.java
 │   ├── FileStorage.java
 │   ├── MatchingService.java
 │   ├── SkillScoringProvider.java
 │   ├── RuleBasedSkillScoringProvider.java
+│   ├── AIModelSkillScoringProvider.java
 │   ├── ScoringService.java
 │   ├── AIIntegrationPlan.java
 │   ├── MatchResult.java
@@ -42,17 +44,15 @@ software_engine/
 
 - UI layer: `LoginFrame`, `RegisterFrame`, `BaseDashboard`, `TADashboard`, `MODashboard`, `AdminDashboard`
 - Domain layer: `User`, `TAProfile`, `Job`, `Application`, `MatchResult`
-- Service layer: `MatchingService`, `ScoringService`, `ValidationUtils`
-- AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIIntegrationPlan`
+- Service layer: `MatchingService`, `ScoringService`, `AdminRecommendationService`, `ValidationUtils`
+- AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIModelSkillScoringProvider`, `AIIntegrationPlan`
 - Persistence layer: `FileStorage`
 - Verification entry: `SystemSmokeTest`
 
-## Iteration 1.3 Additions
+## Iteration 1.4 Additions
 
-- `AdminDashboard`: expanded from read-only monitoring into filtered admin operations with editable applications and jobs, save and undo actions, and unsaved-change warnings
-- `SkillScoringProvider`: interface for future external AI or LLM-backed recommendation logic
-- `RuleBasedSkillScoringProvider`: current default provider that wraps the existing rule-based matcher
-- `ScoringService`: single entry point so UI code stays stable when the scoring backend changes later
-- `AIIntegrationPlan`: lightweight readiness summary used in the admin UI and smoke test output
-- `TADashboard`: now reads scores through `ScoringService` rather than binding directly to `MatchingService`
-- `FileStorage`: added helper lookup by display name to support admin-side job reassignment
+- `AIModelSkillScoringProvider`: performs a real HTTP placeholder call to a chat-completions style API when environment variables are configured
+- `ScoringService`: now selects providers from runtime environment and reports whether the current provider is ready
+- `AdminRecommendationService`: builds overload warnings and alternative-candidate recommendations for selected jobs
+- `AdminDashboard`: adds a recommendation side panel, summary cards, and a more presentation-ready operations layout
+- `LoginFrame` and `BaseDashboard`: refreshed visual presentation for the next demo iteration

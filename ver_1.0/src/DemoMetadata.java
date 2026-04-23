@@ -1,9 +1,9 @@
 public final class DemoMetadata {
     public static final String APP_TITLE = "BUPT TA Recruitment System";
     public static final String APP_SUBTITLE = "Teaching Assistant Recruitment Demo";
-    public static final String VERSION_LABEL = "ver_1.3";
-    public static final String ITERATION_NOTE = "Current focus: strengthen admin operations, centralise scoring behind an AI-ready provider layer, and keep the demo close to a near-final integration build.";
-    public static final String NEXT_STEP_NOTE = "Planned next steps: connect an external AI model through the scoring provider, add recommendation workflows, and expand automated tests around admin and matching scenarios.";
+    public static final String VERSION_LABEL = "ver_1.4";
+    public static final String ITERATION_NOTE = "Current focus: add a live AI API placeholder path, strengthen admin reallocation decisions, and polish the demo into a presentation-ready build.";
+    public static final String NEXT_STEP_NOTE = "Planned next steps: connect a production AI workflow, move recommendation logic into clearer service modules, and extend automated regression tests.";
 
     private DemoMetadata() {
     }
@@ -12,6 +12,7 @@ public final class DemoMetadata {
         return APP_TITLE + "\n"
                 + VERSION_LABEL + "\n\n"
                 + ITERATION_NOTE + "\n"
-                + NEXT_STEP_NOTE;
+                + NEXT_STEP_NOTE + "\n\n"
+                + AIIntegrationPlan.buildReadinessSummary();
     }
 }
