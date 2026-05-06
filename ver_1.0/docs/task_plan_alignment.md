@@ -1,6 +1,31 @@
-# ver_1.4 Task Plan Alignment
+# ver_1.5 Task Plan Alignment
 
-This note checks the current `ver_1.0` demo codebase against `/Users/yukikana0108/Downloads/task_plan.md`.
+This note checks the current `ver_1.0` demo codebase against `/Users/yukikana0108/Downloads/task_plan.md` and the coursework brief.
+
+## Coursework Requirement Check
+
+### Mandatory platform constraints
+
+The current demo satisfies these mandatory requirements:
+
+- the software is a stand-alone Java application
+- all input and output data are stored in CSV text files
+- no database is used
+
+### Core product requirements currently demonstrated
+
+The current demo also demonstrates the core customer-facing workflow expected by the brief:
+
+- TA can create and edit an applicant profile
+- TA can browse available jobs
+- TA can apply for jobs
+- TA can check application status
+- MO can post jobs
+- MO can select or reject applicants
+- Admin can check TA overall workload
+- AI-assisted matching and workload support are included in an explainable, non-black-box way
+
+From a product perspective, this means the demo already covers the selected set of core functions required for a prototype build.
 
 ## Overall Position
 
@@ -11,7 +36,7 @@ The current integrated demo is beyond a pure L2 skeleton. It now contains:
 - a stronger subset of L4 admin monitoring, editing, and reallocation support
 - an AI placeholder integration seam for later L5 model-backed scoring work
 
-At the same time, it does not yet fully satisfy the complete task plan for L1-L6.
+At the same time, it does not yet fully satisfy the complete task plan for L1-L6 as a whole coursework package.
 
 ## Matches Well
 
@@ -24,6 +49,7 @@ At the same time, it does not yet fully satisfy the complete task plan for L1-L6
 - L3 MO posting, listing, closing, and applicant review
 - stronger L4 admin workload monitoring with filters, summaries, exports, editable overview tables, and replacement suggestions
 - early L5 preparation through a replaceable scoring-provider abstraction with a live API placeholder path
+- improved final-demo UI polish and macOS-friendly entry-screen sizing for presentation use
 
 ## Partially Met
 
@@ -42,9 +68,10 @@ At the same time, it does not yet fully satisfy the complete task plan for L1-L6
 
 ## Version Conclusion
 
-`ver_1.4` is a stronger intermediate build than `ver_1.3`, and it is more accurate to describe it as:
+`ver_1.5` is best described as:
 
-- a mostly-complete L2 foundation
-- an integrated partial implementation of L3-L4
+- a product demo that satisfies the mandatory technical constraints
+- a selected-core-feature prototype that already covers the main TA / MO / Admin workflow
+- a mostly-complete L2 foundation with an integrated partial implementation of L3-L4
 - an AI-placeholder bridge into later L5 integration work
-- not yet a full task-plan-complete final version
+- not yet the entire final coursework package for all L1-L6 deliverables
