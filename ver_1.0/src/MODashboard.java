@@ -9,16 +9,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -35,17 +33,20 @@ public class MODashboard extends BaseDashboard {
     private JTextField hoursField;
     private JTextField locationField;
     private JTextArea descriptionArea;
+    private JLabel postStatusLabel;
     private JTable myJobsTable;
     private DefaultTableModel myJobsModel;
     private JTextField myJobsSearchField;
+    private JLabel myJobsSummaryLabel;
     private JComboBox<String> jobSelector;
     private List<Integer> selectorJobIds = new ArrayList<Integer>();
     private JTable applicantsTable;
     private DefaultTableModel applicantsModel;
     private JTextField applicantSearchField;
+    private JLabel applicantSummaryLabel;
 
     public MODashboard(User currentUser) {
-        super(currentUser, "MO Dashboard", 1020, 700);
+        super(currentUser, "MO Dashboard", 1080, 720);
         addTab("Post Job", createPostJobPanel());
         addTab("My Job Posts", createMyJobsPanel());
         addTab("Applicants", createApplicantsPanel());
@@ -61,8 +62,20 @@ public class MODashboard extends BaseDashboard {
     }
 
     private JPanel createPostJobPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(APP_BACKGROUND);
+        content.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        content.add(buildSectionIntro(
+                "Publish and Maintain Job Posts",
+                "Use this screen to release a new TA opportunity with clear skills, workload, and location information. Stronger descriptions help later AI-assisted screening and admin-side reallocation decisions."));
+        content.add(Box.createVerticalStrut(12));
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(SURFACE_COLOR);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(219, 224, 228)),
+                BorderFactory.createEmptyBorder(18, 18, 18, 18)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -76,30 +89,45 @@ public class MODashboard extends BaseDashboard {
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
 
-        addRow(panel, gbc, 0, "Job Title:", titleField);
-        addRow(panel, gbc, 1, "Module Code:", moduleField);
-        addRow(panel, gbc, 2, "Required Skills:", skillsField);
-        addRow(panel, gbc, 3, "Max Hours/Week:", hoursField);
-        addRow(panel, gbc, 4, "Location:", locationField);
+        addRow(formPanel, gbc, 0, "Job Title:", titleField);
+        addRow(formPanel, gbc, 1, "Module Code:", moduleField);
+        addRow(formPanel, gbc, 2, "Required Skills:", skillsField);
+        addRow(formPanel, gbc, 3, "Max Hours/Week:", hoursField);
+        addRow(formPanel, gbc, 4, "Location:", locationField);
 
         gbc.gridx = 0;
         gbc.gridy = 5;
-        panel.add(new JLabel("Description:"), gbc);
+        formPanel.add(new JLabel("Description:"), gbc);
         gbc.gridx = 1;
-        panel.add(new JScrollPane(descriptionArea), gbc);
+        formPanel.add(new JScrollPane(descriptionArea), gbc);
 
+        JPanel bottomRow = new JPanel(new BorderLayout(10, 10));
+        bottomRow.setOpaque(false);
+        postStatusLabel = new JLabel("Posting status: ready to create a new job.");
         JButton postButton = new JButton("Publish Job");
+        styleActionButton(postButton, ACCENT_COLOR, Color.WHITE);
+        bottomRow.add(postStatusLabel, BorderLayout.CENTER);
+        bottomRow.add(postButton, BorderLayout.EAST);
+
         gbc.gridx = 0;
         gbc.gridy = 6;
         gbc.gridwidth = 2;
-        panel.add(postButton, gbc);
+        formPanel.add(bottomRow, gbc);
         postButton.addActionListener(e -> publishJob());
-        return panel;
+
+        content.add(formPanel);
+        content.add(Box.createVerticalGlue());
+        return wrapContent(content);
     }
 
     private JPanel createMyJobsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        panel.add(buildSectionIntro(
+                "My Job Posts",
+                "Review your open and closed jobs, filter quickly during demos, and toggle availability when a role has already been filled or paused."),
+                BorderLayout.NORTH);
 
         myJobsModel = new DefaultTableModel(new String[] {"Job ID", "Title", "Module", "Skills", "Hours", "Status"}, 0) {
             @Override
@@ -108,17 +136,30 @@ public class MODashboard extends BaseDashboard {
             }
         };
         myJobsTable = new JTable(myJobsModel);
+        myJobsTable.setAutoCreateRowSorter(true);
         myJobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JPanel topBar = new JPanel(new BorderLayout(6, 6));
+
+        JPanel topBar = new JPanel(new BorderLayout(8, 8));
+        topBar.setOpaque(false);
+        topBar.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
         topBar.add(new JLabel("Search My Jobs:"), BorderLayout.WEST);
         myJobsSearchField = new JTextField();
         topBar.add(myJobsSearchField, BorderLayout.CENTER);
-        panel.add(topBar, BorderLayout.NORTH);
-        panel.add(new JScrollPane(myJobsTable), BorderLayout.CENTER);
+        myJobsSummaryLabel = new JLabel("Job summary will appear here after refresh.");
+        topBar.add(myJobsSummaryLabel, BorderLayout.SOUTH);
+
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(topBar, BorderLayout.NORTH);
+        center.add(new JScrollPane(myJobsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton toggleButton = new JButton("Open / Close Selected Job");
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(toggleButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(toggleButton);
         panel.add(actions, BorderLayout.SOUTH);
@@ -130,18 +171,23 @@ public class MODashboard extends BaseDashboard {
     }
 
     private JPanel createApplicantsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        panel.add(buildSectionIntro(
+                "Applicant Review",
+                "Inspect match scores, skills, and current workload before selecting or rejecting a TA. The list is sortable so stronger candidates can be surfaced quickly during live review."),
+                BorderLayout.NORTH);
 
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.add(new JLabel("Job Post:"));
+        top.setOpaque(false);
         jobSelector = new JComboBox<String>();
         jobSelector.addActionListener(e -> refreshApplicants());
+        applicantSearchField = new JTextField(18);
+        top.add(new JLabel("Job Post:"));
         top.add(jobSelector);
         top.add(new JLabel("Filter Applicant:"));
-        applicantSearchField = new JTextField(18);
         top.add(applicantSearchField);
-        panel.add(top, BorderLayout.NORTH);
 
         applicantsModel = new DefaultTableModel(
                 new String[] {"App ID", "TA", "Email", "Skills", "Match", "Summary", "Status", "Current Hours"}, 0) {
@@ -151,21 +197,43 @@ public class MODashboard extends BaseDashboard {
             }
         };
         applicantsTable = new JTable(applicantsModel);
+        applicantsTable.setAutoCreateRowSorter(true);
         applicantsTable.setDefaultRenderer(Object.class, new MatchRenderer());
         applicantsTable.setRowHeight(24);
-        panel.add(new JScrollPane(applicantsTable), BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(top, BorderLayout.NORTH);
+        center.add(new JScrollPane(applicantsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
+
+        JPanel actions = new JPanel(new BorderLayout(8, 8));
+        actions.setOpaque(false);
+        applicantSummaryLabel = new JLabel("Applicant summary will appear here after refresh.");
+        actions.add(applicantSummaryLabel, BorderLayout.CENTER);
+
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonRow.setOpaque(false);
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
-        actions.add(acceptButton);
-        actions.add(rejectButton);
+        styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);
+        styleActionButton(rejectButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        buttonRow.add(acceptButton);
+        buttonRow.add(rejectButton);
+        actions.add(buttonRow, BorderLayout.EAST);
         panel.add(actions, BorderLayout.SOUTH);
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
         applicantSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshApplicants));
         return panel;
+    }
+
+    private JPanel wrapContent(JPanel content) {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(APP_BACKGROUND);
+        root.add(wrapScrollable(content), BorderLayout.CENTER);
+        return root;
     }
 
     private void addRow(JPanel panel, GridBagConstraints gbc, int row, String label, JTextField field) {
@@ -212,6 +280,7 @@ public class MODashboard extends BaseDashboard {
         hoursField.setText("");
         locationField.setText("");
         descriptionArea.setText("");
+        postStatusLabel.setText("Posting status: new job published and ready for TA applications.");
 
         refreshMyJobs();
         refreshJobSelector();
@@ -221,6 +290,8 @@ public class MODashboard extends BaseDashboard {
     private void refreshMyJobs() {
         myJobsModel.setRowCount(0);
         String keyword = myJobsSearchField == null ? "" : myJobsSearchField.getText().trim().toLowerCase();
+        int visibleJobs = 0;
+        int openJobs = 0;
         for (Job job : FileStorage.loadJobs()) {
             if (job.moId != currentUser.id) {
                 continue;
@@ -229,7 +300,13 @@ public class MODashboard extends BaseDashboard {
                 continue;
             }
             myJobsModel.addRow(new Object[] {job.id, job.title, job.module, job.requiredSkills, job.maxHours, job.status});
+            visibleJobs++;
+            if (job.isOpen()) {
+                openJobs++;
+            }
         }
+        myJobsSummaryLabel.setText("Visible jobs: " + visibleJobs + " | Open jobs: " + openJobs + " | Closed jobs: "
+                + Math.max(visibleJobs - openJobs, 0));
     }
 
     private void toggleSelectedJob() {
@@ -239,11 +316,13 @@ public class MODashboard extends BaseDashboard {
             return;
         }
 
-        int jobId = Integer.parseInt(String.valueOf(myJobsModel.getValueAt(row, 0)));
+        int modelRow = myJobsTable.convertRowIndexToModel(row);
+        int jobId = Integer.parseInt(String.valueOf(myJobsModel.getValueAt(modelRow, 0)));
         List<Job> jobs = FileStorage.loadJobs();
         for (Job job : jobs) {
             if (job.id == jobId) {
                 job.status = job.isOpen() ? "CLOSED" : "OPEN";
+                postStatusLabel.setText("Posting status: job '" + job.title + "' is now " + job.status + ".");
                 break;
             }
         }
@@ -269,6 +348,7 @@ public class MODashboard extends BaseDashboard {
         applicantsModel.setRowCount(0);
         int selectedJobId = getSelectedJobId();
         if (selectedJobId < 0) {
+            applicantSummaryLabel.setText("No job selected yet. Publish or choose a job to inspect applicants.");
             return;
         }
         String keyword = applicantSearchField == null ? "" : applicantSearchField.getText().trim().toLowerCase();
@@ -278,6 +358,11 @@ public class MODashboard extends BaseDashboard {
             profiles.put(profile.userId, profile);
         }
 
+        int pending = 0;
+        int selected = 0;
+        int rejected = 0;
+        int strongestScore = -1;
+        String strongestName = "";
         for (Application app : FileStorage.loadApplications()) {
             if (app.jobId != selectedJobId) {
                 continue;
@@ -297,7 +382,25 @@ public class MODashboard extends BaseDashboard {
                     app.status,
                     calculateCurrentHours(app.taId)
             });
+            if ("PENDING".equalsIgnoreCase(app.status)) {
+                pending++;
+            } else if ("SELECTED".equalsIgnoreCase(app.status)) {
+                selected++;
+            } else if ("REJECTED".equalsIgnoreCase(app.status)) {
+                rejected++;
+            }
+            if (app.matchScore > strongestScore) {
+                strongestScore = app.matchScore;
+                strongestName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
+            }
         }
+
+        if (applicantsModel.getRowCount() == 0) {
+            applicantSummaryLabel.setText("No applicants match the current selection or filter.");
+            return;
+        }
+        applicantSummaryLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: " + rejected
+                + " | Strongest visible fit: " + strongestName + " at " + Math.max(strongestScore, 0) + "%");
     }
 
     private int getSelectedJobId() {
@@ -355,8 +458,9 @@ public class MODashboard extends BaseDashboard {
             return;
         }
 
-        int appId = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(row, 0)));
-        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(row, 7)));
+        int modelRow = applicantsTable.convertRowIndexToModel(row);
+        int appId = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)));
+        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 7)));
         Job job = FileStorage.findJobById(selectedJobId);
 
         if ("SELECTED".equals(decision) && job != null && currentHours + job.maxHours > FileStorage.getOverloadLimit()) {
@@ -373,7 +477,8 @@ public class MODashboard extends BaseDashboard {
         for (Application app : applications) {
             if (app.id == appId) {
                 app.status = decision;
-                app.reviewerNote = "Reviewed by " + currentUser.getSafeDisplayName();
+                app.reviewerNote = "Reviewed by " + currentUser.getSafeDisplayName()
+                        + " using " + ScoringService.getActiveProvider().getProviderName();
                 break;
             }
         }

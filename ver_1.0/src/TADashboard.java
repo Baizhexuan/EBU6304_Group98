@@ -1,6 +1,5 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -9,16 +8,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -37,14 +34,17 @@ public class TADashboard extends BaseDashboard {
     private JTextField cvPathField;
     private JTextField availabilityField;
     private JTextArea statementArea;
+    private JLabel profileStatusLabel;
     private JTable jobsTable;
     private DefaultTableModel jobsModel;
     private JTextField jobSearchField;
+    private JLabel jobInsightLabel;
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
+    private JLabel applicationInsightLabel;
 
     public TADashboard(User currentUser) {
-        super(currentUser, "TA Dashboard", 980, 680);
+        super(currentUser, "TA Dashboard", 1020, 720);
         addTab("My Profile", createProfilePanel());
         addTab("Browse Jobs", createBrowseJobsPanel());
         addTab("My Applications", createApplicationsPanel());
@@ -59,11 +59,24 @@ public class TADashboard extends BaseDashboard {
     }
 
     private JPanel createProfilePanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(APP_BACKGROUND);
+        content.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        content.add(buildSectionIntro(
+                "Profile Completion",
+                "Keep your TA profile complete before applying. This demo checks email format, GPA range, CV path, availability, and a short statement so the next AI matching stage has richer context to work with."));
+        content.add(Box.createVerticalStrut(12));
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(SURFACE_COLOR);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(219, 224, 228)),
+                BorderFactory.createEmptyBorder(18, 18, 18, 18)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
 
         nameField = new JTextField(24);
         emailField = new JTextField(24);
@@ -76,33 +89,47 @@ public class TADashboard extends BaseDashboard {
         statementArea.setLineWrap(true);
         statementArea.setWrapStyleWord(true);
 
-        addRow(panel, gbc, 0, "Full Name:", nameField);
-        addRow(panel, gbc, 1, "Email:", emailField);
-        addRow(panel, gbc, 2, "Student ID:", studentIdField);
-        addRow(panel, gbc, 3, "Skills (semicolon separated):", skillsField);
-        addRow(panel, gbc, 4, "GPA:", gpaField);
-        addCvRow(panel, gbc, 5);
-        addRow(panel, gbc, 6, "Availability:", availabilityField);
+        addRow(formPanel, gbc, 0, "Full Name:", nameField);
+        addRow(formPanel, gbc, 1, "Email:", emailField);
+        addRow(formPanel, gbc, 2, "Student ID:", studentIdField);
+        addRow(formPanel, gbc, 3, "Skills (semicolon separated):", skillsField);
+        addRow(formPanel, gbc, 4, "GPA:", gpaField);
+        addCvRow(formPanel, gbc, 5);
+        addRow(formPanel, gbc, 6, "Availability:", availabilityField);
 
         gbc.gridx = 0;
         gbc.gridy = 7;
-        panel.add(new JLabel("Personal Statement:"), gbc);
+        formPanel.add(new JLabel("Personal Statement:"), gbc);
         gbc.gridx = 1;
-        panel.add(new JScrollPane(statementArea), gbc);
+        formPanel.add(new JScrollPane(statementArea), gbc);
 
+        JPanel bottomRow = new JPanel(new BorderLayout(10, 10));
+        bottomRow.setOpaque(false);
+        profileStatusLabel = new JLabel("Profile status: not loaded yet.");
         JButton saveButton = new JButton("Save Profile");
+        styleActionButton(saveButton, ACCENT_COLOR, Color.WHITE);
+        bottomRow.add(profileStatusLabel, BorderLayout.CENTER);
+        bottomRow.add(saveButton, BorderLayout.EAST);
+
         gbc.gridx = 0;
         gbc.gridy = 8;
         gbc.gridwidth = 2;
-        panel.add(saveButton, gbc);
-
+        formPanel.add(bottomRow, gbc);
         saveButton.addActionListener(e -> saveProfile());
-        return panel;
+
+        content.add(formPanel);
+        content.add(Box.createVerticalGlue());
+        return wrapContent(content);
     }
 
     private JPanel createBrowseJobsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        panel.add(buildSectionIntro(
+                "Open Jobs and Match Guidance",
+                "Browse currently open jobs, filter by module, skills, or location, and compare the AI-ready match explanation before applying. Sorting is enabled on every column for demo walkthroughs."),
+                BorderLayout.NORTH);
 
         jobsModel = new DefaultTableModel(
                 new String[] {"Job ID", "Title", "Module", "Skills", "Hours", "Location", "AI Match", "Summary"}, 0) {
@@ -112,18 +139,31 @@ public class TADashboard extends BaseDashboard {
             }
         };
         jobsTable = new JTable(jobsModel);
+        jobsTable.setAutoCreateRowSorter(true);
         jobsTable.setRowHeight(24);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JPanel topBar = new JPanel(new BorderLayout(6, 6));
+
+        JPanel topBar = new JPanel(new BorderLayout(8, 8));
+        topBar.setOpaque(false);
+        topBar.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
         topBar.add(new JLabel("Search Jobs:"), BorderLayout.WEST);
         jobSearchField = new JTextField();
         topBar.add(jobSearchField, BorderLayout.CENTER);
-        panel.add(topBar, BorderLayout.NORTH);
-        panel.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+        jobInsightLabel = new JLabel("Match insight will appear here after refresh.");
+        topBar.add(jobInsightLabel, BorderLayout.SOUTH);
+
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(topBar, BorderLayout.NORTH);
+        center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttons.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton applyButton = new JButton("Apply for Selected Job");
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(applyButton, ACCENT_COLOR, Color.WHITE);
         buttons.add(refreshButton);
         buttons.add(applyButton);
         panel.add(buttons, BorderLayout.SOUTH);
@@ -135,8 +175,13 @@ public class TADashboard extends BaseDashboard {
     }
 
     private JPanel createApplicationsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        panel.add(buildSectionIntro(
+                "Application Tracking",
+                "Monitor application outcomes with colour cues, compare earlier match scores, and withdraw only pending applications. This keeps the TA journey aligned with the project requirement flow."),
+                BorderLayout.NORTH);
 
         applicationsModel = new DefaultTableModel(
                 new String[] {"App ID", "Job", "Module", "Status", "Applied At", "Match", "MO Note"}, 0) {
@@ -146,20 +191,37 @@ public class TADashboard extends BaseDashboard {
             }
         };
         applicationsTable = new JTable(applicationsModel);
+        applicationsTable.setAutoCreateRowSorter(true);
         applicationsTable.setDefaultRenderer(Object.class, new StatusRenderer());
         applicationsTable.setRowHeight(24);
         panel.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel actions = new JPanel(new BorderLayout(8, 8));
+        actions.setOpaque(false);
+        applicationInsightLabel = new JLabel("Application summary will appear here after refresh.");
+        actions.add(applicationInsightLabel, BorderLayout.CENTER);
+
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonRow.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton withdrawButton = new JButton("Withdraw Selected Pending Application");
-        actions.add(refreshButton);
-        actions.add(withdrawButton);
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(withdrawButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        buttonRow.add(refreshButton);
+        buttonRow.add(withdrawButton);
+        actions.add(buttonRow, BorderLayout.EAST);
         panel.add(actions, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshApplications());
         withdrawButton.addActionListener(e -> withdrawSelectedApplication());
         return panel;
+    }
+
+    private JPanel wrapContent(JPanel content) {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(APP_BACKGROUND);
+        root.add(wrapScrollable(content), BorderLayout.CENTER);
+        return root;
     }
 
     private void addRow(JPanel panel, GridBagConstraints gbc, int row, String label, JTextField field) {
@@ -177,8 +239,10 @@ public class TADashboard extends BaseDashboard {
         panel.add(new JLabel("CV Path:"), gbc);
 
         JPanel rowPanel = new JPanel(new BorderLayout(6, 6));
+        rowPanel.setOpaque(false);
         rowPanel.add(cvPathField, BorderLayout.CENTER);
         JButton browseButton = new JButton("Browse");
+        styleActionButton(browseButton, new Color(225, 234, 238), ACCENT_COLOR);
         browseButton.addActionListener(e -> chooseCv());
         rowPanel.add(browseButton, BorderLayout.EAST);
 
@@ -196,6 +260,7 @@ public class TADashboard extends BaseDashboard {
     private void loadProfile() {
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         if (profile == null) {
+            profileStatusLabel.setText("Profile status: complete your information before applying.");
             return;
         }
         nameField.setText(profile.fullName);
@@ -206,6 +271,9 @@ public class TADashboard extends BaseDashboard {
         cvPathField.setText(profile.cvPath);
         availabilityField.setText(profile.availability);
         statementArea.setText(profile.statement);
+        profileStatusLabel.setText(profile.isComplete()
+                ? "Profile status: ready for applications and AI matching."
+                : "Profile status: partially complete. Fill all required fields before applying.");
     }
 
     private void saveProfile() {
@@ -222,7 +290,7 @@ public class TADashboard extends BaseDashboard {
             return;
         }
 
-        double gpa = ValidationUtils.parseDouble(gpaField.getText(), 0.0);
+        double gpa = ValidationUtils.parseDouble(gpaField.getText(), -1.0);
         if (gpa < 0.0 || gpa > 4.0) {
             JOptionPane.showMessageDialog(this, "GPA should be between 0.0 and 4.0.", "Validation",
                     JOptionPane.WARNING_MESSAGE);
@@ -248,6 +316,7 @@ public class TADashboard extends BaseDashboard {
         profile.statement = statementArea.getText().trim();
         FileStorage.saveProfiles(profiles);
         syncDisplayName(profile.fullName);
+        profileStatusLabel.setText("Profile status: saved and ready for AI-assisted job matching.");
 
         JOptionPane.showMessageDialog(this, "Profile saved successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshJobs();
@@ -269,6 +338,9 @@ public class TADashboard extends BaseDashboard {
         jobsModel.setRowCount(0);
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         String keyword = jobSearchField == null ? "" : jobSearchField.getText().trim().toLowerCase();
+        int visibleJobs = 0;
+        int bestScore = -1;
+        String bestJob = "";
         for (Job job : FileStorage.loadJobs()) {
             if (!job.isOpen()) {
                 continue;
@@ -287,6 +359,17 @@ public class TADashboard extends BaseDashboard {
                     match.score + "%",
                     match.summary
             });
+            visibleJobs++;
+            if (match.score > bestScore) {
+                bestScore = match.score;
+                bestJob = job.title + " (" + job.module + ")";
+            }
+        }
+        if (visibleJobs == 0) {
+            jobInsightLabel.setText("No open jobs match the current filter.");
+        } else {
+            jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
+                    + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
         }
     }
 
@@ -320,7 +403,8 @@ public class TADashboard extends BaseDashboard {
             return;
         }
 
-        int jobId = Integer.parseInt(String.valueOf(jobsModel.getValueAt(row, 0)));
+        int modelRow = jobsTable.convertRowIndexToModel(row);
+        int jobId = Integer.parseInt(String.valueOf(jobsModel.getValueAt(modelRow, 0)));
         List<Application> applications = FileStorage.loadApplications();
         for (Application app : applications) {
             if (app.taId == currentUser.id && app.jobId == jobId && !"WITHDRAWN".equalsIgnoreCase(app.status)) {
@@ -353,6 +437,10 @@ public class TADashboard extends BaseDashboard {
 
     private void refreshApplications() {
         applicationsModel.setRowCount(0);
+        int pending = 0;
+        int selected = 0;
+        int rejected = 0;
+        int withdrawn = 0;
         for (Application app : FileStorage.loadApplications()) {
             if (app.taId != currentUser.id) {
                 continue;
@@ -367,7 +455,18 @@ public class TADashboard extends BaseDashboard {
                     app.matchScore + "%",
                     app.reviewerNote
             });
+            if ("PENDING".equalsIgnoreCase(app.status)) {
+                pending++;
+            } else if ("SELECTED".equalsIgnoreCase(app.status)) {
+                selected++;
+            } else if ("REJECTED".equalsIgnoreCase(app.status)) {
+                rejected++;
+            } else if ("WITHDRAWN".equalsIgnoreCase(app.status)) {
+                withdrawn++;
+            }
         }
+        applicationInsightLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: "
+                + rejected + " | Withdrawn: " + withdrawn);
     }
 
     private void withdrawSelectedApplication() {
@@ -377,8 +476,9 @@ public class TADashboard extends BaseDashboard {
             return;
         }
 
-        int appId = Integer.parseInt(String.valueOf(applicationsModel.getValueAt(row, 0)));
-        String status = String.valueOf(applicationsModel.getValueAt(row, 3));
+        int modelRow = applicationsTable.convertRowIndexToModel(row);
+        int appId = Integer.parseInt(String.valueOf(applicationsModel.getValueAt(modelRow, 0)));
+        String status = String.valueOf(applicationsModel.getValueAt(modelRow, 3));
         if (!"PENDING".equalsIgnoreCase(status)) {
             JOptionPane.showMessageDialog(this, "Only pending applications can be withdrawn.", "Info",
                     JOptionPane.INFORMATION_MESSAGE);
