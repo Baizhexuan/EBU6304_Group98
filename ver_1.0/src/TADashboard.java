@@ -3,6 +3,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,26 +36,41 @@ public class TADashboard extends BaseDashboard {
     private JTextField availabilityField;
     private JTextArea statementArea;
     private JLabel profileStatusLabel;
+
     private JTable jobsTable;
     private DefaultTableModel jobsModel;
-    private JTextField jobSearchField;
+    private JTextField jobTitleFilterField;
+    private JTextField jobModuleFilterField;
+    private JTextField jobSkillsFilterField;
+    private JTextField jobLocationFilterField;
     private JLabel jobInsightLabel;
+
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
+    private JTextField applicationJobFilterField;
+    private JTextField applicationModuleFilterField;
+    private JTextField applicationStatusFilterField;
     private JLabel applicationInsightLabel;
 
+    private JTable notificationsTable;
+    private DefaultTableModel notificationsModel;
+    private JLabel notificationSummaryLabel;
+
     public TADashboard(User currentUser) {
-        super(currentUser, "TA Dashboard", 1020, 720);
+        super(currentUser, "TA Dashboard", 1100, 760);
         addTab("My Profile", createProfilePanel());
         addTab("Browse Jobs", createBrowseJobsPanel());
         addTab("My Applications", createApplicationsPanel());
+        addTab("Notifications", createNotificationsPanel());
         installRefreshOnTabSwitch(() -> {
             refreshJobs();
             refreshApplications();
+            refreshNotifications();
         });
         loadProfile();
         refreshJobs();
         refreshApplications();
+        refreshNotifications();
         setVisible(true);
     }
 
@@ -128,11 +144,11 @@ public class TADashboard extends BaseDashboard {
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
         panel.add(buildSectionIntro(
                 "Open Jobs and Match Guidance",
-                "Browse currently open jobs, filter by module, skills, or location, and compare the AI-ready match explanation before applying. Sorting is enabled on every column for demo walkthroughs."),
+                "Browse currently open jobs, filter each major attribute separately, and compare the AI-ready match explanation before applying. Missing skills are surfaced explicitly for decision making."),
                 BorderLayout.NORTH);
 
         jobsModel = new DefaultTableModel(
-                new String[] {"Job ID", "Title", "Module", "Skills", "Hours", "Location", "AI Match", "Summary"}, 0) {
+                new String[] {"Job ID", "Title", "Module", "Skills", "Hours", "Location", "AI Match", "Missing Skills", "Summary"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -143,20 +159,41 @@ public class TADashboard extends BaseDashboard {
         jobsTable.setRowHeight(24);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JPanel topBar = new JPanel(new BorderLayout(8, 8));
-        topBar.setOpaque(false);
-        topBar.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-        topBar.add(new JLabel("Search Jobs:"), BorderLayout.WEST);
-        jobSearchField = new JTextField();
-        topBar.add(jobSearchField, BorderLayout.CENTER);
-        jobInsightLabel = new JLabel("Match insight will appear here after refresh.");
-        topBar.add(jobInsightLabel, BorderLayout.SOUTH);
+        JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("Job ID"));
+        filterPanel.add(new JLabel("Title"));
+        filterPanel.add(new JLabel("Module"));
+        filterPanel.add(new JLabel("Skills"));
+        filterPanel.add(new JLabel("Hours"));
+        filterPanel.add(new JLabel("Location"));
+        filterPanel.add(new JLabel("AI Match"));
+        filterPanel.add(new JLabel("Missing Skills"));
+        filterPanel.add(new JLabel("Summary"));
+        filterPanel.add(new JLabel(""));
+        jobTitleFilterField = new JTextField();
+        filterPanel.add(jobTitleFilterField);
+        jobModuleFilterField = new JTextField();
+        filterPanel.add(jobModuleFilterField);
+        jobSkillsFilterField = new JTextField();
+        filterPanel.add(jobSkillsFilterField);
+        filterPanel.add(new JLabel(""));
+        jobLocationFilterField = new JTextField();
+        filterPanel.add(jobLocationFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
 
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(topBar, BorderLayout.NORTH);
+        center.add(filterPanel, BorderLayout.NORTH);
         center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout(8, 8));
+        bottom.setOpaque(false);
+        jobInsightLabel = new JLabel("Match insight will appear here after refresh.");
+        bottom.add(jobInsightLabel, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.setOpaque(false);
@@ -166,11 +203,15 @@ public class TADashboard extends BaseDashboard {
         styleActionButton(applyButton, ACCENT_COLOR, Color.WHITE);
         buttons.add(refreshButton);
         buttons.add(applyButton);
-        panel.add(buttons, BorderLayout.SOUTH);
+        bottom.add(buttons, BorderLayout.EAST);
+        panel.add(bottom, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshJobs());
         applyButton.addActionListener(e -> applyForSelectedJob());
-        jobSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshJobs));
+        installFieldListener(jobTitleFilterField, this::refreshJobs);
+        installFieldListener(jobModuleFilterField, this::refreshJobs);
+        installFieldListener(jobSkillsFilterField, this::refreshJobs);
+        installFieldListener(jobLocationFilterField, this::refreshJobs);
         return panel;
     }
 
@@ -180,7 +221,7 @@ public class TADashboard extends BaseDashboard {
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
         panel.add(buildSectionIntro(
                 "Application Tracking",
-                "Monitor application outcomes with colour cues, compare earlier match scores, and withdraw only pending applications. This keeps the TA journey aligned with the project requirement flow."),
+                "Monitor application outcomes with colour cues, compare earlier AI match details, and withdraw only pending applications. Status updates from MO actions now also generate in-app notifications."),
                 BorderLayout.NORTH);
 
         applicationsModel = new DefaultTableModel(
@@ -194,7 +235,32 @@ public class TADashboard extends BaseDashboard {
         applicationsTable.setAutoCreateRowSorter(true);
         applicationsTable.setDefaultRenderer(Object.class, new StatusRenderer());
         applicationsTable.setRowHeight(24);
-        panel.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
+
+        JPanel filterPanel = new JPanel(new GridLayout(2, 7, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("App ID"));
+        filterPanel.add(new JLabel("Job"));
+        filterPanel.add(new JLabel("Module"));
+        filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel("Applied At"));
+        filterPanel.add(new JLabel("Match"));
+        filterPanel.add(new JLabel("MO Note"));
+        filterPanel.add(new JLabel(""));
+        applicationJobFilterField = new JTextField();
+        filterPanel.add(applicationJobFilterField);
+        applicationModuleFilterField = new JTextField();
+        filterPanel.add(applicationModuleFilterField);
+        applicationStatusFilterField = new JTextField();
+        filterPanel.add(applicationStatusFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new BorderLayout(8, 8));
         actions.setOpaque(false);
@@ -214,6 +280,60 @@ public class TADashboard extends BaseDashboard {
 
         refreshButton.addActionListener(e -> refreshApplications());
         withdrawButton.addActionListener(e -> withdrawSelectedApplication());
+        installFieldListener(applicationJobFilterField, this::refreshApplications);
+        installFieldListener(applicationModuleFilterField, this::refreshApplications);
+        installFieldListener(applicationStatusFilterField, this::refreshApplications);
+        return panel;
+    }
+
+    private JPanel createNotificationsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(APP_BACKGROUND);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        panel.add(buildSectionIntro(
+                "In-App Notifications",
+                "This tab implements US-8 style in-app notifications. MO decisions generate updates automatically so TAs can review unread status changes without leaving the system."),
+                BorderLayout.NORTH);
+
+        notificationsModel = new DefaultTableModel(
+                new String[] {"ID", "Title", "Message", "Status", "Created At", "Action Hint"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        notificationsTable = new JTable(notificationsModel);
+        notificationsTable.setAutoCreateRowSorter(true);
+        notificationsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        notificationsTable.setRowHeight(24);
+        notificationsTable.setDefaultRenderer(Object.class, new NotificationRenderer());
+        panel.add(new JScrollPane(notificationsTable), BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout(8, 8));
+        bottom.setOpaque(false);
+        notificationSummaryLabel = new JLabel("Notification summary will appear here after refresh.");
+        bottom.add(notificationSummaryLabel, BorderLayout.CENTER);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.setOpaque(false);
+        JButton refreshButton = new JButton("Refresh Notifications");
+        JButton markReadButton = new JButton("Mark Selected as Read");
+        JButton markAllButton = new JButton("Mark All as Read");
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(markReadButton, ACCENT_COLOR, Color.WHITE);
+        styleActionButton(markAllButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        actions.add(refreshButton);
+        actions.add(markReadButton);
+        actions.add(markAllButton);
+        bottom.add(actions, BorderLayout.EAST);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        refreshButton.addActionListener(e -> refreshNotifications());
+        markReadButton.addActionListener(e -> markSelectedNotificationAsRead());
+        markAllButton.addActionListener(e -> {
+            NotificationService.markAllAsRead(currentUser.id);
+            refreshNotifications();
+        });
         return panel;
     }
 
@@ -248,6 +368,10 @@ public class TADashboard extends BaseDashboard {
 
         gbc.gridx = 1;
         panel.add(rowPanel, gbc);
+    }
+
+    private void installFieldListener(JTextField field, Runnable action) {
+        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
     }
 
     private void chooseCv() {
@@ -337,7 +461,10 @@ public class TADashboard extends BaseDashboard {
     private void refreshJobs() {
         jobsModel.setRowCount(0);
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
-        String keyword = jobSearchField == null ? "" : jobSearchField.getText().trim().toLowerCase();
+        String titleFilter = getLower(jobTitleFilterField);
+        String moduleFilter = getLower(jobModuleFilterField);
+        String skillsFilter = getLower(jobSkillsFilterField);
+        String locationFilter = getLower(jobLocationFilterField);
         int visibleJobs = 0;
         int bestScore = -1;
         String bestJob = "";
@@ -345,7 +472,7 @@ public class TADashboard extends BaseDashboard {
             if (!job.isOpen()) {
                 continue;
             }
-            if (!matchesJobKeyword(job, keyword)) {
+            if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
                 continue;
             }
             MatchResult match = ScoringService.evaluate(profile, job);
@@ -357,6 +484,7 @@ public class TADashboard extends BaseDashboard {
                     job.maxHours,
                     job.location,
                     match.score + "%",
+                    extractMissingSkills(match.summary),
                     match.summary
             });
             visibleJobs++;
@@ -366,26 +494,19 @@ public class TADashboard extends BaseDashboard {
             }
         }
         if (visibleJobs == 0) {
-            jobInsightLabel.setText("No open jobs match the current filter.");
+            jobInsightLabel.setText("No open jobs match the current filters.");
         } else {
             jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
                     + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
         }
     }
 
-    private boolean matchesJobKeyword(Job job, String keyword) {
-        if (keyword.isEmpty()) {
-            return true;
-        }
-        return contains(job.title, keyword)
-                || contains(job.module, keyword)
-                || contains(job.requiredSkills, keyword)
-                || contains(job.location, keyword)
-                || contains(job.description, keyword);
-    }
-
-    private boolean contains(String text, String keyword) {
-        return text != null && text.toLowerCase().contains(keyword);
+    private boolean matchesJobFilters(Job job, String titleFilter, String moduleFilter, String skillsFilter,
+            String locationFilter) {
+        return contains(job.title, titleFilter)
+                && contains(job.module, moduleFilter)
+                && contains(job.requiredSkills, skillsFilter)
+                && contains(job.location, locationFilter);
     }
 
     private void applyForSelectedJob() {
@@ -430,13 +551,17 @@ public class TADashboard extends BaseDashboard {
         FileStorage.saveApplications(applications);
 
         JOptionPane.showMessageDialog(this,
-                "Application submitted with AI match score: " + match.score + "%.",
+                "Application submitted with AI match score: " + match.score + "% and missing-skills summary: "
+                        + extractMissingSkills(match.summary) + ".",
                 "Application Submitted", JOptionPane.INFORMATION_MESSAGE);
         refreshApplications();
     }
 
     private void refreshApplications() {
         applicationsModel.setRowCount(0);
+        String jobFilter = getLower(applicationJobFilterField);
+        String moduleFilter = getLower(applicationModuleFilterField);
+        String statusFilter = getLower(applicationStatusFilterField);
         int pending = 0;
         int selected = 0;
         int rejected = 0;
@@ -446,10 +571,15 @@ public class TADashboard extends BaseDashboard {
                 continue;
             }
             Job job = FileStorage.findJobById(app.jobId);
+            String jobTitle = job == null ? "Unknown" : job.title;
+            String module = job == null ? "Unknown" : job.module;
+            if (!contains(jobTitle, jobFilter) || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
+                continue;
+            }
             applicationsModel.addRow(new Object[] {
                     app.id,
-                    job == null ? "Unknown" : job.title,
-                    job == null ? "Unknown" : job.module,
+                    jobTitle,
+                    module,
                     app.status,
                     app.appliedAt,
                     app.matchScore + "%",
@@ -466,7 +596,42 @@ public class TADashboard extends BaseDashboard {
             }
         }
         applicationInsightLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: "
-                + rejected + " | Withdrawn: " + withdrawn);
+                + rejected + " | Withdrawn: " + withdrawn + " | Unread notifications: "
+                + NotificationService.countUnreadForUser(currentUser.id));
+    }
+
+    private void refreshNotifications() {
+        notificationsModel.setRowCount(0);
+        List<Notification> notifications = NotificationService.getNotificationsForUser(currentUser.id);
+        int unread = 0;
+        for (Notification notification : notifications) {
+            notificationsModel.addRow(new Object[] {
+                    notification.id,
+                    notification.title,
+                    notification.message,
+                    notification.status,
+                    notification.createdAt,
+                    notification.actionHint
+            });
+            if (notification.isUnread()) {
+                unread++;
+            }
+        }
+        notificationSummaryLabel.setText("Total notifications: " + notifications.size() + " | Unread: " + unread);
+        tabs.setTitleAt(3, unread > 0 ? "Notifications (" + unread + ")" : "Notifications");
+    }
+
+    private void markSelectedNotificationAsRead() {
+        int row = notificationsTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Please select a notification first.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        int modelRow = notificationsTable.convertRowIndexToModel(row);
+        int notificationId = ValidationUtils.parseInt(String.valueOf(notificationsModel.getValueAt(modelRow, 0)), 0);
+        NotificationService.markAsRead(notificationId);
+        refreshNotifications();
     }
 
     private void withdrawSelectedApplication() {
@@ -497,6 +662,31 @@ public class TADashboard extends BaseDashboard {
         refreshApplications();
     }
 
+    private String getLower(JTextField field) {
+        return field == null ? "" : field.getText().trim().toLowerCase();
+    }
+
+    private boolean contains(String text, String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return true;
+        }
+        return text != null && text.toLowerCase().contains(keyword);
+    }
+
+    private String extractMissingSkills(String summary) {
+        if (ValidationUtils.isBlank(summary)) {
+            return "None";
+        }
+        String[] pieces = summary.split("\\|");
+        for (String piece : pieces) {
+            String trimmed = piece.trim();
+            if (trimmed.toLowerCase().startsWith("missing:")) {
+                return trimmed.substring("Missing:".length()).trim();
+            }
+        }
+        return "None";
+    }
+
     private static class StatusRenderer extends DefaultTableCellRenderer {
         @Override
         public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
@@ -513,6 +703,24 @@ public class TADashboard extends BaseDashboard {
                     component.setBackground(new Color(232, 232, 232));
                 } else {
                     component.setBackground(new Color(255, 249, 214));
+                }
+            }
+            return component;
+        }
+    }
+
+    private static class NotificationRenderer extends DefaultTableCellRenderer {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column) {
+            java.awt.Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
+                    column);
+            if (!isSelected) {
+                String status = String.valueOf(table.getValueAt(row, 3));
+                if ("UNREAD".equalsIgnoreCase(status)) {
+                    component.setBackground(new Color(232, 244, 250));
+                } else {
+                    component.setBackground(Color.WHITE);
                 }
             }
             return component;

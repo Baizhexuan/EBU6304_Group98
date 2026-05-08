@@ -12,6 +12,8 @@ software_engineering/
 │   ├── MODashboard.java
 │   ├── AdminDashboard.java
 │   ├── AdminRecommendationService.java
+│   ├── Notification.java
+│   ├── NotificationService.java
 │   ├── FileStorage.java
 │   ├── MatchingService.java
 │   ├── SkillScoringProvider.java
@@ -31,6 +33,7 @@ software_engineering/
 │   ├── profiles.csv
 │   ├── jobs.csv
 │   ├── applications.csv
+│   ├── notifications.csv
 │   └── admin_workload_report_*.csv
 ├── docs/
 │   ├── architecture.md
@@ -43,16 +46,17 @@ software_engineering/
 ## Layering
 
 - UI layer: `LoginFrame`, `RegisterFrame`, `BaseDashboard`, `TADashboard`, `MODashboard`, `AdminDashboard`
-- Domain layer: `User`, `TAProfile`, `Job`, `Application`, `MatchResult`
-- Service layer: `MatchingService`, `ScoringService`, `AdminRecommendationService`, `ValidationUtils`
+- Domain layer: `User`, `TAProfile`, `Job`, `Application`, `Notification`, `MatchResult`
+- Service layer: `MatchingService`, `ScoringService`, `AdminRecommendationService`, `NotificationService`, `ValidationUtils`
 - AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIModelSkillScoringProvider`, `AIIntegrationPlan`
 - Persistence layer: `FileStorage`
 - Verification entry: `SystemSmokeTest`
 
-## Iteration 1.4 Additions
+## Iteration 1.6 Additions
 
-- `AIModelSkillScoringProvider`: performs a real HTTP placeholder call to a chat-completions style API when environment variables are configured
-- `ScoringService`: now selects providers from runtime environment and reports whether the current provider is ready
-- `AdminRecommendationService`: builds overload warnings and alternative-candidate recommendations for selected jobs
-- `AdminDashboard`: adds a recommendation side panel, summary cards, and a more presentation-ready operations layout
-- `LoginFrame` and `BaseDashboard`: refreshed visual presentation for the next demo iteration
+- `Notification` and `NotificationService`: implement an in-app notification path for TA status updates
+- `FileStorage`: now manages `notifications.csv` in the same text-based persistence style as the rest of the demo
+- `TADashboard`: adds a notification tab, unread tracking, aligned per-column search fields, and clearer missing-skills AI output
+- `MODashboard`: adds aligned per-column filters and automatically generates notifications when applicant decisions are made
+- `AdminDashboard`: replaces single keyword search bars with aligned field-by-field filters and expands AI explanation visibility
+- `LoginFrame` and `BaseDashboard`: strengthen visible button outlines and final-demo interaction clarity

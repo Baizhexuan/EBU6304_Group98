@@ -142,12 +142,12 @@ public class LoginFrame extends JFrame {
 
         JPanel buttonRow = new JPanel(new GridLayout(1, 3, 10, 0));
         buttonRow.setOpaque(false);
-        JButton loginButton = new JButton("Login");
+        JButton loginButton = new JButton("Log in");
         JButton registerButton = new JButton("Register");
         JButton aboutButton = new JButton("About");
         styleButton(loginButton, new Color(33, 76, 95), Color.WHITE);
-        styleButton(registerButton, new Color(225, 234, 238), new Color(33, 76, 95));
-        styleButton(aboutButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleButton(registerButton, new Color(255, 252, 247), new Color(33, 76, 95));
+        styleButton(aboutButton, new Color(255, 252, 247), new Color(70, 56, 32));
         buttonRow.add(loginButton);
         buttonRow.add(registerButton);
         buttonRow.add(aboutButton);
@@ -190,10 +190,13 @@ public class LoginFrame extends JFrame {
     }
 
     private void styleButton(JButton button, Color background, Color foreground) {
+        button.setOpaque(true);
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(11, 14, 11, 14));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : new Color(154, 170, 178)),
+                BorderFactory.createEmptyBorder(11, 14, 11, 14)));
         button.setFont(new Font("SansSerif", Font.BOLD, 13));
     }
 

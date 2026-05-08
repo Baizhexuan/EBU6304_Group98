@@ -110,10 +110,15 @@ public abstract class BaseDashboard extends JFrame {
     }
 
     protected void styleActionButton(javax.swing.JButton button, Color background, Color foreground) {
+        button.setOpaque(true);
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
         button.setMargin(new Insets(8, 14, 8, 14));
+        button.setFont(new Font("SansSerif", Font.BOLD, 13));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : ACCENT_COLOR),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
     }
 
     protected void logout() {

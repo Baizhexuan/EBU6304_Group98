@@ -3,6 +3,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,19 +35,26 @@ public class MODashboard extends BaseDashboard {
     private JTextField locationField;
     private JTextArea descriptionArea;
     private JLabel postStatusLabel;
+
     private JTable myJobsTable;
     private DefaultTableModel myJobsModel;
-    private JTextField myJobsSearchField;
+    private JTextField myJobsTitleFilterField;
+    private JTextField myJobsModuleFilterField;
+    private JTextField myJobsStatusFilterField;
     private JLabel myJobsSummaryLabel;
+
     private JComboBox<String> jobSelector;
     private List<Integer> selectorJobIds = new ArrayList<Integer>();
     private JTable applicantsTable;
     private DefaultTableModel applicantsModel;
-    private JTextField applicantSearchField;
+    private JTextField applicantNameFilterField;
+    private JTextField applicantEmailFilterField;
+    private JTextField applicantSkillsFilterField;
+    private JTextField applicantStatusFilterField;
     private JLabel applicantSummaryLabel;
 
     public MODashboard(User currentUser) {
-        super(currentUser, "MO Dashboard", 1080, 720);
+        super(currentUser, "MO Dashboard", 1160, 760);
         addTab("Post Job", createPostJobPanel());
         addTab("My Job Posts", createMyJobsPanel());
         addTab("Applicants", createApplicantsPanel());
@@ -126,7 +134,7 @@ public class MODashboard extends BaseDashboard {
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
         panel.add(buildSectionIntro(
                 "My Job Posts",
-                "Review your open and closed jobs, filter quickly during demos, and toggle availability when a role has already been filled or paused."),
+                "Review your open and closed jobs, filter each visible attribute separately, and toggle availability when a role has already been filled or paused."),
                 BorderLayout.NORTH);
 
         myJobsModel = new DefaultTableModel(new String[] {"Job ID", "Title", "Module", "Skills", "Hours", "Status"}, 0) {
@@ -139,20 +147,34 @@ public class MODashboard extends BaseDashboard {
         myJobsTable.setAutoCreateRowSorter(true);
         myJobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JPanel topBar = new JPanel(new BorderLayout(8, 8));
-        topBar.setOpaque(false);
-        topBar.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-        topBar.add(new JLabel("Search My Jobs:"), BorderLayout.WEST);
-        myJobsSearchField = new JTextField();
-        topBar.add(myJobsSearchField, BorderLayout.CENTER);
-        myJobsSummaryLabel = new JLabel("Job summary will appear here after refresh.");
-        topBar.add(myJobsSummaryLabel, BorderLayout.SOUTH);
+        JPanel filterPanel = new JPanel(new GridLayout(2, 6, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("Job ID"));
+        filterPanel.add(new JLabel("Title"));
+        filterPanel.add(new JLabel("Module"));
+        filterPanel.add(new JLabel("Skills"));
+        filterPanel.add(new JLabel("Hours"));
+        filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel(""));
+        myJobsTitleFilterField = new JTextField();
+        filterPanel.add(myJobsTitleFilterField);
+        myJobsModuleFilterField = new JTextField();
+        filterPanel.add(myJobsModuleFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        myJobsStatusFilterField = new JTextField();
+        filterPanel.add(myJobsStatusFilterField);
 
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(topBar, BorderLayout.NORTH);
+        center.add(filterPanel, BorderLayout.NORTH);
         center.add(new JScrollPane(myJobsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout(8, 8));
+        bottom.setOpaque(false);
+        myJobsSummaryLabel = new JLabel("Job summary will appear here after refresh.");
+        bottom.add(myJobsSummaryLabel, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setOpaque(false);
@@ -162,11 +184,14 @@ public class MODashboard extends BaseDashboard {
         styleActionButton(toggleButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(toggleButton);
-        panel.add(actions, BorderLayout.SOUTH);
+        bottom.add(actions, BorderLayout.EAST);
+        panel.add(bottom, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshMyJobs());
         toggleButton.addActionListener(e -> toggleSelectedJob());
-        myJobsSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshMyJobs));
+        installFieldListener(myJobsTitleFilterField, this::refreshMyJobs);
+        installFieldListener(myJobsModuleFilterField, this::refreshMyJobs);
+        installFieldListener(myJobsStatusFilterField, this::refreshMyJobs);
         return panel;
     }
 
@@ -176,21 +201,18 @@ public class MODashboard extends BaseDashboard {
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
         panel.add(buildSectionIntro(
                 "Applicant Review",
-                "Inspect match scores, skills, and current workload before selecting or rejecting a TA. The list is sortable so stronger candidates can be surfaced quickly during live review."),
+                "Inspect match scores, missing skills, and current workload before selecting or rejecting a TA. MO decisions now generate in-app notifications for the applicant automatically."),
                 BorderLayout.NORTH);
 
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.setOpaque(false);
+        JPanel selectorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        selectorPanel.setOpaque(false);
         jobSelector = new JComboBox<String>();
         jobSelector.addActionListener(e -> refreshApplicants());
-        applicantSearchField = new JTextField(18);
-        top.add(new JLabel("Job Post:"));
-        top.add(jobSelector);
-        top.add(new JLabel("Filter Applicant:"));
-        top.add(applicantSearchField);
+        selectorPanel.add(new JLabel("Job Post:"));
+        selectorPanel.add(jobSelector);
 
         applicantsModel = new DefaultTableModel(
-                new String[] {"App ID", "TA", "Email", "Skills", "Match", "Summary", "Status", "Current Hours"}, 0) {
+                new String[] {"App ID", "TA", "Email", "Skills", "Match", "Missing Skills", "Summary", "Status", "Current Hours"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -201,11 +223,40 @@ public class MODashboard extends BaseDashboard {
         applicantsTable.setDefaultRenderer(Object.class, new MatchRenderer());
         applicantsTable.setRowHeight(24);
 
+        JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("App ID"));
+        filterPanel.add(new JLabel("TA"));
+        filterPanel.add(new JLabel("Email"));
+        filterPanel.add(new JLabel("Skills"));
+        filterPanel.add(new JLabel("Match"));
+        filterPanel.add(new JLabel("Missing Skills"));
+        filterPanel.add(new JLabel("Summary"));
+        filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel("Current Hours"));
+        filterPanel.add(new JLabel(""));
+        applicantNameFilterField = new JTextField();
+        filterPanel.add(applicantNameFilterField);
+        applicantEmailFilterField = new JTextField();
+        filterPanel.add(applicantEmailFilterField);
+        applicantSkillsFilterField = new JTextField();
+        filterPanel.add(applicantSkillsFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        applicantStatusFilterField = new JTextField();
+        filterPanel.add(applicantStatusFilterField);
+        filterPanel.add(new JLabel(""));
+
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(top, BorderLayout.NORTH);
-        center.add(new JScrollPane(applicantsTable), BorderLayout.CENTER);
-        panel.add(center, BorderLayout.CENTER);
+        center.add(selectorPanel, BorderLayout.NORTH);
+        center.add(filterPanel, BorderLayout.CENTER);
+        JPanel tableWrap = new JPanel(new BorderLayout());
+        tableWrap.setOpaque(false);
+        tableWrap.add(center, BorderLayout.NORTH);
+        tableWrap.add(new JScrollPane(applicantsTable), BorderLayout.CENTER);
+        panel.add(tableWrap, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new BorderLayout(8, 8));
         actions.setOpaque(false);
@@ -225,7 +276,10 @@ public class MODashboard extends BaseDashboard {
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
-        applicantSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshApplicants));
+        installFieldListener(applicantNameFilterField, this::refreshApplicants);
+        installFieldListener(applicantEmailFilterField, this::refreshApplicants);
+        installFieldListener(applicantSkillsFilterField, this::refreshApplicants);
+        installFieldListener(applicantStatusFilterField, this::refreshApplicants);
         return panel;
     }
 
@@ -243,6 +297,10 @@ public class MODashboard extends BaseDashboard {
         panel.add(new JLabel(label), gbc);
         gbc.gridx = 1;
         panel.add(field, gbc);
+    }
+
+    private void installFieldListener(JTextField field, Runnable action) {
+        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
     }
 
     private void publishJob() {
@@ -289,14 +347,17 @@ public class MODashboard extends BaseDashboard {
 
     private void refreshMyJobs() {
         myJobsModel.setRowCount(0);
-        String keyword = myJobsSearchField == null ? "" : myJobsSearchField.getText().trim().toLowerCase();
+        String titleFilter = getLower(myJobsTitleFilterField);
+        String moduleFilter = getLower(myJobsModuleFilterField);
+        String statusFilter = getLower(myJobsStatusFilterField);
         int visibleJobs = 0;
         int openJobs = 0;
         for (Job job : FileStorage.loadJobs()) {
             if (job.moId != currentUser.id) {
                 continue;
             }
-            if (!matchesJobKeyword(job, keyword)) {
+            if (!contains(job.title, titleFilter) || !contains(job.module, moduleFilter)
+                    || !contains(job.status, statusFilter)) {
                 continue;
             }
             myJobsModel.addRow(new Object[] {job.id, job.title, job.module, job.requiredSkills, job.maxHours, job.status});
@@ -351,7 +412,10 @@ public class MODashboard extends BaseDashboard {
             applicantSummaryLabel.setText("No job selected yet. Publish or choose a job to inspect applicants.");
             return;
         }
-        String keyword = applicantSearchField == null ? "" : applicantSearchField.getText().trim().toLowerCase();
+        String nameFilter = getLower(applicantNameFilterField);
+        String emailFilter = getLower(applicantEmailFilterField);
+        String skillsFilter = getLower(applicantSkillsFilterField);
+        String statusFilter = getLower(applicantStatusFilterField);
 
         Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
         for (TAProfile profile : FileStorage.loadProfiles()) {
@@ -369,15 +433,20 @@ public class MODashboard extends BaseDashboard {
             }
             User taUser = FileStorage.findUserById(app.taId);
             TAProfile profile = profiles.get(app.taId);
-            if (!matchesApplicantKeyword(taUser, profile, app, keyword)) {
+            String displayName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
+            String email = profile == null ? "N/A" : profile.email;
+            String skills = profile == null ? "N/A" : profile.skills;
+            if (!contains(displayName, nameFilter) || !contains(email, emailFilter)
+                    || !contains(skills, skillsFilter) || !contains(app.status, statusFilter)) {
                 continue;
             }
             applicantsModel.addRow(new Object[] {
                     app.id,
-                    taUser == null ? "Unknown" : taUser.getSafeDisplayName(),
-                    profile == null ? "N/A" : profile.email,
-                    profile == null ? "N/A" : profile.skills,
+                    displayName,
+                    email,
+                    skills,
                     app.matchScore + "%",
+                    extractMissingSkills(app.matchSummary),
                     app.matchSummary,
                     app.status,
                     calculateCurrentHours(app.taId)
@@ -391,12 +460,12 @@ public class MODashboard extends BaseDashboard {
             }
             if (app.matchScore > strongestScore) {
                 strongestScore = app.matchScore;
-                strongestName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
+                strongestName = displayName;
             }
         }
 
         if (applicantsModel.getRowCount() == 0) {
-            applicantSummaryLabel.setText("No applicants match the current selection or filter.");
+            applicantSummaryLabel.setText("No applicants match the current selection or filters.");
             return;
         }
         applicantSummaryLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: " + rejected
@@ -424,32 +493,6 @@ public class MODashboard extends BaseDashboard {
         return hours;
     }
 
-    private boolean matchesJobKeyword(Job job, String keyword) {
-        if (keyword.isEmpty()) {
-            return true;
-        }
-        return contains(job.title, keyword)
-                || contains(job.module, keyword)
-                || contains(job.requiredSkills, keyword)
-                || contains(job.status, keyword)
-                || contains(job.location, keyword);
-    }
-
-    private boolean matchesApplicantKeyword(User taUser, TAProfile profile, Application app, String keyword) {
-        if (keyword.isEmpty()) {
-            return true;
-        }
-        return contains(taUser == null ? null : taUser.getSafeDisplayName(), keyword)
-                || contains(profile == null ? null : profile.email, keyword)
-                || contains(profile == null ? null : profile.skills, keyword)
-                || contains(app.status, keyword)
-                || contains(app.matchSummary, keyword);
-    }
-
-    private boolean contains(String text, String keyword) {
-        return text != null && text.toLowerCase().contains(keyword);
-    }
-
     private void reviewSelectedApplicant(String decision) {
         int row = applicantsTable.getSelectedRow();
         int selectedJobId = getSelectedJobId();
@@ -460,7 +503,7 @@ public class MODashboard extends BaseDashboard {
 
         int modelRow = applicantsTable.convertRowIndexToModel(row);
         int appId = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)));
-        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 7)));
+        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 8)));
         Job job = FileStorage.findJobById(selectedJobId);
 
         if ("SELECTED".equals(decision) && job != null && currentHours + job.maxHours > FileStorage.getOverloadLimit()) {
@@ -479,11 +522,38 @@ public class MODashboard extends BaseDashboard {
                 app.status = decision;
                 app.reviewerNote = "Reviewed by " + currentUser.getSafeDisplayName()
                         + " using " + ScoringService.getActiveProvider().getProviderName();
+                NotificationService.notifyApplicationDecision(app, currentUser, job, decision);
                 break;
             }
         }
         FileStorage.saveApplications(applications);
         refreshApplicants();
+        postStatusLabel.setText("Posting status: applicant review updated and notification sent.");
+    }
+
+    private String getLower(JTextField field) {
+        return field == null ? "" : field.getText().trim().toLowerCase();
+    }
+
+    private boolean contains(String text, String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return true;
+        }
+        return text != null && text.toLowerCase().contains(keyword);
+    }
+
+    private String extractMissingSkills(String summary) {
+        if (ValidationUtils.isBlank(summary)) {
+            return "None";
+        }
+        String[] pieces = summary.split("\\|");
+        for (String piece : pieces) {
+            String trimmed = piece.trim();
+            if (trimmed.toLowerCase().startsWith("missing:")) {
+                return trimmed.substring("Missing:".length()).trim();
+            }
+        }
+        return "None";
     }
 
     private static class MatchRenderer extends DefaultTableCellRenderer {
@@ -493,8 +563,8 @@ public class MODashboard extends BaseDashboard {
             java.awt.Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
                     column);
             if (!isSelected) {
-                String status = String.valueOf(table.getValueAt(row, 6));
-                int hours = Integer.parseInt(String.valueOf(table.getValueAt(row, 7)));
+                String status = String.valueOf(table.getValueAt(row, 7));
+                int hours = Integer.parseInt(String.valueOf(table.getValueAt(row, 8)));
                 if ("SELECTED".equalsIgnoreCase(status)) {
                     component.setBackground(new Color(214, 245, 214));
                 } else if ("REJECTED".equalsIgnoreCase(status)) {

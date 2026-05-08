@@ -17,6 +17,7 @@ public class FileStorage {
         ensureProfiles();
         ensureJobs();
         ensureApplications();
+        ensureNotifications();
     }
 
     public static int getOverloadLimit() {
@@ -84,6 +85,19 @@ public class FileStorage {
         }
     }
 
+    private static void ensureNotifications() {
+        File file = new File(DATA_DIR + "notifications.csv");
+        if (file.exists()) {
+            return;
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("id,userId,title,message,status,createdAt,actionHint");
+            writer.println("1,2,Welcome to the TA system,Complete your profile and check open jobs to get started.,READ,2026-04-05 10:00,Open My Profile to complete your details.");
+        } catch (IOException e) {
+            System.err.println("Unable to create notifications.csv: " + e.getMessage());
+        }
+    }
+
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<User>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "users.csv"))) {
@@ -112,7 +126,8 @@ public class FileStorage {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "users.csv"))) {
             writer.println("id,username,password,role,displayName");
             for (User user : users) {
-                writer.println(user.id + "," + safe(user.username) + "," + safe(user.password) + "," + safe(user.role) + "," + safe(user.displayName));
+                writer.println(user.id + "," + safe(user.username) + "," + safe(user.password) + "," + safe(user.role)
+                        + "," + safe(user.displayName));
             }
         } catch (IOException e) {
             System.err.println("Unable to save users: " + e.getMessage());
@@ -153,8 +168,8 @@ public class FileStorage {
             writer.println("id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement");
             for (TAProfile profile : profiles) {
                 writer.println(profile.id + "," + profile.userId + "," + safe(profile.fullName) + "," + safe(profile.email)
-                        + "," + safe(profile.studentId) + "," + safe(profile.skills) + "," + profile.gpa + "," + safe(profile.cvPath)
-                        + "," + safe(profile.availability) + "," + safe(profile.statement));
+                        + "," + safe(profile.studentId) + "," + safe(profile.skills) + "," + profile.gpa + ","
+                        + safe(profile.cvPath) + "," + safe(profile.availability) + "," + safe(profile.statement));
             }
         } catch (IOException e) {
             System.err.println("Unable to save profiles: " + e.getMessage());
@@ -193,8 +208,9 @@ public class FileStorage {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "jobs.csv"))) {
             writer.println("id,moId,title,module,description,requiredSkills,maxHours,status,location");
             for (Job job : jobs) {
-                writer.println(job.id + "," + job.moId + "," + safe(job.title) + "," + safe(job.module) + "," + safe(job.description)
-                        + "," + safe(job.requiredSkills) + "," + job.maxHours + "," + safe(job.status) + "," + safe(job.location));
+                writer.println(job.id + "," + job.moId + "," + safe(job.title) + "," + safe(job.module) + ","
+                        + safe(job.description) + "," + safe(job.requiredSkills) + "," + job.maxHours + ","
+                        + safe(job.status) + "," + safe(job.location));
             }
         } catch (IOException e) {
             System.err.println("Unable to save jobs: " + e.getMessage());
@@ -232,11 +248,51 @@ public class FileStorage {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "applications.csv"))) {
             writer.println("id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote");
             for (Application app : applications) {
-                writer.println(app.id + "," + app.taId + "," + app.jobId + "," + safe(app.status) + "," + safe(app.appliedAt)
-                        + "," + app.matchScore + "," + safe(app.matchSummary) + "," + safe(app.reviewerNote));
+                writer.println(app.id + "," + app.taId + "," + app.jobId + "," + safe(app.status) + ","
+                        + safe(app.appliedAt) + "," + app.matchScore + "," + safe(app.matchSummary) + ","
+                        + safe(app.reviewerNote));
             }
         } catch (IOException e) {
             System.err.println("Unable to save applications: " + e.getMessage());
+        }
+    }
+
+    public static List<Notification> loadNotifications() {
+        List<Notification> notifications = new ArrayList<Notification>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "notifications.csv"))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",", 7);
+                if (parts.length < 7) {
+                    continue;
+                }
+                Notification notification = new Notification();
+                notification.id = ValidationUtils.parseInt(parts[0], 0);
+                notification.userId = ValidationUtils.parseInt(parts[1], 0);
+                notification.title = parts[2].trim();
+                notification.message = parts[3].trim();
+                notification.status = parts[4].trim();
+                notification.createdAt = parts[5].trim();
+                notification.actionHint = parts[6].trim();
+                notifications.add(notification);
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load notifications: " + e.getMessage());
+        }
+        return notifications;
+    }
+
+    public static void saveNotifications(List<Notification> notifications) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "notifications.csv"))) {
+            writer.println("id,userId,title,message,status,createdAt,actionHint");
+            for (Notification notification : notifications) {
+                writer.println(notification.id + "," + notification.userId + "," + safe(notification.title) + ","
+                        + safe(notification.message) + "," + safe(notification.status) + ","
+                        + safe(notification.createdAt) + "," + safe(notification.actionHint));
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to save notifications: " + e.getMessage());
         }
     }
 
@@ -316,6 +372,14 @@ public class FileStorage {
         int max = 0;
         for (Application app : loadApplications()) {
             max = Math.max(max, app.id);
+        }
+        return max + 1;
+    }
+
+    public static int nextNotificationId() {
+        int max = 0;
+        for (Notification notification : loadNotifications()) {
+            max = Math.max(max, notification.id);
         }
         return max + 1;
     }

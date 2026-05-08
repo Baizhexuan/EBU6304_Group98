@@ -120,7 +120,9 @@ public class RegisterFrame extends JFrame {
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(11, 14, 11, 14));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : new Color(154, 170, 178)),
+                BorderFactory.createEmptyBorder(11, 14, 11, 14)));
         button.setFont(new Font("SansSerif", Font.BOLD, 13));
     }
 

@@ -39,7 +39,9 @@ public class AdminDashboard extends BaseDashboard {
 
     private JTable workloadTable;
     private DefaultTableModel workloadModel;
-    private JTextField workloadSearchField;
+    private JTextField workloadUsernameFilterField;
+    private JTextField workloadNameFilterField;
+    private JTextField workloadEmailFilterField;
     private JComboBox<String> workloadStatusFilter;
     private JLabel adminSummaryLabel;
     private JLabel aiReadinessLabel;
@@ -48,18 +50,24 @@ public class AdminDashboard extends BaseDashboard {
 
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
-    private JTextField applicationSearchField;
+    private JTextField applicationTaFilterField;
+    private JTextField applicationJobFilterField;
+    private JTextField applicationModuleFilterField;
+    private JTextField applicationStatusFilterField;
     private boolean applicationsDirty;
     private List<Application> applicationSnapshot = new ArrayList<Application>();
 
     private JTable jobsTable;
     private DefaultTableModel jobsModel;
-    private JTextField jobSearchField;
+    private JTextField jobMoFilterField;
+    private JTextField jobTitleFilterField;
+    private JTextField jobModuleFilterField;
+    private JTextField jobStatusFilterField;
     private boolean jobsDirty;
     private List<Job> jobSnapshot = new ArrayList<Job>();
 
     public AdminDashboard(User currentUser) {
-        super(currentUser, "Admin Dashboard", 1240, 780);
+        super(currentUser, "Admin Dashboard", 1280, 820);
         addTab("Workload Monitor", createWorkloadPanel());
         addTab("Applications Overview", createApplicationsPanel());
         addTab("Jobs Overview", createJobsPanel());
@@ -112,6 +120,7 @@ public class AdminDashboard extends BaseDashboard {
             }
         };
         workloadTable = new JTable(workloadModel);
+        workloadTable.setAutoCreateRowSorter(true);
         workloadTable.setDefaultRenderer(Object.class, new WorkloadRenderer());
         workloadTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         workloadTable.setRowHeight(26);
@@ -120,6 +129,25 @@ public class AdminDashboard extends BaseDashboard {
                 refreshRecommendationPanel();
             }
         });
+
+        JPanel filterPanel = new JPanel(new GridLayout(2, 6, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("TA Username"));
+        filterPanel.add(new JLabel("Full Name"));
+        filterPanel.add(new JLabel("Email"));
+        filterPanel.add(new JLabel("Selected Jobs"));
+        filterPanel.add(new JLabel("Current Hours"));
+        filterPanel.add(new JLabel("Status"));
+        workloadUsernameFilterField = new JTextField();
+        workloadNameFilterField = new JTextField();
+        workloadEmailFilterField = new JTextField();
+        filterPanel.add(workloadUsernameFilterField);
+        filterPanel.add(workloadNameFilterField);
+        filterPanel.add(workloadEmailFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        workloadStatusFilter = new JComboBox<String>(new String[] {"ALL", "OK", "NEAR LIMIT", "OVERLOAD"});
+        filterPanel.add(workloadStatusFilter);
 
         recommendationArea = new JTextArea();
         recommendationArea.setEditable(false);
@@ -139,42 +167,35 @@ public class AdminDashboard extends BaseDashboard {
         recommendationPanel.add(recommendationHeader, BorderLayout.NORTH);
         recommendationPanel.add(new JScrollPane(recommendationArea), BorderLayout.CENTER);
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                new JScrollPane(workloadTable), recommendationPanel);
+        JPanel tableWrap = new JPanel(new BorderLayout(8, 8));
+        tableWrap.setOpaque(false);
+        tableWrap.add(filterPanel, BorderLayout.NORTH);
+        tableWrap.add(new JScrollPane(workloadTable), BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableWrap, recommendationPanel);
         splitPane.setResizeWeight(0.66);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         panel.add(splitPane, BorderLayout.CENTER);
-
-        JPanel bottom = new JPanel(new BorderLayout(8, 8));
-        bottom.setOpaque(false);
-        JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filters.setOpaque(false);
-        filters.add(new JLabel("Search:"));
-        workloadSearchField = new JTextField(18);
-        filters.add(workloadSearchField);
-        filters.add(new JLabel("Status:"));
-        workloadStatusFilter = new JComboBox<String>(new String[] {"ALL", "OK", "NEAR LIMIT", "OVERLOAD"});
-        filters.add(workloadStatusFilter);
-        bottom.add(filters, BorderLayout.WEST);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton recommendationButton = new JButton("Refresh Advice");
         JButton exportButton = new JButton("Export CSV Report");
-        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
-        styleButton(recommendationButton, new Color(240, 229, 206), new Color(70, 56, 32));
-        styleButton(exportButton, new Color(33, 76, 95), Color.WHITE);
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(recommendationButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(exportButton, ACCENT_COLOR, Color.WHITE);
         actions.add(refreshButton);
         actions.add(recommendationButton);
         actions.add(exportButton);
-        bottom.add(actions, BorderLayout.EAST);
-        panel.add(bottom, BorderLayout.SOUTH);
+        panel.add(actions, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshWorkload());
         recommendationButton.addActionListener(e -> refreshRecommendationPanel());
         exportButton.addActionListener(e -> exportWorkloadReport());
-        workloadSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshWorkload));
+        installFieldListener(workloadUsernameFilterField, this::refreshWorkload);
+        installFieldListener(workloadNameFilterField, this::refreshWorkload);
+        installFieldListener(workloadEmailFilterField, this::refreshWorkload);
         workloadStatusFilter.addActionListener(e -> refreshWorkload());
         return panel;
     }
@@ -183,13 +204,10 @@ public class AdminDashboard extends BaseDashboard {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
-
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.setOpaque(false);
-        topBar.add(new JLabel("Search applications:"));
-        applicationSearchField = new JTextField(28);
-        topBar.add(applicationSearchField);
-        panel.add(topBar, BorderLayout.NORTH);
+        panel.add(buildSectionIntro(
+                "Application Operations",
+                "Review application status, compare AI match explanations, and edit outcomes or notes. Filters are split by major attributes for easier admin traceability."),
+                BorderLayout.NORTH);
 
         applicationsModel = new DefaultTableModel(
                 new String[] {"App ID", "TA", "Job", "Module", "Status", "Applied At", "Match", "Summary", "Note"}, 0) {
@@ -199,6 +217,7 @@ public class AdminDashboard extends BaseDashboard {
             }
         };
         applicationsTable = new JTable(applicationsModel);
+        applicationsTable.setAutoCreateRowSorter(true);
         applicationsTable.setRowHeight(24);
         applicationsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         applicationsTable.getColumnModel().getColumn(4)
@@ -208,16 +227,46 @@ public class AdminDashboard extends BaseDashboard {
                 applicationsDirty = true;
             }
         });
-        panel.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
+
+        JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("App ID"));
+        filterPanel.add(new JLabel("TA"));
+        filterPanel.add(new JLabel("Job"));
+        filterPanel.add(new JLabel("Module"));
+        filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel("Applied At"));
+        filterPanel.add(new JLabel("Match"));
+        filterPanel.add(new JLabel("Summary"));
+        filterPanel.add(new JLabel("Note"));
+        filterPanel.add(new JLabel(""));
+        applicationTaFilterField = new JTextField();
+        filterPanel.add(applicationTaFilterField);
+        applicationJobFilterField = new JTextField();
+        filterPanel.add(applicationJobFilterField);
+        applicationModuleFilterField = new JTextField();
+        filterPanel.add(applicationModuleFilterField);
+        applicationStatusFilterField = new JTextField();
+        filterPanel.add(applicationStatusFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
-        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
-        styleButton(saveButton, new Color(33, 76, 95), Color.WHITE);
-        styleButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(saveButton, ACCENT_COLOR, Color.WHITE);
+        styleActionButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -226,7 +275,10 @@ public class AdminDashboard extends BaseDashboard {
         refreshButton.addActionListener(e -> refreshApplications());
         saveButton.addActionListener(e -> saveApplicationChanges());
         undoButton.addActionListener(e -> undoApplicationChanges());
-        applicationSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshApplications));
+        installFieldListener(applicationTaFilterField, this::refreshApplications);
+        installFieldListener(applicationJobFilterField, this::refreshApplications);
+        installFieldListener(applicationModuleFilterField, this::refreshApplications);
+        installFieldListener(applicationStatusFilterField, this::refreshApplications);
         return panel;
     }
 
@@ -234,13 +286,10 @@ public class AdminDashboard extends BaseDashboard {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
-
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.setOpaque(false);
-        topBar.add(new JLabel("Search jobs:"));
-        jobSearchField = new JTextField(28);
-        topBar.add(jobSearchField);
-        panel.add(topBar, BorderLayout.NORTH);
+        panel.add(buildSectionIntro(
+                "Global Job Records",
+                "Edit job ownership, wording, and status at the system level. Per-column filters keep each attribute aligned with its visible column."),
+                BorderLayout.NORTH);
 
         jobsModel = new DefaultTableModel(
                 new String[] {"Job ID", "MO", "Title", "Module", "Skills", "Hours", "Location", "Status"}, 0) {
@@ -250,6 +299,7 @@ public class AdminDashboard extends BaseDashboard {
             }
         };
         jobsTable = new JTable(jobsModel);
+        jobsTable.setAutoCreateRowSorter(true);
         jobsTable.setRowHeight(24);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jobsTable.getColumnModel().getColumn(7)
@@ -259,16 +309,44 @@ public class AdminDashboard extends BaseDashboard {
                 jobsDirty = true;
             }
         });
-        panel.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+
+        JPanel filterPanel = new JPanel(new GridLayout(2, 8, 6, 6));
+        filterPanel.setOpaque(false);
+        filterPanel.add(new JLabel("Job ID"));
+        filterPanel.add(new JLabel("MO"));
+        filterPanel.add(new JLabel("Title"));
+        filterPanel.add(new JLabel("Module"));
+        filterPanel.add(new JLabel("Skills"));
+        filterPanel.add(new JLabel("Hours"));
+        filterPanel.add(new JLabel("Location"));
+        filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel(""));
+        jobMoFilterField = new JTextField();
+        filterPanel.add(jobMoFilterField);
+        jobTitleFilterField = new JTextField();
+        filterPanel.add(jobTitleFilterField);
+        jobModuleFilterField = new JTextField();
+        filterPanel.add(jobModuleFilterField);
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        filterPanel.add(new JLabel(""));
+        jobStatusFilterField = new JTextField();
+        filterPanel.add(jobStatusFilterField);
+
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setOpaque(false);
+        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
-        styleButton(refreshButton, new Color(225, 234, 238), new Color(33, 76, 95));
-        styleButton(saveButton, new Color(33, 76, 95), Color.WHITE);
-        styleButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(saveButton, ACCENT_COLOR, Color.WHITE);
+        styleActionButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -277,8 +355,15 @@ public class AdminDashboard extends BaseDashboard {
         refreshButton.addActionListener(e -> refreshJobs());
         saveButton.addActionListener(e -> saveJobChanges());
         undoButton.addActionListener(e -> undoJobChanges());
-        jobSearchField.getDocument().addDocumentListener(new SimpleDocumentListener(this::refreshJobs));
+        installFieldListener(jobMoFilterField, this::refreshJobs);
+        installFieldListener(jobTitleFilterField, this::refreshJobs);
+        installFieldListener(jobModuleFilterField, this::refreshJobs);
+        installFieldListener(jobStatusFilterField, this::refreshJobs);
         return panel;
+    }
+
+    private void installFieldListener(JTextField field, Runnable action) {
+        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
     }
 
     private JLabel buildCardLabel(String text) {
@@ -298,12 +383,6 @@ public class AdminDashboard extends BaseDashboard {
         card.add(heading, BorderLayout.NORTH);
         card.add(content, BorderLayout.CENTER);
         return card;
-    }
-
-    private void styleButton(JButton button, Color background, Color foreground) {
-        button.setBackground(background);
-        button.setForeground(foreground);
-        button.setFocusPainted(false);
     }
 
     private void refreshVisibleTab() {
@@ -330,7 +409,9 @@ public class AdminDashboard extends BaseDashboard {
             profiles.put(profile.userId, profile);
         }
 
-        String keyword = workloadSearchField == null ? "" : workloadSearchField.getText().trim().toLowerCase();
+        String usernameFilter = getLower(workloadUsernameFilterField);
+        String nameFilter = getLower(workloadNameFilterField);
+        String emailFilter = getLower(workloadEmailFilterField);
         String selectedStatus = workloadStatusFilter == null ? "ALL" : String.valueOf(workloadStatusFilter.getSelectedItem());
         int taCount = 0;
         int overloadCount = 0;
@@ -356,7 +437,8 @@ public class AdminDashboard extends BaseDashboard {
             String fullName = profile == null ? user.getSafeDisplayName() : profile.fullName;
             String email = profile == null ? "N/A" : profile.email;
             String status = buildWorkloadStatus(currentHours);
-            if (!matchesWorkloadFilters(user, fullName, email, status, keyword, selectedStatus)) {
+            if (!contains(user.username, usernameFilter) || !contains(fullName, nameFilter)
+                    || !contains(email, emailFilter) || !matchesStatus(status, selectedStatus)) {
                 continue;
             }
 
@@ -372,7 +454,8 @@ public class AdminDashboard extends BaseDashboard {
                 + " | Total allocated hours: " + totalHours
                 + " | Overload cases: " + overloadCount
                 + " | Overload limit: " + FileStorage.getOverloadLimit() + "h</div></html>");
-        aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary() + "</div></html>");
+        aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary()
+                + " | Explainability: score, missing skills, and projected-load reasoning are displayed in the UI.</div></html>");
         if (workloadModel.getRowCount() > 0 && workloadTable.getSelectedRow() < 0) {
             workloadTable.setRowSelectionInterval(0, 0);
         }
@@ -390,7 +473,7 @@ public class AdminDashboard extends BaseDashboard {
             recommendationArea.setCaretPosition(0);
             return;
         }
-        String username = String.valueOf(workloadModel.getValueAt(selectedRow, 0));
+        String username = String.valueOf(workloadTable.getValueAt(selectedRow, 0));
         User user = FileStorage.findUserByUsername(username);
         if (user == null) {
             recommendationArea.setText(AdminRecommendationService.buildGlobalAlertSummary());
@@ -402,28 +485,12 @@ public class AdminDashboard extends BaseDashboard {
         recommendationArea.setCaretPosition(0);
     }
 
-    private boolean matchesWorkloadFilters(User user, String fullName, String email, String status, String keyword,
-            String selectedStatus) {
-        boolean keywordMatch = keyword.isEmpty()
-                || contains(user.username, keyword)
-                || contains(fullName, keyword)
-                || contains(email, keyword)
-                || contains(status, keyword);
-        if (!keywordMatch) {
-            return false;
-        }
-        if ("ALL".equalsIgnoreCase(selectedStatus)) {
-            return true;
-        }
-        if ("OK".equalsIgnoreCase(selectedStatus)) {
-            return "OK".equalsIgnoreCase(status);
-        }
-        return status.toUpperCase().startsWith(selectedStatus.toUpperCase());
-    }
-
     private void refreshApplications() {
         applicationsModel.setRowCount(0);
-        String keyword = applicationSearchField == null ? "" : applicationSearchField.getText().trim().toLowerCase();
+        String taFilter = getLower(applicationTaFilterField);
+        String jobFilter = getLower(applicationJobFilterField);
+        String moduleFilter = getLower(applicationModuleFilterField);
+        String statusFilter = getLower(applicationStatusFilterField);
         List<Application> applications = FileStorage.loadApplications();
         applicationSnapshot = copyApplications(applications);
         for (Application app : applications) {
@@ -432,13 +499,8 @@ public class AdminDashboard extends BaseDashboard {
             String taName = ta == null ? "Unknown" : ta.getSafeDisplayName();
             String jobTitle = job == null ? "Unknown" : job.title;
             String module = job == null ? "Unknown" : job.module;
-            if (!keyword.isEmpty()
-                    && !contains(taName, keyword)
-                    && !contains(jobTitle, keyword)
-                    && !contains(module, keyword)
-                    && !contains(app.status, keyword)
-                    && !contains(app.matchSummary, keyword)
-                    && !contains(app.reviewerNote, keyword)) {
+            if (!contains(taName, taFilter) || !contains(jobTitle, jobFilter)
+                    || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
                 continue;
             }
             applicationsModel.addRow(new Object[] {app.id, taName, jobTitle, module, app.status, app.appliedAt,
@@ -473,19 +535,17 @@ public class AdminDashboard extends BaseDashboard {
 
     private void refreshJobs() {
         jobsModel.setRowCount(0);
-        String keyword = jobSearchField == null ? "" : jobSearchField.getText().trim().toLowerCase();
+        String moFilter = getLower(jobMoFilterField);
+        String titleFilter = getLower(jobTitleFilterField);
+        String moduleFilter = getLower(jobModuleFilterField);
+        String statusFilter = getLower(jobStatusFilterField);
         List<Job> jobs = FileStorage.loadJobs();
         jobSnapshot = copyJobs(jobs);
         for (Job job : jobs) {
             User mo = FileStorage.findUserById(job.moId);
             String moName = mo == null ? "Unknown" : mo.getSafeDisplayName();
-            if (!keyword.isEmpty()
-                    && !contains(moName, keyword)
-                    && !contains(job.title, keyword)
-                    && !contains(job.module, keyword)
-                    && !contains(job.requiredSkills, keyword)
-                    && !contains(job.location, keyword)
-                    && !contains(job.status, keyword)) {
+            if (!contains(moName, moFilter) || !contains(job.title, titleFilter)
+                    || !contains(job.module, moduleFilter) || !contains(job.status, statusFilter)) {
                 continue;
             }
             jobsModel.addRow(new Object[] {job.id, moName, job.title, job.module, job.requiredSkills, job.maxHours,
@@ -570,6 +630,37 @@ public class AdminDashboard extends BaseDashboard {
         return choice == JOptionPane.YES_OPTION;
     }
 
+    private boolean matchesStatus(String actual, String filter) {
+        if (filter == null || "ALL".equalsIgnoreCase(filter)) {
+            return true;
+        }
+        if ("OK".equalsIgnoreCase(filter)) {
+            return "OK".equalsIgnoreCase(actual);
+        }
+        return actual != null && actual.toUpperCase().startsWith(filter.toUpperCase());
+    }
+
+    private String getLower(JTextField field) {
+        return field == null ? "" : field.getText().trim().toLowerCase();
+    }
+
+    private boolean contains(String text, String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return true;
+        }
+        return text != null && text.toLowerCase().contains(keyword);
+    }
+
+    private String buildWorkloadStatus(int hours) {
+        if (hours > FileStorage.getOverloadLimit()) {
+            return "OVERLOAD - review allocation immediately";
+        }
+        if (hours >= FileStorage.getOverloadLimit() - 2) {
+            return "NEAR LIMIT - monitor closely";
+        }
+        return "OK";
+    }
+
     private Application findApplicationById(List<Application> applications, int appId) {
         for (Application app : applications) {
             if (app.id == appId) {
@@ -623,31 +714,17 @@ public class AdminDashboard extends BaseDashboard {
         return copies;
     }
 
-    private boolean contains(String text, String keyword) {
-        return text != null && text.toLowerCase().contains(keyword);
-    }
-
-    private String buildWorkloadStatus(int currentHours) {
-        if (currentHours > FileStorage.getOverloadLimit()) {
-            return "OVERLOAD - review allocation immediately";
-        }
-        if (currentHours >= FileStorage.getOverloadLimit() - 2) {
-            return "NEAR LIMIT - monitor closely";
-        }
-        return "OK";
-    }
-
     private static class WorkloadRenderer extends DefaultTableCellRenderer {
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             if (!isSelected) {
                 String status = String.valueOf(table.getValueAt(row, 5));
                 if (status.startsWith("OVERLOAD")) {
-                    component.setBackground(new Color(255, 221, 221));
+                    component.setBackground(new Color(250, 220, 220));
                 } else if (status.startsWith("NEAR LIMIT")) {
-                    component.setBackground(new Color(255, 242, 204));
+                    component.setBackground(new Color(255, 239, 214));
                 } else {
                     component.setBackground(Color.WHITE);
                 }
