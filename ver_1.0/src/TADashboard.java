@@ -385,6 +385,8 @@ public class TADashboard extends BaseDashboard {
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         if (profile == null) {
             profileStatusLabel.setText("Profile status: complete your information before applying.");
+            NotificationService.notifyProfileRequired(currentUser);
+            refreshNotifications();
             return;
         }
         nameField.setText(profile.fullName);
@@ -398,6 +400,10 @@ public class TADashboard extends BaseDashboard {
         profileStatusLabel.setText(profile.isComplete()
                 ? "Profile status: ready for applications and AI matching."
                 : "Profile status: partially complete. Fill all required fields before applying.");
+        if (!profile.isComplete()) {
+            NotificationService.notifyProfileRequired(currentUser);
+        }
+        refreshNotifications();
     }
 
     private void saveProfile() {
@@ -441,9 +447,11 @@ public class TADashboard extends BaseDashboard {
         FileStorage.saveProfiles(profiles);
         syncDisplayName(profile.fullName);
         profileStatusLabel.setText("Profile status: saved and ready for AI-assisted job matching.");
+        NotificationService.markProfileReminderResolved(currentUser);
 
         JOptionPane.showMessageDialog(this, "Profile saved successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshJobs();
+        refreshNotifications();
     }
 
     private void syncDisplayName(String displayName) {
@@ -518,8 +526,10 @@ public class TADashboard extends BaseDashboard {
 
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         if (profile == null || !profile.isComplete()) {
+            NotificationService.notifyProfileRequired(currentUser);
+            refreshNotifications();
             JOptionPane.showMessageDialog(this,
-                    "Please complete your profile before applying. This matches the project requirement for TA profile creation.",
+                    "Please complete your profile before applying. A reminder has also been added to Notifications.",
                     "Profile Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
