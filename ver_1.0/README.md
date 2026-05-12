@@ -53,6 +53,39 @@ New updates in this version:
 - kept notifications CSV-backed so the implementation remains compatible with the coursework storage rule
 - preserved the aligned table filters, missing-skills output, and explainable AI recommendation notes from the previous iteration
 
+
+## Product Screenshots
+
+Place the final product screenshots in `screenshots/` using the file names below. The images will render automatically on GitHub after the files are added.
+
+### Login and Registration
+
+![Login screen](screenshots/login.png)
+
+![Registration screen](screenshots/register.png)
+
+### TA Workflow
+
+![TA profile](screenshots/ta_profile.png)
+
+![TA browse jobs](screenshots/ta_browse_jobs.png)
+
+![TA applications](screenshots/ta_applications.png)
+
+![TA notifications](screenshots/ta_notifications.png)
+
+### MO Workflow
+
+![MO post job](screenshots/mo_post_job.png)
+
+![MO applicants](screenshots/mo_applicants.png)
+
+### Admin Workflow
+
+![Admin workload](screenshots/admin_workload.png)
+
+![Admin recommendations](screenshots/admin_recommendations.png)
+
 ## Run
 
 ```bash
@@ -97,3 +130,4 @@ If these variables are not set, the demo automatically falls back to the local r
 - `ver_1.4`: live AI placeholder path, admin reallocation recommendations, and UI polish for the next demo stage
 - `ver_1.5`: macOS-friendly entry screens, cleaner final-product styling, and stronger final-demo usability
 - `ver_1.6`: CSV-backed notifications, richer AI explanation surfaces, and aligned multi-field search across key tables
+- `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
