@@ -556,6 +556,11 @@ public class AdminDashboard extends BaseDashboard {
 
     private void saveJobChanges() {
         List<Job> jobs = FileStorage.loadJobs();
+        Map<Integer, String> previousStatuses = new HashMap<Integer, String>();
+        for (Job job : jobs) {
+            previousStatuses.put(job.id, job.status);
+        }
+        int closedNotifications = 0;
         for (int row = 0; row < jobsModel.getRowCount(); row++) {
             int jobId = ValidationUtils.parseInt(String.valueOf(jobsModel.getValueAt(row, 0)), 0);
             Job match = findJobById(jobs, jobId);
@@ -584,11 +589,19 @@ public class AdminDashboard extends BaseDashboard {
             match.maxHours = hours;
             match.location = String.valueOf(jobsModel.getValueAt(row, 6)).trim();
             match.status = String.valueOf(jobsModel.getValueAt(row, 7)).trim().toUpperCase();
+            String previousStatus = previousStatuses.get(match.id);
+            if ("OPEN".equalsIgnoreCase(previousStatus) && "CLOSED".equalsIgnoreCase(match.status)) {
+                closedNotifications += NotificationService.notifyJobClosed(match, currentUser);
+            }
         }
         FileStorage.saveJobs(jobs);
         jobSnapshot = copyJobs(jobs);
         jobsDirty = false;
-        JOptionPane.showMessageDialog(this, "Job updates saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+        String savedMessage = "Job updates saved.";
+        if (closedNotifications > 0) {
+            savedMessage += " Closure notifications sent: " + closedNotifications + ".";
+        }
+        JOptionPane.showMessageDialog(this, savedMessage, "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshWorkload();
         refreshJobs();
     }
