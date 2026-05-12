@@ -1,0 +1,3 @@
+id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement
+1,2,Li Ming,li.ming@bupt.edu.cn,2023211001,Java;OOP;Git;Communication,3.7,/demo/cv/li-ming.pdf,Mon PM;Wed PM,Interested in software labs and mentoring first-year students.
+2,3,Wang Yue,wang.yue@bupt.edu.cn,2023211002,Python;Data Structures;SQL;Teamwork,3.8,/demo/cv/wang-yue.pdf,Tue PM;Thu PM,Enjoys lab assistance and data-focused teaching support.
