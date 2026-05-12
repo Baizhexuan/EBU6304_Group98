@@ -382,8 +382,14 @@ public class MODashboard extends BaseDashboard {
         List<Job> jobs = FileStorage.loadJobs();
         for (Job job : jobs) {
             if (job.id == jobId) {
-                job.status = job.isOpen() ? "CLOSED" : "OPEN";
-                postStatusLabel.setText("Posting status: job '" + job.title + "' is now " + job.status + ".");
+                boolean closingJob = job.isOpen();
+                job.status = closingJob ? "CLOSED" : "OPEN";
+                if (closingJob) {
+                    int notified = NotificationService.notifyJobClosed(job, currentUser);
+                    postStatusLabel.setText("Posting status: job '" + job.title + "' is now CLOSED. Notifications sent: " + notified + ".");
+                } else {
+                    postStatusLabel.setText("Posting status: job '" + job.title + "' is now OPEN.");
+                }
                 break;
             }
         }
