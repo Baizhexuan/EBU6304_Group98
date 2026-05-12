@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.6
+# EBU6304 Group 98 Demo Version 1.7
 
 BUPT International School Teaching Assistant Recruitment System.
 
@@ -9,7 +9,7 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 - TA can create and edit an applicant profile
 - TA can browse open jobs and apply for them
 - TA can check application status and withdraw pending applications
-- TA can receive in-app notifications about application decisions
+- TA can receive in-app notifications about application decisions, missing profile details, and closed jobs
 - MO can post jobs, manage their own posts, and review applicants
 - Admin can monitor TA workload, edit global application and job records, export reports, and inspect replacement recommendations
 - AI-assisted scoring is included through an explainable rule-based engine and an API-ready placeholder provider
@@ -28,7 +28,7 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 - MO job posting
 - MO applicant selection and rejection
 - Admin workload monitoring
-- in-app notification support for applicant status updates
+- in-app notification support for applicant status updates, profile-completion reminders, and job-closure alerts
 
 ### AI-assisted functions currently covered
 
@@ -41,18 +41,17 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 
 This `ver_1.0` folder now meets the mandatory platform and storage restrictions and demonstrates a selected set of core features as required by the coursework brief. It is still an iterative demo build rather than the full final coursework package, because the broader Agile evidence, formal test suite, JavaDoc delivery, and complete report package belong to the wider repository work rather than only this folder.
 
-## Iteration 1.6 Update
+## Iteration 1.7 Update
 
-This iteration focuses on closing more coursework gaps through notifications, clearer AI-assisted output, and stronger table-level usability.
+This iteration moves `US-8` closer to a complete notification workflow by adding additional triggers beyond MO decision updates.
 
 New updates in this version:
 
-- implemented a CSV-backed in-app notification flow to move the demo closer to `US-8`
-- added a TA notifications tab with unread tracking and mark-as-read actions
-- updated MO applicant decisions to generate notifications automatically
-- changed table searching from a single keyword box to aligned per-column filters across TA, MO, and Admin views
-- exposed missing skills more explicitly in the TA and MO UI so AI assistance is easier to explain during demos
-- refined login button styling and visible outlines to improve clarity and fix button-legibility issues
+- added profile-completion reminders when a TA opens an incomplete profile or tries to apply before finishing required details
+- added automatic job-closure alerts for TAs with active applications when MO or Admin closes a job
+- resolved unread profile reminders after the TA saves a complete profile
+- kept notifications CSV-backed so the implementation remains compatible with the coursework storage rule
+- preserved the aligned table filters, missing-skills output, and explainable AI recommendation notes from the previous iteration
 
 ## Run
 
