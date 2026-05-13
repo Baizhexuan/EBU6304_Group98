@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.7
+# EBU6304 Group 98 Demo Version 1.8
 
 BUPT International School Teaching Assistant Recruitment System.
 
@@ -53,6 +53,19 @@ New updates in this version:
 - kept notifications CSV-backed so the implementation remains compatible with the coursework storage rule
 - preserved the aligned table filters, missing-skills output, and explainable AI recommendation notes from the previous iteration
 
+
+
+## Iteration 1.8 Update
+
+This iteration focuses on final-demo usability across macOS, Windows, and Linux while making the AI-assisted workflow more interactive.
+
+New updates in this version:
+
+- fixed cross-platform Swing button rendering so registration and dashboard buttons keep visible text and borders
+- added compact search controls with an attribute selector and keyword input above aligned per-column filters
+- added an Admin AI Assistant dialog for interactive recruitment questions using the external model when configured, with a local explainable fallback
+- enriched admin recommendations with risk labels, projected load reasoning, and suggested next actions
+- kept the previous `US-8` notification improvements for profile reminders and job-closure alerts
 
 ## Product Screenshots
 
@@ -131,3 +144,4 @@ If these variables are not set, the demo automatically falls back to the local r
 - `ver_1.5`: macOS-friendly entry screens, cleaner final-product styling, and stronger final-demo usability
 - `ver_1.6`: CSV-backed notifications, richer AI explanation surfaces, and aligned multi-field search across key tables
 - `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
+- `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog
