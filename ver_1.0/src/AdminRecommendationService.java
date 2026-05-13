@@ -56,7 +56,8 @@ public final class AdminRecommendationService {
         StringBuilder builder = new StringBuilder();
         builder.append("Load status for ").append(ta.getSafeDisplayName()).append(": ")
                 .append(buildLoadStatus(hours)).append(" (current selected hours: ").append(hours).append("h)\n\n");
-        builder.append("Action memo: ").append(buildActionMemoForTa(taId)).append("\n\n");
+        builder.append("Action memo: ").append(buildActionMemoForTa(taId)).append("\n");
+        builder.append("AI decision guardrail: use the recommendation as evidence, then confirm availability and module-specific fit manually.\n\n");
 
         if (selectedApplications.isEmpty()) {
             builder.append("This TA has no selected jobs yet, so no reallocation is required.");
@@ -78,7 +79,7 @@ public final class AdminRecommendationService {
                     .append(" (").append(job.maxHours).append("h)\n");
             List<CandidateRecommendation> candidates = findTopCandidates(taId, job, 3);
             if (candidates.isEmpty()) {
-                builder.append("- No safe replacement candidate is currently available.\n\n");
+                builder.append("- No safe replacement candidate is currently available. Keep the original allocation under review or reopen recruitment.\n\n");
                 continue;
             }
             for (CandidateRecommendation candidate : candidates) {
@@ -86,7 +87,9 @@ public final class AdminRecommendationService {
                         .append(" | predicted fit ").append(candidate.matchScore).append("%")
                         .append(" | current load ").append(candidate.currentHours).append("h")
                         .append(" | projected load ").append(candidate.projectedHours).append("h")
+                        .append(" | risk ").append(candidate.riskLabel)
                         .append(" | ").append(candidate.reason)
+                        .append(" | next step: ").append(candidate.nextStep)
                         .append("\n");
             }
             builder.append('\n');
@@ -128,11 +131,15 @@ public final class AdminRecommendationService {
             int currentHours = getSelectedHours(user.id);
             MatchResult match = ScoringService.evaluate(profile, job);
             int projectedHours = currentHours + job.maxHours;
+            String riskLabel = buildCandidateRiskLabel(match.score, projectedHours);
             String reason = projectedHours > FileStorage.getOverloadLimit()
                     ? "strong fit but would still exceed safe hours after reassignment"
                     : "keeps projected load at " + projectedHours + "h and aligns with job skills";
+            String nextStep = match.score >= 70 && projectedHours <= FileStorage.getOverloadLimit()
+                    ? "shortlist for MO confirmation"
+                    : "check missing skills before reassignment";
             candidates.add(new CandidateRecommendation(user.getSafeDisplayName(), match.score, currentHours,
-                    projectedHours, reason));
+                    projectedHours, riskLabel, reason, nextStep));
         }
 
         Collections.sort(candidates, new Comparator<CandidateRecommendation>() {
@@ -190,6 +197,19 @@ public final class AdminRecommendationService {
         return hours;
     }
 
+    private static String buildCandidateRiskLabel(int matchScore, int projectedHours) {
+        if (projectedHours > FileStorage.getOverloadLimit()) {
+            return "HIGH workload risk";
+        }
+        if (matchScore < 50) {
+            return "MEDIUM skill-fit risk";
+        }
+        if (projectedHours >= FileStorage.getOverloadLimit() - 2) {
+            return "MEDIUM load buffer risk";
+        }
+        return "LOW risk";
+    }
+
     private static String buildLoadStatus(int hours) {
         if (hours > FileStorage.getOverloadLimit()) {
             return "OVERLOAD - action recommended";
@@ -205,15 +225,19 @@ public final class AdminRecommendationService {
         private final int matchScore;
         private final int currentHours;
         private final int projectedHours;
+        private final String riskLabel;
         private final String reason;
+        private final String nextStep;
 
         private CandidateRecommendation(String name, int matchScore, int currentHours, int projectedHours,
-                String reason) {
+                String riskLabel, String reason, String nextStep) {
             this.name = name;
             this.matchScore = matchScore;
             this.currentHours = currentHours;
             this.projectedHours = projectedHours;
+            this.riskLabel = riskLabel;
             this.reason = reason;
+            this.nextStep = nextStep;
         }
     }
 }

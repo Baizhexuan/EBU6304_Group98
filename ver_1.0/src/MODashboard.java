@@ -165,9 +165,18 @@ public class MODashboard extends BaseDashboard {
         myJobsStatusFilterField = new JTextField();
         filterPanel.add(myJobsStatusFilterField);
 
+        FilterToolbar compactFilter = new FilterToolbar("Search job posts", this::refreshMyJobs);
+        compactFilter.addField("Title", myJobsTitleFilterField);
+        compactFilter.addField("Module", myJobsModuleFilterField);
+        compactFilter.addField("Status", myJobsStatusFilterField);
+        JPanel filters = new JPanel(new BorderLayout(6, 6));
+        filters.setOpaque(false);
+        filters.add(compactFilter, BorderLayout.NORTH);
+        filters.add(filterPanel, BorderLayout.CENTER);
+
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(filters, BorderLayout.NORTH);
         center.add(new JScrollPane(myJobsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
@@ -248,10 +257,20 @@ public class MODashboard extends BaseDashboard {
         filterPanel.add(applicantStatusFilterField);
         filterPanel.add(new JLabel(""));
 
+        FilterToolbar compactFilter = new FilterToolbar("Search applicants", this::refreshApplicants);
+        compactFilter.addField("TA", applicantNameFilterField);
+        compactFilter.addField("Email", applicantEmailFilterField);
+        compactFilter.addField("Skills", applicantSkillsFilterField);
+        compactFilter.addField("Status", applicantStatusFilterField);
+        JPanel filters = new JPanel(new BorderLayout(6, 6));
+        filters.setOpaque(false);
+        filters.add(selectorPanel, BorderLayout.NORTH);
+        filters.add(compactFilter, BorderLayout.CENTER);
+        filters.add(filterPanel, BorderLayout.SOUTH);
+
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(selectorPanel, BorderLayout.NORTH);
-        center.add(filterPanel, BorderLayout.CENTER);
+        center.add(filters, BorderLayout.NORTH);
         JPanel tableWrap = new JPanel(new BorderLayout());
         tableWrap.setOpaque(false);
         tableWrap.add(center, BorderLayout.NORTH);
@@ -382,8 +401,14 @@ public class MODashboard extends BaseDashboard {
         List<Job> jobs = FileStorage.loadJobs();
         for (Job job : jobs) {
             if (job.id == jobId) {
-                job.status = job.isOpen() ? "CLOSED" : "OPEN";
-                postStatusLabel.setText("Posting status: job '" + job.title + "' is now " + job.status + ".");
+                boolean closingJob = job.isOpen();
+                job.status = closingJob ? "CLOSED" : "OPEN";
+                if (closingJob) {
+                    int notified = NotificationService.notifyJobClosed(job, currentUser);
+                    postStatusLabel.setText("Posting status: job '" + job.title + "' is now CLOSED. Notifications sent: " + notified + ".");
+                } else {
+                    postStatusLabel.setText("Posting status: job '" + job.title + "' is now OPEN.");
+                }
                 break;
             }
         }

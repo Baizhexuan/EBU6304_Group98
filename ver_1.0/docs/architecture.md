@@ -12,6 +12,9 @@ software_engineering/
 │   ├── MODashboard.java
 │   ├── AdminDashboard.java
 │   ├── AdminRecommendationService.java
+│   ├── AIConversationService.java
+│   ├── AIConversationDialog.java
+│   ├── FilterToolbar.java
 │   ├── Notification.java
 │   ├── NotificationService.java
 │   ├── FileStorage.java
@@ -60,3 +63,19 @@ software_engineering/
 - `MODashboard`: adds aligned per-column filters and automatically generates notifications when applicant decisions are made
 - `AdminDashboard`: replaces single keyword search bars with aligned field-by-field filters and expands AI explanation visibility
 - `LoginFrame` and `BaseDashboard`: strengthen visible button outlines and final-demo interaction clarity
+
+
+## Iteration 1.7 Notification Extension
+
+- `NotificationService.notifyProfileRequired` adds a deduplicated unread reminder when a TA profile is missing or incomplete.
+- `NotificationService.markProfileReminderResolved` clears the reminder after a complete profile is saved.
+- `NotificationService.notifyJobClosed` sends job-closure alerts to TAs with active applications when MO or Admin closes a job.
+- Notifications remain stored in `data/notifications.csv`, preserving the no-database coursework constraint.
+
+
+## Iteration 1.8 UI and AI Assistant Update
+
+- `BaseDashboard` and `RegisterFrame` use a basic Swing button UI for more reliable text and border rendering across macOS, Windows, and Linux.
+- `FilterToolbar` adds a compact attribute selector plus keyword input while preserving aligned per-column filters.
+- `AIConversationDialog` and `AIConversationService` add an interactive Admin AI assistant with external model support and local explainable fallback.
+- `AdminRecommendationService` now includes risk labels, projected-load reasoning, and suggested next actions.

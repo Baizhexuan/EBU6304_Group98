@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.6
+# EBU6304 Group 98 Demo Version 1.8
 
 BUPT International School Teaching Assistant Recruitment System.
 
@@ -9,7 +9,7 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 - TA can create and edit an applicant profile
 - TA can browse open jobs and apply for them
 - TA can check application status and withdraw pending applications
-- TA can receive in-app notifications about application decisions
+- TA can receive in-app notifications about application decisions, missing profile details, and closed jobs
 - MO can post jobs, manage their own posts, and review applicants
 - Admin can monitor TA workload, edit global application and job records, export reports, and inspect replacement recommendations
 - AI-assisted scoring is included through an explainable rule-based engine and an API-ready placeholder provider
@@ -28,7 +28,7 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 - MO job posting
 - MO applicant selection and rejection
 - Admin workload monitoring
-- in-app notification support for applicant status updates
+- in-app notification support for applicant status updates, profile-completion reminders, and job-closure alerts
 
 ### AI-assisted functions currently covered
 
@@ -41,18 +41,63 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 
 This `ver_1.0` folder now meets the mandatory platform and storage restrictions and demonstrates a selected set of core features as required by the coursework brief. It is still an iterative demo build rather than the full final coursework package, because the broader Agile evidence, formal test suite, JavaDoc delivery, and complete report package belong to the wider repository work rather than only this folder.
 
-## Iteration 1.6 Update
+## Iteration 1.7 Update
 
-This iteration focuses on closing more coursework gaps through notifications, clearer AI-assisted output, and stronger table-level usability.
+This iteration moves `US-8` closer to a complete notification workflow by adding additional triggers beyond MO decision updates.
 
 New updates in this version:
 
-- implemented a CSV-backed in-app notification flow to move the demo closer to `US-8`
-- added a TA notifications tab with unread tracking and mark-as-read actions
-- updated MO applicant decisions to generate notifications automatically
-- changed table searching from a single keyword box to aligned per-column filters across TA, MO, and Admin views
-- exposed missing skills more explicitly in the TA and MO UI so AI assistance is easier to explain during demos
-- refined login button styling and visible outlines to improve clarity and fix button-legibility issues
+- added profile-completion reminders when a TA opens an incomplete profile or tries to apply before finishing required details
+- added automatic job-closure alerts for TAs with active applications when MO or Admin closes a job
+- resolved unread profile reminders after the TA saves a complete profile
+- kept notifications CSV-backed so the implementation remains compatible with the coursework storage rule
+- preserved the aligned table filters, missing-skills output, and explainable AI recommendation notes from the previous iteration
+
+
+
+## Iteration 1.8 Update
+
+This iteration focuses on final-demo usability across macOS, Windows, and Linux while making the AI-assisted workflow more interactive.
+
+New updates in this version:
+
+- fixed cross-platform Swing button rendering so registration and dashboard buttons keep visible text and borders
+- added compact search controls with an attribute selector and keyword input above aligned per-column filters
+- added an Admin AI Assistant dialog for interactive recruitment questions using the external model when configured, with a local explainable fallback
+- enriched admin recommendations with risk labels, projected load reasoning, and suggested next actions
+- kept the previous `US-8` notification improvements for profile reminders and job-closure alerts
+
+## Product Screenshots
+
+Place the final product screenshots in `screenshots/` using the file names below. The images will render automatically on GitHub after the files are added.
+
+### Login and Registration
+
+![Login screen](screenshots/login.png)
+
+![Registration screen](screenshots/register.png)
+
+### TA Workflow
+
+![TA profile](screenshots/ta_profile.png)
+
+![TA browse jobs](screenshots/ta_browse_jobs.png)
+
+![TA applications](screenshots/ta_applications.png)
+
+![TA notifications](screenshots/ta_notifications.png)
+
+### MO Workflow
+
+![MO post job](screenshots/mo_post_job.png)
+
+![MO applicants](screenshots/mo_applicants.png)
+
+### Admin Workflow
+
+![Admin workload](screenshots/admin_workload.png)
+
+![Admin recommendations](screenshots/admin_recommendations.png)
 
 ## Run
 
@@ -98,3 +143,5 @@ If these variables are not set, the demo automatically falls back to the local r
 - `ver_1.4`: live AI placeholder path, admin reallocation recommendations, and UI polish for the next demo stage
 - `ver_1.5`: macOS-friendly entry screens, cleaner final-product styling, and stronger final-demo usability
 - `ver_1.6`: CSV-backed notifications, richer AI explanation surfaces, and aligned multi-field search across key tables
+- `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
+- `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog

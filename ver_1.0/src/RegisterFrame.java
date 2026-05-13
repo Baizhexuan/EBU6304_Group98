@@ -19,6 +19,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 public class RegisterFrame extends JFrame {
     private final LoginFrame loginFrame;
@@ -31,8 +32,8 @@ public class RegisterFrame extends JFrame {
     public RegisterFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
         setTitle("Create Demo Account");
-        setMinimumSize(new Dimension(720, 500));
-        setSize(760, 540);
+        setMinimumSize(new Dimension(820, 580));
+        setSize(860, 640);
         setLocationRelativeTo(loginFrame);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -85,7 +86,7 @@ public class RegisterFrame extends JFrame {
         addRow(form, gbc, 3, "Display Name", displayNameField);
         addRow(form, gbc, 4, "Role", roleBox);
 
-        JPanel actions = new JPanel(new GridLayout(1, 2, 10, 0));
+        JPanel actions = new JPanel(new GridLayout(1, 2, 12, 0));
         actions.setOpaque(false);
         JButton registerButton = new JButton("Create Account");
         JButton cancelButton = new JButton("Cancel");
@@ -117,13 +118,17 @@ public class RegisterFrame extends JFrame {
     }
 
     private void styleButton(JButton button, Color background, Color foreground) {
+        button.setUI(new BasicButtonUI());
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(true);
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : new Color(154, 170, 178)),
                 BorderFactory.createEmptyBorder(11, 14, 11, 14)));
-        button.setFont(new Font("SansSerif", Font.BOLD, 13));
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
     }
 
     private void addRow(JPanel form, GridBagConstraints gbc, int row, String label, java.awt.Component field) {

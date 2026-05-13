@@ -184,9 +184,19 @@ public class TADashboard extends BaseDashboard {
         filterPanel.add(new JLabel(""));
         filterPanel.add(new JLabel(""));
 
+        FilterToolbar compactFilter = new FilterToolbar("Search open jobs", this::refreshJobs);
+        compactFilter.addField("Title", jobTitleFilterField);
+        compactFilter.addField("Module", jobModuleFilterField);
+        compactFilter.addField("Skills", jobSkillsFilterField);
+        compactFilter.addField("Location", jobLocationFilterField);
+        JPanel filters = new JPanel(new BorderLayout(6, 6));
+        filters.setOpaque(false);
+        filters.add(compactFilter, BorderLayout.NORTH);
+        filters.add(filterPanel, BorderLayout.CENTER);
+
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(filters, BorderLayout.NORTH);
         center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
@@ -256,9 +266,18 @@ public class TADashboard extends BaseDashboard {
         filterPanel.add(new JLabel(""));
         filterPanel.add(new JLabel(""));
 
+        FilterToolbar compactFilter = new FilterToolbar("Search applications", this::refreshApplications);
+        compactFilter.addField("Job", applicationJobFilterField);
+        compactFilter.addField("Module", applicationModuleFilterField);
+        compactFilter.addField("Status", applicationStatusFilterField);
+        JPanel filters = new JPanel(new BorderLayout(6, 6));
+        filters.setOpaque(false);
+        filters.add(compactFilter, BorderLayout.NORTH);
+        filters.add(filterPanel, BorderLayout.CENTER);
+
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
-        center.add(filterPanel, BorderLayout.NORTH);
+        center.add(filters, BorderLayout.NORTH);
         center.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
@@ -385,6 +404,8 @@ public class TADashboard extends BaseDashboard {
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         if (profile == null) {
             profileStatusLabel.setText("Profile status: complete your information before applying.");
+            NotificationService.notifyProfileRequired(currentUser);
+            refreshNotifications();
             return;
         }
         nameField.setText(profile.fullName);
@@ -398,6 +419,10 @@ public class TADashboard extends BaseDashboard {
         profileStatusLabel.setText(profile.isComplete()
                 ? "Profile status: ready for applications and AI matching."
                 : "Profile status: partially complete. Fill all required fields before applying.");
+        if (!profile.isComplete()) {
+            NotificationService.notifyProfileRequired(currentUser);
+        }
+        refreshNotifications();
     }
 
     private void saveProfile() {
@@ -441,9 +466,11 @@ public class TADashboard extends BaseDashboard {
         FileStorage.saveProfiles(profiles);
         syncDisplayName(profile.fullName);
         profileStatusLabel.setText("Profile status: saved and ready for AI-assisted job matching.");
+        NotificationService.markProfileReminderResolved(currentUser);
 
         JOptionPane.showMessageDialog(this, "Profile saved successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshJobs();
+        refreshNotifications();
     }
 
     private void syncDisplayName(String displayName) {
@@ -518,8 +545,10 @@ public class TADashboard extends BaseDashboard {
 
         TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
         if (profile == null || !profile.isComplete()) {
+            NotificationService.notifyProfileRequired(currentUser);
+            refreshNotifications();
             JOptionPane.showMessageDialog(this,
-                    "Please complete your profile before applying. This matches the project requirement for TA profile creation.",
+                    "Please complete your profile before applying. A reminder has also been added to Notifications.",
                     "Profile Required", JOptionPane.WARNING_MESSAGE);
             return;
         }

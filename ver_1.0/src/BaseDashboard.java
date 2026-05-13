@@ -14,8 +14,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 public abstract class BaseDashboard extends JFrame {
+    protected static final Font UI_TITLE_FONT = new Font("SansSerif", Font.BOLD, 16);
     protected static final Color APP_BACKGROUND = new Color(245, 242, 235);
     protected static final Color SURFACE_COLOR = new Color(255, 252, 247);
     protected static final Color ACCENT_COLOR = new Color(33, 76, 95);
@@ -110,10 +113,18 @@ public abstract class BaseDashboard extends JFrame {
     }
 
     protected void styleActionButton(javax.swing.JButton button, Color background, Color foreground) {
+        applyButtonStyle(button, background, foreground);
+    }
+
+    public static void applyButtonStyle(javax.swing.JButton button, Color background, Color foreground) {
+        button.setUI(new BasicButtonUI());
         button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(true);
         button.setBackground(background);
         button.setForeground(foreground);
         button.setFocusPainted(false);
+        button.setHorizontalAlignment(SwingConstants.CENTER);
         button.setMargin(new Insets(8, 14, 8, 14));
         button.setFont(new Font("SansSerif", Font.BOLD, 13));
         button.setBorder(BorderFactory.createCompoundBorder(
