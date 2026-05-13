@@ -14,8 +14,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 public abstract class BaseDashboard extends JFrame {
+    protected static final Font UI_TITLE_FONT = new Font("SansSerif", Font.BOLD, 16);
     protected static final Color APP_BACKGROUND = new Color(245, 242, 235);
     protected static final Color SURFACE_COLOR = new Color(255, 252, 247);
     protected static final Color ACCENT_COLOR = new Color(33, 76, 95);
@@ -95,34 +98,3 @@ public abstract class BaseDashboard extends JFrame {
 
         intro.add(heading);
         intro.add(new JLabel(" "));
-        intro.add(summary);
-        return intro;
-    }
-
-    protected JLabel buildStatusPill(String text, Color background, Color foreground) {
-        JLabel label = new JLabel(" " + text + " ");
-        label.setOpaque(true);
-        label.setBackground(background);
-        label.setForeground(foreground);
-        label.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
-        label.setFont(new Font("SansSerif", Font.BOLD, 12));
-        return label;
-    }
-
-    protected void styleActionButton(javax.swing.JButton button, Color background, Color foreground) {
-        button.setOpaque(true);
-        button.setBackground(background);
-        button.setForeground(foreground);
-        button.setFocusPainted(false);
-        button.setMargin(new Insets(8, 14, 8, 14));
-        button.setFont(new Font("SansSerif", Font.BOLD, 13));
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : ACCENT_COLOR),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
-    }
-
-    protected void logout() {
-        dispose();
-        new LoginFrame();
-    }
-}
