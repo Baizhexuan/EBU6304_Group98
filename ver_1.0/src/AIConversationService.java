@@ -8,8 +8,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public final class AIConversationService {
-    private static final int CONNECT_TIMEOUT_MS = 4000;
-    private static final int READ_TIMEOUT_MS = 10000;
+    private static final int CONNECT_TIMEOUT_MS = 6000;
+    private static final int READ_TIMEOUT_MS = 20000;
+    private static final int MAX_CONTEXT_CHARS = 5000;
 
     private AIConversationService() {
     }
@@ -18,15 +19,117 @@ public final class AIConversationService {
         if (ValidationUtils.isBlank(question)) {
             return "Please enter a question about TA matching, workload balancing, or applicant screening.";
         }
-        if (!ValidationUtils.notBlank(System.getenv("OPENAI_API_KEY"))) {
+        if (!isConfigured()) {
             return buildLocalAnswer(question, context);
         }
         try {
-            return sendChatCompletion(question, context);
+            String response = sendResponsesRequest(question, context);
+            if (ValidationUtils.notBlank(response)) {
+                return "External AI model response (" + getModelName() + ")\n\n" + response.trim();
+            }
+            return buildLocalAnswer(question, context) + "\n\nExternal model fallback reason: empty response text.";
         } catch (Exception ex) {
             return buildLocalAnswer(question, context)
                     + "\n\nExternal model fallback reason: " + summariseError(ex.getMessage());
         }
+    }
+
+    public static boolean isConfigured() {
+        return ValidationUtils.notBlank(System.getenv("OPENAI_API_KEY"));
+    }
+
+    public static String buildStatusText() {
+        if (!isConfigured()) {
+            return "Local fallback mode: set OPENAI_API_KEY to call the external model.";
+        }
+        return "External model ready: " + getModelName() + " via " + getBaseUrl() + "/responses";
+    }
+
+    private static String sendResponsesRequest(String question, String context) throws IOException {
+        URL url = new URL(getBaseUrl() + "/responses");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY"));
+
+        String payload = buildResponsesPayload(question, context);
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
+        String body = readFully(stream);
+        if (status < 200 || status >= 300) {
+            throw new IOException("HTTP " + status + " - " + summariseError(body));
+        }
+        return extractResponsesText(body);
+    }
+
+    private static String buildResponsesPayload(String question, String context) {
+        String instructions = "You are an explainable AI assistant for a university Teaching Assistant recruitment system. "
+                + "Use the provided system context only as decision support. Do not make final hiring decisions blindly. "
+                + "Return concise advice with: recommendation, evidence, risks, and next action.";
+        String input = "Current recruitment context:\n" + limit(safe(context), MAX_CONTEXT_CHARS)
+                + "\n\nUser question:\n" + question.trim();
+
+        return "{"
+                + "\"model\":\"" + escapeJson(getModelName()) + "\","
+                + "\"instructions\":\"" + escapeJson(instructions) + "\","
+                + "\"input\":\"" + escapeJson(input) + "\","
+                + "\"max_output_tokens\":700"
+                + "}";
+    }
+
+    private static String extractResponsesText(String responseBody) {
+        String outputText = extractJsonString(responseBody, "output_text");
+        if (ValidationUtils.notBlank(outputText)) {
+            return outputText;
+        }
+        String text = extractJsonString(responseBody, "text");
+        if (ValidationUtils.notBlank(text)) {
+            return text;
+        }
+        return responseBody;
+    }
+
+    private static String extractJsonString(String json, String key) {
+        String marker = "\"" + key + "\":\"";
+        int index = json.indexOf(marker);
+        if (index < 0) {
+            return "";
+        }
+        int start = index + marker.length();
+        StringBuilder value = new StringBuilder();
+        boolean escaping = false;
+        for (int i = start; i < json.length(); i++) {
+            char ch = json.charAt(i);
+            if (escaping) {
+                if (ch == 'n') {
+                    value.append('\n');
+                } else if (ch == 'r') {
+                    value.append('\r');
+                } else if (ch == 't') {
+                    value.append('\t');
+                } else {
+                    value.append(ch);
+                }
+                escaping = false;
+                continue;
+            }
+            if (ch == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (ch == '"') {
+                break;
+            }
+            value.append(ch);
+        }
+        return value.toString().trim();
     }
 
     private static String buildLocalAnswer(String question, String context) {
@@ -38,62 +141,6 @@ public final class AIConversationService {
                 + "3. Prefer candidates who remain under " + FileStorage.getOverloadLimit() + " hours after assignment.\n"
                 + "4. Record a reviewer note explaining why the final choice was made.\n\n"
                 + "Current system context:\n" + safe(context);
-    }
-
-    private static String sendChatCompletion(String question, String context) throws IOException {
-        URL url = new URL(getBaseUrl() + "/chat/completions");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        connection.setReadTimeout(READ_TIMEOUT_MS);
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY"));
-
-        String prompt = "You are assisting a university TA recruitment system. Give concise, explainable advice. "
-                + "Never make a final hiring decision blindly; explain trade-offs.\n\n"
-                + "Context:\n" + safe(context) + "\n\nQuestion:\n" + question.trim();
-        String payload = "{"
-                + "\"model\":\"" + escapeJson(getModelName()) + "\","
-                + "\"messages\":["
-                + "{\"role\":\"system\",\"content\":\"You support explainable TA recruitment decisions.\"},"
-                + "{\"role\":\"user\",\"content\":\"" + escapeJson(prompt) + "\"}"
-                + "]}";
-        try (OutputStream output = connection.getOutputStream()) {
-            output.write(payload.getBytes(StandardCharsets.UTF_8));
-        }
-        int status = connection.getResponseCode();
-        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
-        String body = readFully(stream);
-        if (status < 200 || status >= 300) {
-            throw new IOException("HTTP " + status + " - " + body);
-        }
-        return extractContent(body);
-    }
-
-    private static String extractContent(String responseBody) {
-        String marker = "\"content\":\"";
-        int index = responseBody.indexOf(marker);
-        if (index < 0) {
-            return responseBody;
-        }
-        int start = index + marker.length();
-        StringBuilder content = new StringBuilder();
-        boolean escaping = false;
-        for (int i = start; i < responseBody.length(); i++) {
-            char ch = responseBody.charAt(i);
-            if (escaping) {
-                content.append(ch == 'n' ? '\n' : ch);
-                escaping = false;
-            } else if (ch == '\\') {
-                escaping = true;
-            } else if (ch == '"') {
-                break;
-            } else {
-                content.append(ch);
-            }
-        }
-        return content.toString().trim();
     }
 
     private static String readFully(InputStream stream) throws IOException {
@@ -112,7 +159,7 @@ public final class AIConversationService {
 
     private static String getBaseUrl() {
         String value = System.getenv("OPENAI_BASE_URL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "https://api.openai.com/v1";
+        return ValidationUtils.notBlank(value) ? trimTrailingSlash(value.trim()) : "https://api.openai.com/v1";
     }
 
     private static String getModelName() {
@@ -120,11 +167,29 @@ public final class AIConversationService {
         return ValidationUtils.notBlank(value) ? value.trim() : "gpt-4o-mini";
     }
 
+    private static String trimTrailingSlash(String value) {
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static String limit(String value, int maxLength) {
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength) + "\n[Context truncated for model request]";
+    }
+
     private static String escapeJson(String value) {
         if (value == null) {
             return "";
         }
-        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "").replace("\t", " ");
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "")
+                .replace("\t", " ");
     }
 
     private static String safe(String value) {
@@ -135,6 +200,6 @@ public final class AIConversationService {
         if (ValidationUtils.isBlank(message)) {
             return "unknown API error";
         }
-        return message.length() > 120 ? message.substring(0, 120) + "..." : message;
+        return message.length() > 180 ? message.substring(0, 180) + "..." : message;
     }
 }
