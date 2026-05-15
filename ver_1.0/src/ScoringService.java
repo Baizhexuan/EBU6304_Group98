@@ -27,11 +27,11 @@ public final class ScoringService {
     }
 
     private static SkillScoringProvider buildProviderFromEnvironment() {
-        String providerMode = System.getenv("AI_SCORING_MODE");
+        String providerMode = AIConfig.get("AI_SCORING_MODE");
         if (ValidationUtils.notBlank(providerMode) && "AI".equalsIgnoreCase(providerMode.trim())) {
             return new AIModelSkillScoringProvider();
         }
-        if (ValidationUtils.notBlank(System.getenv("OPENAI_API_KEY"))) {
+        if (ValidationUtils.notBlank(AIConfig.get("OPENAI_API_KEY"))) {
             return new AIModelSkillScoringProvider();
         }
         return new RuleBasedSkillScoringProvider();
