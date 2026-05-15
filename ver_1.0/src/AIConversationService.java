@@ -1,113 +1,275 @@
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.SwingWorker;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
-public class AIConversationDialog extends JDialog {
-    private final JTextArea questionArea;
-    private final JTextArea answerArea;
-    private final JLabel statusLabel;
-    private final JButton askButton;
-    private final String context;
+public final class AIConversationService {
+    private static final int CONNECT_TIMEOUT_MS = 6000;
+    private static final int READ_TIMEOUT_MS = 20000;
+    private static final int MAX_CONTEXT_CHARS = 5000;
 
-    public AIConversationDialog(JFrame owner, String context) {
-        super(owner, "AI Recruitment Assistant", false);
-        this.context = context;
-        setMinimumSize(new Dimension(760, 560));
-        setSize(820, 620);
-        setLocationRelativeTo(owner);
-
-        JPanel root = new JPanel(new BorderLayout(10, 10));
-        root.setBackground(BaseDashboard.APP_BACKGROUND);
-        root.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
-
-        JPanel header = new JPanel(new BorderLayout(6, 6));
-        header.setOpaque(false);
-        JLabel title = new JLabel("Ask AI about matching, workload, or applicant risk");
-        title.setFont(BaseDashboard.UI_TITLE_FONT);
-        statusLabel = new JLabel(AIConversationService.buildStatusText());
-        statusLabel.setForeground(new Color(82, 91, 96));
-        header.add(title, BorderLayout.NORTH);
-        header.add(statusLabel, BorderLayout.SOUTH);
-        root.add(header, BorderLayout.NORTH);
-
-        questionArea = new JTextArea(5, 52);
-        questionArea.setLineWrap(true);
-        questionArea.setWrapStyleWord(true);
-        questionArea.setText("Which TA should be considered as a safer replacement, and why?");
-        answerArea = new JTextArea();
-        answerArea.setEditable(false);
-        answerArea.setLineWrap(true);
-        answerArea.setWrapStyleWord(true);
-        answerArea.setBackground(BaseDashboard.SURFACE_COLOR);
-        answerArea.setText("Ask a question to generate model-backed recruitment guidance. If OPENAI_API_KEY is not set, the dialog will use a local explainable fallback.");
-
-        JPanel center = new JPanel(new BorderLayout(8, 8));
-        center.setOpaque(false);
-        center.add(new JScrollPane(questionArea), BorderLayout.NORTH);
-        center.add(new JScrollPane(answerArea), BorderLayout.CENTER);
-        root.add(center, BorderLayout.CENTER);
-
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.setOpaque(false);
-        askButton = new JButton("Ask AI");
-        JButton copyButton = new JButton("Copy Response");
-        JButton closeButton = new JButton("Close");
-        BaseDashboard.applyButtonStyle(askButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-        BaseDashboard.applyButtonStyle(copyButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
-        BaseDashboard.applyButtonStyle(closeButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
-        actions.add(askButton);
-        actions.add(copyButton);
-        actions.add(closeButton);
-        root.add(actions, BorderLayout.SOUTH);
-
-        askButton.addActionListener(e -> askModelAsync());
-        copyButton.addActionListener(e -> copyResponse());
-        closeButton.addActionListener(e -> dispose());
-        add(root);
+    private AIConversationService() {
     }
 
-    private void copyResponse() {
-        StringSelection selection = new StringSelection(answerArea.getText());
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
-        statusLabel.setText("Response copied to clipboard.");
-    }
-
-    private void askModelAsync() {
-        final String question = questionArea.getText();
-        askButton.setEnabled(false);
-        statusLabel.setText("Requesting model response...");
-        answerArea.setText("Thinking with the current recruitment context...");
-
-        SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
-            @Override
-            protected String doInBackground() {
-                return AIConversationService.ask(question, context);
+    public static String ask(String question, String context) {
+        if (ValidationUtils.isBlank(question)) {
+            return "Please enter a question about TA matching, workload balancing, or applicant screening.";
+        }
+        if (!isConfigured()) {
+            return buildLocalAnswer(question, context);
+        }
+        try {
+            String response = isChatCompletionsMode()
+                    ? sendChatCompletionsRequest(question, context)
+                    : sendResponsesRequest(question, context);
+            if (ValidationUtils.notBlank(response)) {
+                return "External AI model response (" + getModelName() + ", " + getApiModeLabel() + ")\n\n"
+                        + response.trim();
             }
+            return buildLocalAnswer(question, context) + "\n\nExternal model fallback reason: empty response text.";
+        } catch (Exception ex) {
+            return buildLocalAnswer(question, context)
+                    + "\n\nExternal model fallback reason: " + summariseError(ex.getMessage());
+        }
+    }
 
-            @Override
-            protected void done() {
-                try {
-                    answerArea.setText(get());
-                } catch (Exception ex) {
-                    answerArea.setText("AI request failed: " + ex.getMessage());
+    public static boolean isConfigured() {
+        return ValidationUtils.notBlank(AIConfig.get("OPENAI_API_KEY"));
+    }
+
+    public static String buildStatusText() {
+        if (!isConfigured()) {
+            return "Local fallback mode: set OPENAI_API_KEY to call the external model.";
+        }
+        String endpoint = isChatCompletionsMode() ? "/chat/completions" : "/responses";
+        return "External model ready: " + getModelName() + " via " + getBaseUrl() + endpoint;
+    }
+
+    private static String sendChatCompletionsRequest(String question, String context) throws IOException {
+        URL url = new URL(getBaseUrl() + "/chat/completions");
+        HttpURLConnection connection = openPostConnection(url);
+        String payload = buildChatCompletionsPayload(question, context);
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
+        String body = readFully(stream);
+        if (status < 200 || status >= 300) {
+            throw new IOException("HTTP " + status + " - " + summariseError(body));
+        }
+        return extractChatCompletionText(body);
+    }
+
+    private static String sendResponsesRequest(String question, String context) throws IOException {
+        URL url = new URL(getBaseUrl() + "/responses");
+        HttpURLConnection connection = openPostConnection(url);
+
+        String payload = buildResponsesPayload(question, context);
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
+        String body = readFully(stream);
+        if (status < 200 || status >= 300) {
+            throw new IOException("HTTP " + status + " - " + summariseError(body));
+        }
+        return extractResponsesText(body);
+    }
+
+    private static HttpURLConnection openPostConnection(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + AIConfig.get("OPENAI_API_KEY"));
+        return connection;
+    }
+
+    private static String buildChatCompletionsPayload(String question, String context) {
+        String systemMessage = "You are an explainable AI assistant for a university Teaching Assistant recruitment system. "
+                + "Use the provided context as decision support. Return plain text only. Do not use Markdown, emoji, tables, code blocks, or decorative symbols. "
+                + "Use short labelled sections: Recommendation, Evidence, Risks, Next Action.";
+        String userMessage = "Current recruitment context:\n" + limit(safe(context), MAX_CONTEXT_CHARS)
+                + "\n\nUser question:\n" + question.trim();
+        return "{"
+                + "\"model\":\"" + escapeJson(getModelName()) + "\","
+                + "\"messages\":["
+                + "{\"role\":\"system\",\"content\":\"" + escapeJson(systemMessage) + "\"},"
+                + "{\"role\":\"user\",\"content\":\"" + escapeJson(userMessage) + "\"}"
+                + "],"
+                + "\"temperature\":0.3,"
+                + "\"max_tokens\":700"
+                + "}";
+    }
+
+    private static String buildResponsesPayload(String question, String context) {
+        String instructions = "You are an explainable AI assistant for a university Teaching Assistant recruitment system. "
+                + "Use the provided system context only as decision support. Do not make final hiring decisions blindly. "
+                + "Return plain text only. Do not use Markdown, emoji, tables, code blocks, or decorative symbols. "
+                + "Use short labelled sections: Recommendation, Evidence, Risks, Next Action.";
+        String input = "Current recruitment context:\n" + limit(safe(context), MAX_CONTEXT_CHARS)
+                + "\n\nUser question:\n" + question.trim();
+
+        return "{"
+                + "\"model\":\"" + escapeJson(getModelName()) + "\","
+                + "\"instructions\":\"" + escapeJson(instructions) + "\","
+                + "\"input\":\"" + escapeJson(input) + "\","
+                + "\"max_output_tokens\":700"
+                + "}";
+    }
+
+    private static String extractChatCompletionText(String responseBody) {
+        String content = extractJsonString(responseBody, "content");
+        return ValidationUtils.notBlank(content) ? content : responseBody;
+    }
+
+    private static String extractResponsesText(String responseBody) {
+        String outputText = extractJsonString(responseBody, "output_text");
+        if (ValidationUtils.notBlank(outputText)) {
+            return outputText;
+        }
+        String text = extractJsonString(responseBody, "text");
+        if (ValidationUtils.notBlank(text)) {
+            return text;
+        }
+        return responseBody;
+    }
+
+    private static String extractJsonString(String json, String key) {
+        String marker = "\"" + key + "\":\"";
+        int index = json.indexOf(marker);
+        if (index < 0) {
+            return "";
+        }
+        int start = index + marker.length();
+        StringBuilder value = new StringBuilder();
+        boolean escaping = false;
+        for (int i = start; i < json.length(); i++) {
+            char ch = json.charAt(i);
+            if (escaping) {
+                if (ch == 'n') {
+                    value.append('\n');
+                } else if (ch == 'r') {
+                    value.append('\r');
+                } else if (ch == 't') {
+                    value.append('\t');
+                } else {
+                    value.append(ch);
                 }
-                answerArea.setCaretPosition(0);
-                statusLabel.setText(AIConversationService.buildStatusText());
-                askButton.setEnabled(true);
+                escaping = false;
+                continue;
             }
-        };
-        worker.execute();
+            if (ch == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (ch == '"') {
+                break;
+            }
+            value.append(ch);
+        }
+        return value.toString().trim();
+    }
+
+    private static String buildLocalAnswer(String question, String context) {
+        return "Local AI assistant mode\n"
+                + "Question: " + question.trim() + "\n\n"
+                + "Structured recommendation:\n"
+                + "1. Review workload risk before making another selection.\n"
+                + "2. Compare match score with missing skills and current hours.\n"
+                + "3. Prefer candidates who remain under " + FileStorage.getOverloadLimit() + " hours after assignment.\n"
+                + "4. Record a reviewer note explaining why the final choice was made.\n\n"
+                + "Current system context:\n" + safe(context);
+    }
+
+    private static String readFully(InputStream stream) throws IOException {
+        if (stream == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append('\n');
+            }
+        }
+        return builder.toString().trim();
+    }
+
+    private static String getBaseUrl() {
+        String value = AIConfig.get("OPENAI_BASE_URL");
+        if (ValidationUtils.notBlank(value)) {
+            return trimTrailingSlash(value.trim());
+        }
+        return isQwenModel() ? "https://dashscope.aliyuncs.com/compatible-mode/v1" : "https://api.openai.com/v1";
+    }
+
+    private static String getModelName() {
+        String value = AIConfig.get("OPENAI_MODEL");
+        return ValidationUtils.notBlank(value) ? value.trim() : "qwen-plus";
+    }
+
+    private static boolean isChatCompletionsMode() {
+        String mode = AIConfig.get("AI_API_MODE");
+        if (ValidationUtils.notBlank(mode)) {
+            return "CHAT_COMPLETIONS".equalsIgnoreCase(mode.trim())
+                    || "QWEN".equalsIgnoreCase(mode.trim())
+                    || "DASHSCOPE".equalsIgnoreCase(mode.trim());
+        }
+        return isQwenModel() || getBaseUrl().toLowerCase().contains("dashscope");
+    }
+
+    private static boolean isQwenModel() {
+        return getModelName().toLowerCase().startsWith("qwen");
+    }
+
+    private static String getApiModeLabel() {
+        return isChatCompletionsMode() ? "chat/completions" : "responses";
+    }
+
+    private static String trimTrailingSlash(String value) {
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static String limit(String value, int maxLength) {
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength) + "\n[Context truncated for model request]";
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "")
+                .replace("\t", " ");
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String summariseError(String message) {
+        if (ValidationUtils.isBlank(message)) {
+            return "unknown API error";
+        }
+        return message.length() > 180 ? message.substring(0, 180) + "..." : message;
     }
 }
