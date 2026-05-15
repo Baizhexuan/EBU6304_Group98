@@ -14,6 +14,7 @@ software_engineering/
 │   ├── AdminRecommendationService.java
 │   ├── AIConversationService.java
 │   ├── AIConversationDialog.java
+│   ├── AIConfig.java
 │   ├── FilterToolbar.java
 │   ├── Notification.java
 │   ├── NotificationService.java
@@ -40,7 +41,8 @@ software_engineering/
 │   └── admin_workload_report_*.csv
 ├── docs/
 │   ├── architecture.md
-│   └── task_plan_alignment.md
+│   ├── task_plan_alignment.md
+│   └── final_requirement_checklist.md
 ├── compile.sh
 ├── run.sh
 └── README.md
@@ -79,3 +81,12 @@ software_engineering/
 - `FilterToolbar` adds a compact attribute selector plus keyword input while preserving aligned per-column filters.
 - `AIConversationDialog` and `AIConversationService` add an interactive Admin AI assistant with external model support and local explainable fallback.
 - `AdminRecommendationService` now includes risk labels, projected-load reasoning, and suggested next actions.
+
+
+## Iteration 1.10 Final Demo Refinement
+
+- `AIConfig` reads local `config/ai.properties` or environment variables so qwen-plus can be used without hard-coding secrets.
+- `AIConversationService` asks external models for plain-text structured recommendations without Markdown or emoji.
+- `AIConversationDialog` includes a Copy Response action for report and demo use.
+- `BaseDashboard` centralises lighter button and table styling for more consistent Admin, TA, and MO screens.
+- `docs/final_requirement_checklist.md` records the final feature coverage and remaining limitations.
