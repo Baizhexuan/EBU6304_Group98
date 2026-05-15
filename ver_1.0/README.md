@@ -159,6 +159,4 @@ If these settings are not available, the dialog and scoring flow fall back to lo
 - `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
 - `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog
 - `ver_1.9`: Admin AI Assistant supports real external model calls, including qwen-plus via DashScope compatible chat completions
-# Python_ChatBot
-
 - `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, and final requirement checklist
