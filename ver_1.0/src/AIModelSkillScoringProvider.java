@@ -1,53 +1,3 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
-public class AIModelSkillScoringProvider implements SkillScoringProvider {
-    private static final int CONNECT_TIMEOUT_MS = 3000;
-    private static final int READ_TIMEOUT_MS = 6000;
-
-    @Override
-    public MatchResult evaluate(TAProfile profile, Job job) {
-        MatchResult fallback = MatchingService.evaluate(profile, job);
-        if (profile == null || job == null) {
-            return new MatchResult(fallback.score, fallback.summary + " | AI placeholder received incomplete input.");
-        }
-        if (!isReady()) {
-            return new MatchResult(fallback.score,
-                    fallback.summary + " | AI placeholder ready but inactive: " + getStatusDescription());
-        }
-
-        try {
-            String response = sendChatCompletion(profile, job, fallback);
-            MatchResult parsed = parseModelResponse(response, fallback);
-            return new MatchResult(parsed.score, parsed.summary + " | Source: external AI placeholder call");
-        } catch (Exception ex) {
-            return new MatchResult(fallback.score,
-                    fallback.summary + " | AI fallback engaged: " + summariseError(ex.getMessage()));
-        }
-    }
-
-    @Override
-    public String getProviderName() {
-        return "AIModelSkillScoringProvider(" + getModelName() + ")";
-    }
-
-    @Override
-    public boolean isExternalModel() {
-        return true;
-    }
-
-    @Override
-    public boolean isReady() {
-        return ValidationUtils.notBlank(getApiKey());
-    }
-
-    @Override
     public String getStatusDescription() {
         if (!isReady()) {
             return "Set OPENAI_API_KEY and optionally AI_SCORING_MODE=AI to enable live scoring.";
@@ -176,17 +126,24 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
     }
 
     private String getApiKey() {
-        return System.getenv("OPENAI_API_KEY");
+        return AIConfig.get("OPENAI_API_KEY");
     }
 
     private String getBaseUrl() {
-        String value = System.getenv("OPENAI_BASE_URL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "https://api.openai.com/v1";
+        String value = AIConfig.get("OPENAI_BASE_URL");
+        return ValidationUtils.notBlank(value) ? trimTrailingSlash(value.trim()) : "https://dashscope.aliyuncs.com/compatible-mode/v1";
     }
 
     private String getModelName() {
-        String value = System.getenv("OPENAI_MODEL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "gpt-4o-mini";
+        String value = AIConfig.get("OPENAI_MODEL");
+        return ValidationUtils.notBlank(value) ? value.trim() : "qwen-plus";
+    }
+
+    private String trimTrailingSlash(String value) {
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private String safe(String value) {
