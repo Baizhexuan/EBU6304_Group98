@@ -1,4 +1,4 @@
-# ver_1.8 Task Plan Alignment
+# ver_1.10 Task Plan Alignment
 
 This note checks the current `ver_1.0` demo codebase against `/Users/yukikana0108/Downloads/task_plan.md` and the coursework brief.
 
@@ -69,10 +69,15 @@ At the same time, it does not yet fully satisfy the complete task plan for L1-L6
 
 ## Version Conclusion
 
-`ver_1.8` is best described as:
+`ver_1.10` is best described as:
 
 - a product demo that satisfies the mandatory technical constraints
 - a selected-core-feature prototype that covers the main TA / MO / Admin workflow plus expanded notification support, cross-platform UI polish, and richer AI-assisted decision support
 - a mostly-complete L2 foundation with an integrated partial implementation of L3-L4
 - an AI-placeholder bridge into later L5 integration work with clearer explainability than earlier builds
 - not yet the entire final coursework package for all L1-L6 deliverables
+
+
+## Final Checklist Link
+
+See `docs/final_requirement_checklist.md` for the current feature-by-feature final requirement check.

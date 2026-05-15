@@ -2,3 +2,6 @@ bin/
 .DS_Store
 src/.DS_Store
 src/models/.DS_Store
+config/ai.properties
+ai.properties
+data/notifications.csv

@@ -146,6 +146,7 @@ public class MODashboard extends BaseDashboard {
         myJobsTable = new JTable(myJobsModel);
         myJobsTable.setAutoCreateRowSorter(true);
         myJobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        styleTable(myJobsTable);
 
         JPanel filterPanel = new JPanel(new GridLayout(2, 6, 6, 6));
         filterPanel.setOpaque(false);
@@ -185,8 +186,7 @@ public class MODashboard extends BaseDashboard {
         myJobsSummaryLabel = new JLabel("Job summary will appear here after refresh.");
         bottom.add(myJobsSummaryLabel, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.setOpaque(false);
+        JPanel actions = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton toggleButton = new JButton("Open / Close Selected Job");
         styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
@@ -230,7 +230,7 @@ public class MODashboard extends BaseDashboard {
         applicantsTable = new JTable(applicantsModel);
         applicantsTable.setAutoCreateRowSorter(true);
         applicantsTable.setDefaultRenderer(Object.class, new MatchRenderer());
-        applicantsTable.setRowHeight(24);
+        styleTable(applicantsTable);
 
         JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
         filterPanel.setOpaque(false);
@@ -282,8 +282,7 @@ public class MODashboard extends BaseDashboard {
         applicantSummaryLabel = new JLabel("Applicant summary will appear here after refresh.");
         actions.add(applicantSummaryLabel, BorderLayout.CENTER);
 
-        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonRow.setOpaque(false);
+        JPanel buttonRow = buildActionRow();
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
         styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);

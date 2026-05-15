@@ -156,7 +156,7 @@ public class TADashboard extends BaseDashboard {
         };
         jobsTable = new JTable(jobsModel);
         jobsTable.setAutoCreateRowSorter(true);
-        jobsTable.setRowHeight(24);
+        styleTable(jobsTable);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
@@ -205,8 +205,7 @@ public class TADashboard extends BaseDashboard {
         jobInsightLabel = new JLabel("Match insight will appear here after refresh.");
         bottom.add(jobInsightLabel, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttons.setOpaque(false);
+        JPanel buttons = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton applyButton = new JButton("Apply for Selected Job");
         styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
@@ -244,7 +243,7 @@ public class TADashboard extends BaseDashboard {
         applicationsTable = new JTable(applicationsModel);
         applicationsTable.setAutoCreateRowSorter(true);
         applicationsTable.setDefaultRenderer(Object.class, new StatusRenderer());
-        applicationsTable.setRowHeight(24);
+        styleTable(applicationsTable);
 
         JPanel filterPanel = new JPanel(new GridLayout(2, 7, 6, 6));
         filterPanel.setOpaque(false);
@@ -324,7 +323,7 @@ public class TADashboard extends BaseDashboard {
         notificationsTable = new JTable(notificationsModel);
         notificationsTable.setAutoCreateRowSorter(true);
         notificationsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        notificationsTable.setRowHeight(24);
+        styleTable(notificationsTable);
         notificationsTable.setDefaultRenderer(Object.class, new NotificationRenderer());
         panel.add(new JScrollPane(notificationsTable), BorderLayout.CENTER);
 

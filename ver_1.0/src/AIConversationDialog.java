@@ -2,6 +2,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -60,16 +62,26 @@ public class AIConversationDialog extends JDialog {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actions.setOpaque(false);
         askButton = new JButton("Ask AI");
+        JButton copyButton = new JButton("Copy Response");
         JButton closeButton = new JButton("Close");
         BaseDashboard.applyButtonStyle(askButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-        BaseDashboard.applyButtonStyle(closeButton, new Color(225, 234, 238), BaseDashboard.ACCENT_COLOR);
+        BaseDashboard.applyButtonStyle(copyButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
+        BaseDashboard.applyButtonStyle(closeButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
         actions.add(askButton);
+        actions.add(copyButton);
         actions.add(closeButton);
         root.add(actions, BorderLayout.SOUTH);
 
         askButton.addActionListener(e -> askModelAsync());
+        copyButton.addActionListener(e -> copyResponse());
         closeButton.addActionListener(e -> dispose());
         add(root);
+    }
+
+    private void copyResponse() {
+        StringSelection selection = new StringSelection(answerArea.getText());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+        statusLabel.setText("Response copied to clipboard.");
     }
 
     private void askModelAsync() {

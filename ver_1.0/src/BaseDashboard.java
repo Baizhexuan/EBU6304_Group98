@@ -1,6 +1,7 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
 import javax.swing.BorderFactory;
@@ -14,15 +15,19 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 public abstract class BaseDashboard extends JFrame {
     protected static final Font UI_TITLE_FONT = new Font("SansSerif", Font.BOLD, 16);
-    protected static final Color APP_BACKGROUND = new Color(245, 242, 235);
-    protected static final Color SURFACE_COLOR = new Color(255, 252, 247);
-    protected static final Color ACCENT_COLOR = new Color(33, 76, 95);
-    protected static final Color SOFT_ACCENT = new Color(210, 230, 236);
+    protected static final Font UI_BODY_FONT = new Font("SansSerif", Font.PLAIN, 13);
+    protected static final Color APP_BACKGROUND = new Color(247, 248, 249);
+    protected static final Color SURFACE_COLOR = Color.WHITE;
+    protected static final Color ACCENT_COLOR = new Color(32, 78, 92);
+    protected static final Color SOFT_ACCENT = new Color(226, 237, 240);
+    protected static final Color BORDER_COLOR = new Color(218, 224, 228);
+    protected static final Color TEXT_MUTED = new Color(82, 91, 96);
 
     protected final User currentUser;
     protected final JTabbedPane tabs;
@@ -32,7 +37,7 @@ public abstract class BaseDashboard extends JFrame {
         setTitle(roleTitle + " - " + currentUser.getSafeDisplayName());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(width, height);
-        setMinimumSize(new java.awt.Dimension(860, 620));
+        setMinimumSize(new java.awt.Dimension(960, 680));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         getContentPane().setBackground(APP_BACKGROUND);
@@ -61,6 +66,7 @@ public abstract class BaseDashboard extends JFrame {
         tabs = new JTabbedPane();
         tabs.setFont(new Font("SansSerif", Font.BOLD, 13));
         tabs.setBackground(SURFACE_COLOR);
+        tabs.setForeground(new Color(45, 54, 58));
         tabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         add(tabs, BorderLayout.CENTER);
     }
@@ -85,15 +91,16 @@ public abstract class BaseDashboard extends JFrame {
         intro.setLayout(new BoxLayout(intro, BoxLayout.Y_AXIS));
         intro.setBackground(SURFACE_COLOR);
         intro.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(219, 224, 228)),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)));
+                BorderFactory.createLineBorder(BORDER_COLOR),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
 
         JLabel heading = new JLabel(title);
         heading.setFont(new Font("SansSerif", Font.BOLD, 16));
         heading.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel summary = new JLabel("<html><div style='width:720px;'>" + body + "</div></html>");
-        summary.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        JLabel summary = new JLabel("<html><div style='width:760px;'>" + body + "</div></html>");
+        summary.setFont(UI_BODY_FONT);
+        summary.setForeground(TEXT_MUTED);
         summary.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         intro.add(heading);
@@ -125,11 +132,32 @@ public abstract class BaseDashboard extends JFrame {
         button.setForeground(foreground);
         button.setFocusPainted(false);
         button.setHorizontalAlignment(SwingConstants.CENTER);
-        button.setMargin(new Insets(8, 14, 8, 14));
+        button.setMargin(new Insets(6, 12, 6, 12));
         button.setFont(new Font("SansSerif", Font.BOLD, 13));
+        button.setPreferredSize(new Dimension(Math.max(104, button.getPreferredSize().width), 36));
         button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : ACCENT_COLOR),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(22, 64, 78) : new Color(178, 191, 198)),
+                BorderFactory.createEmptyBorder(7, 12, 7, 12)));
+    }
+
+    protected void styleTable(JTable table) {
+        table.setRowHeight(30);
+        table.setShowGrid(true);
+        table.setGridColor(new Color(232, 236, 238));
+        table.setFillsViewportHeight(true);
+        table.setFont(UI_BODY_FONT);
+        table.setSelectionBackground(new Color(216, 233, 239));
+        table.setSelectionForeground(new Color(28, 44, 50));
+        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(239, 243, 245));
+        table.getTableHeader().setForeground(new Color(45, 54, 58));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 34));
+    }
+
+    protected JPanel buildActionRow() {
+        JPanel actions = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        return actions;
     }
 
     protected void logout() {

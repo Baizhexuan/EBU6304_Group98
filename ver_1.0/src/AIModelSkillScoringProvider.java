@@ -176,17 +176,24 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
     }
 
     private String getApiKey() {
-        return System.getenv("OPENAI_API_KEY");
+        return AIConfig.get("OPENAI_API_KEY");
     }
 
     private String getBaseUrl() {
-        String value = System.getenv("OPENAI_BASE_URL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "https://api.openai.com/v1";
+        String value = AIConfig.get("OPENAI_BASE_URL");
+        return ValidationUtils.notBlank(value) ? trimTrailingSlash(value.trim()) : "https://dashscope.aliyuncs.com/compatible-mode/v1";
     }
 
     private String getModelName() {
-        String value = System.getenv("OPENAI_MODEL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "gpt-4o-mini";
+        String value = AIConfig.get("OPENAI_MODEL");
+        return ValidationUtils.notBlank(value) ? value.trim() : "qwen-plus";
+    }
+
+    private String trimTrailingSlash(String value) {
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private String safe(String value) {

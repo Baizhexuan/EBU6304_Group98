@@ -23,9 +23,12 @@ public final class AIConversationService {
             return buildLocalAnswer(question, context);
         }
         try {
-            String response = sendResponsesRequest(question, context);
+            String response = isChatCompletionsMode()
+                    ? sendChatCompletionsRequest(question, context)
+                    : sendResponsesRequest(question, context);
             if (ValidationUtils.notBlank(response)) {
-                return "External AI model response (" + getModelName() + ")\n\n" + response.trim();
+                return "External AI model response (" + getModelName() + ", " + getApiModeLabel() + ")\n\n"
+                        + response.trim();
             }
             return buildLocalAnswer(question, context) + "\n\nExternal model fallback reason: empty response text.";
         } catch (Exception ex) {
@@ -35,25 +38,37 @@ public final class AIConversationService {
     }
 
     public static boolean isConfigured() {
-        return ValidationUtils.notBlank(System.getenv("OPENAI_API_KEY"));
+        return ValidationUtils.notBlank(AIConfig.get("OPENAI_API_KEY"));
     }
 
     public static String buildStatusText() {
         if (!isConfigured()) {
             return "Local fallback mode: set OPENAI_API_KEY to call the external model.";
         }
-        return "External model ready: " + getModelName() + " via " + getBaseUrl() + "/responses";
+        String endpoint = isChatCompletionsMode() ? "/chat/completions" : "/responses";
+        return "External model ready: " + getModelName() + " via " + getBaseUrl() + endpoint;
+    }
+
+    private static String sendChatCompletionsRequest(String question, String context) throws IOException {
+        URL url = new URL(getBaseUrl() + "/chat/completions");
+        HttpURLConnection connection = openPostConnection(url);
+        String payload = buildChatCompletionsPayload(question, context);
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
+        String body = readFully(stream);
+        if (status < 200 || status >= 300) {
+            throw new IOException("HTTP " + status + " - " + summariseError(body));
+        }
+        return extractChatCompletionText(body);
     }
 
     private static String sendResponsesRequest(String question, String context) throws IOException {
         URL url = new URL(getBaseUrl() + "/responses");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        connection.setReadTimeout(READ_TIMEOUT_MS);
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY"));
+        HttpURLConnection connection = openPostConnection(url);
 
         String payload = buildResponsesPayload(question, context);
         try (OutputStream output = connection.getOutputStream()) {
@@ -69,10 +84,39 @@ public final class AIConversationService {
         return extractResponsesText(body);
     }
 
+    private static HttpURLConnection openPostConnection(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + AIConfig.get("OPENAI_API_KEY"));
+        return connection;
+    }
+
+    private static String buildChatCompletionsPayload(String question, String context) {
+        String systemMessage = "You are an explainable AI assistant for a university Teaching Assistant recruitment system. "
+                + "Use the provided context as decision support. Return plain text only. Do not use Markdown, emoji, tables, code blocks, or decorative symbols. "
+                + "Use short labelled sections: Recommendation, Evidence, Risks, Next Action.";
+        String userMessage = "Current recruitment context:\n" + limit(safe(context), MAX_CONTEXT_CHARS)
+                + "\n\nUser question:\n" + question.trim();
+        return "{"
+                + "\"model\":\"" + escapeJson(getModelName()) + "\","
+                + "\"messages\":["
+                + "{\"role\":\"system\",\"content\":\"" + escapeJson(systemMessage) + "\"},"
+                + "{\"role\":\"user\",\"content\":\"" + escapeJson(userMessage) + "\"}"
+                + "],"
+                + "\"temperature\":0.3,"
+                + "\"max_tokens\":700"
+                + "}";
+    }
+
     private static String buildResponsesPayload(String question, String context) {
         String instructions = "You are an explainable AI assistant for a university Teaching Assistant recruitment system. "
                 + "Use the provided system context only as decision support. Do not make final hiring decisions blindly. "
-                + "Return concise advice with: recommendation, evidence, risks, and next action.";
+                + "Return plain text only. Do not use Markdown, emoji, tables, code blocks, or decorative symbols. "
+                + "Use short labelled sections: Recommendation, Evidence, Risks, Next Action.";
         String input = "Current recruitment context:\n" + limit(safe(context), MAX_CONTEXT_CHARS)
                 + "\n\nUser question:\n" + question.trim();
 
@@ -82,6 +126,11 @@ public final class AIConversationService {
                 + "\"input\":\"" + escapeJson(input) + "\","
                 + "\"max_output_tokens\":700"
                 + "}";
+    }
+
+    private static String extractChatCompletionText(String responseBody) {
+        String content = extractJsonString(responseBody, "content");
+        return ValidationUtils.notBlank(content) ? content : responseBody;
     }
 
     private static String extractResponsesText(String responseBody) {
@@ -158,13 +207,34 @@ public final class AIConversationService {
     }
 
     private static String getBaseUrl() {
-        String value = System.getenv("OPENAI_BASE_URL");
-        return ValidationUtils.notBlank(value) ? trimTrailingSlash(value.trim()) : "https://api.openai.com/v1";
+        String value = AIConfig.get("OPENAI_BASE_URL");
+        if (ValidationUtils.notBlank(value)) {
+            return trimTrailingSlash(value.trim());
+        }
+        return isQwenModel() ? "https://dashscope.aliyuncs.com/compatible-mode/v1" : "https://api.openai.com/v1";
     }
 
     private static String getModelName() {
-        String value = System.getenv("OPENAI_MODEL");
-        return ValidationUtils.notBlank(value) ? value.trim() : "gpt-4o-mini";
+        String value = AIConfig.get("OPENAI_MODEL");
+        return ValidationUtils.notBlank(value) ? value.trim() : "qwen-plus";
+    }
+
+    private static boolean isChatCompletionsMode() {
+        String mode = AIConfig.get("AI_API_MODE");
+        if (ValidationUtils.notBlank(mode)) {
+            return "CHAT_COMPLETIONS".equalsIgnoreCase(mode.trim())
+                    || "QWEN".equalsIgnoreCase(mode.trim())
+                    || "DASHSCOPE".equalsIgnoreCase(mode.trim());
+        }
+        return isQwenModel() || getBaseUrl().toLowerCase().contains("dashscope");
+    }
+
+    private static boolean isQwenModel() {
+        return getModelName().toLowerCase().startsWith("qwen");
+    }
+
+    private static String getApiModeLabel() {
+        return isChatCompletionsMode() ? "chat/completions" : "responses";
     }
 
     private static String trimTrailingSlash(String value) {

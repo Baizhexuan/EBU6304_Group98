@@ -123,7 +123,7 @@ public class AdminDashboard extends BaseDashboard {
         workloadTable.setAutoCreateRowSorter(true);
         workloadTable.setDefaultRenderer(Object.class, new WorkloadRenderer());
         workloadTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        workloadTable.setRowHeight(26);
+        styleTable(workloadTable);
         workloadTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 refreshRecommendationPanel();
@@ -187,8 +187,7 @@ public class AdminDashboard extends BaseDashboard {
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         panel.add(splitPane, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.setOpaque(false);
+        JPanel actions = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton recommendationButton = new JButton("Refresh Advice");
         JButton aiDialogButton = new JButton("Ask AI Assistant");
@@ -232,7 +231,7 @@ public class AdminDashboard extends BaseDashboard {
         };
         applicationsTable = new JTable(applicationsModel);
         applicationsTable.setAutoCreateRowSorter(true);
-        applicationsTable.setRowHeight(24);
+        styleTable(applicationsTable);
         applicationsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         applicationsTable.getColumnModel().getColumn(4)
                 .setCellEditor(new DefaultCellEditor(new JComboBox<String>(APPLICATION_STATUSES)));
@@ -283,8 +282,7 @@ public class AdminDashboard extends BaseDashboard {
         center.add(new JScrollPane(applicationsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.setOpaque(false);
+        JPanel actions = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
@@ -324,7 +322,7 @@ public class AdminDashboard extends BaseDashboard {
         };
         jobsTable = new JTable(jobsModel);
         jobsTable.setAutoCreateRowSorter(true);
-        jobsTable.setRowHeight(24);
+        styleTable(jobsTable);
         jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jobsTable.getColumnModel().getColumn(7)
                 .setCellEditor(new DefaultCellEditor(new JComboBox<String>(JOB_STATUSES)));
@@ -373,8 +371,7 @@ public class AdminDashboard extends BaseDashboard {
         center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.setOpaque(false);
+        JPanel actions = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");

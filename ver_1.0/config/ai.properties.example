@@ -1,0 +1,7 @@
+# Copy this file to config/ai.properties and fill in your own key.
+# Do not commit config/ai.properties to GitHub.
+OPENAI_API_KEY=your_bailian_key_here
+OPENAI_MODEL=qwen-plus
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+AI_API_MODE=CHAT_COMPLETIONS
+AI_SCORING_MODE=AI

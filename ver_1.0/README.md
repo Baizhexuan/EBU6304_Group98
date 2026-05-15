@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.8
+# EBU6304 Group 98 Demo Version 1.10
 
 BUPT International School Teaching Assistant Recruitment System.
 
@@ -108,16 +108,26 @@ Place the final product screenshots in `screenshots/` using the file names below
 
 ## Optional AI Model Configuration
 
-The Admin AI Assistant dialog calls the OpenAI Responses API when `OPENAI_API_KEY` is available. The scoring provider can also use the same key when `AI_SCORING_MODE=AI` is enabled.
+The Admin AI Assistant dialog can call `qwen-plus` through Alibaba Bailian / DashScope OpenAI-compatible mode. API keys must stay local and must not be committed to GitHub.
+
+Recommended local file setup:
 
 ```bash
-export OPENAI_API_KEY=your_key_here
-export OPENAI_MODEL=gpt-4o-mini
-export OPENAI_BASE_URL=https://api.openai.com/v1
+cp config/ai.properties.example config/ai.properties
+# then edit config/ai.properties and add your own Bailian API key
+```
+
+Equivalent environment-variable setup:
+
+```bash
+export OPENAI_API_KEY=your_bailian_key_here
+export OPENAI_MODEL=qwen-plus
+export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+export AI_API_MODE=CHAT_COMPLETIONS
 export AI_SCORING_MODE=AI
 ```
 
-If these variables are not set, the dialog and scoring flow fall back to local explainable recommendation logic so the demo remains usable offline.
+If these settings are not available, the dialog and scoring flow fall back to local explainable recommendation logic so the demo remains usable offline.
 
 ## Demo Accounts
 
@@ -133,6 +143,7 @@ If these variables are not set, the dialog and scoring flow fall back to local e
 - `data/`: CSV data files
 - `docs/architecture.md`: structure overview
 - `docs/task_plan_alignment.md`: requirement and task-plan comparison notes
+- `docs/final_requirement_checklist.md`: final feature and requirement checklist
 - `compile.sh`: compile script
 - `run.sh`: run script
 
@@ -147,4 +158,7 @@ If these variables are not set, the dialog and scoring flow fall back to local e
 - `ver_1.6`: CSV-backed notifications, richer AI explanation surfaces, and aligned multi-field search across key tables
 - `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
 - `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog
-- `ver_1.9`: Admin AI Assistant uses a real Responses API call when `OPENAI_API_KEY` is configured
+- `ver_1.9`: Admin AI Assistant supports real external model calls, including qwen-plus via DashScope compatible chat completions
+# Python_ChatBot
+
+- `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, and final requirement checklist
