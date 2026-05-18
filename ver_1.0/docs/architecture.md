@@ -1,7 +1,7 @@
 # Demo Architecture
 
 ```text
-software_engineering/
+ver_1.0/
 ├── src/
 │   ├── Main.java
 │   ├── DemoMetadata.java
@@ -31,7 +31,11 @@ software_engineering/
 │   ├── TAProfile.java
 │   ├── Job.java
 │   ├── Application.java
-│   └── SystemSmokeTest.java
+│   ├── SystemSmokeTest.java
+│   ├── AuthFlowTest.java
+│   ├── WorkflowRulesTest.java
+│   ├── CsvPersistenceTest.java
+│   └── TestSupport.java
 ├── data/
 │   ├── users.csv
 │   ├── profiles.csv
@@ -39,12 +43,19 @@ software_engineering/
 │   ├── applications.csv
 │   ├── notifications.csv
 │   └── admin_workload_report_*.csv
+├── config/
+│   └── ai.properties.example
 ├── docs/
 │   ├── architecture.md
 │   ├── task_plan_alignment.md
-│   └── final_requirement_checklist.md
+│   ├── final_requirement_checklist.md
+│   ├── testing_strategy.md
+│   └── user_manual.md
+├── screenshots/
 ├── compile.sh
 ├── run.sh
+├── test.sh
+├── javadoc.sh
 └── README.md
 ```
 
@@ -53,40 +64,14 @@ software_engineering/
 - UI layer: `LoginFrame`, `RegisterFrame`, `BaseDashboard`, `TADashboard`, `MODashboard`, `AdminDashboard`
 - Domain layer: `User`, `TAProfile`, `Job`, `Application`, `Notification`, `MatchResult`
 - Service layer: `MatchingService`, `ScoringService`, `AdminRecommendationService`, `NotificationService`, `ValidationUtils`
-- AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIModelSkillScoringProvider`, `AIIntegrationPlan`
+- AI integration seam: `SkillScoringProvider`, `RuleBasedSkillScoringProvider`, `AIModelSkillScoringProvider`, `AIConversationService`, `AIConversationDialog`, `AIConfig`, `AIIntegrationPlan`
 - Persistence layer: `FileStorage`
-- Verification entry: `SystemSmokeTest`
+- Verification layer: `SystemSmokeTest`, `AuthFlowTest`, `WorkflowRulesTest`, `CsvPersistenceTest`, `TestSupport`
 
-## Iteration 1.6 Additions
+## Final-Delivery Design Notes
 
-- `Notification` and `NotificationService`: implement an in-app notification path for TA status updates
-- `FileStorage`: now manages `notifications.csv` in the same text-based persistence style as the rest of the demo
-- `TADashboard`: adds a notification tab, unread tracking, aligned per-column search fields, and clearer missing-skills AI output
-- `MODashboard`: adds aligned per-column filters and automatically generates notifications when applicant decisions are made
-- `AdminDashboard`: replaces single keyword search bars with aligned field-by-field filters and expands AI explanation visibility
-- `LoginFrame` and `BaseDashboard`: strengthen visible button outlines and final-demo interaction clarity
-
-
-## Iteration 1.7 Notification Extension
-
-- `NotificationService.notifyProfileRequired` adds a deduplicated unread reminder when a TA profile is missing or incomplete.
-- `NotificationService.markProfileReminderResolved` clears the reminder after a complete profile is saved.
-- `NotificationService.notifyJobClosed` sends job-closure alerts to TAs with active applications when MO or Admin closes a job.
-- Notifications remain stored in `data/notifications.csv`, preserving the no-database coursework constraint.
-
-
-## Iteration 1.8 UI and AI Assistant Update
-
-- `BaseDashboard` and `RegisterFrame` use a basic Swing button UI for more reliable text and border rendering across macOS, Windows, and Linux.
-- `FilterToolbar` adds a compact attribute selector plus keyword input while preserving aligned per-column filters.
-- `AIConversationDialog` and `AIConversationService` add an interactive Admin AI assistant with external model support and local explainable fallback.
-- `AdminRecommendationService` now includes risk labels, projected-load reasoning, and suggested next actions.
-
-
-## Iteration 1.10 Final Demo Refinement
-
-- `AIConfig` reads local `config/ai.properties` or environment variables so qwen-plus can be used without hard-coding secrets.
-- `AIConversationService` asks external models for plain-text structured recommendations without Markdown or emoji.
-- `AIConversationDialog` includes a Copy Response action for report and demo use.
-- `BaseDashboard` centralises lighter button and table styling for more consistent Admin, TA, and MO screens.
-- `docs/final_requirement_checklist.md` records the final feature coverage and remaining limitations.
+- The project remains a stand-alone Java Swing application to satisfy the coursework platform constraint.
+- Persistence remains CSV-only so the app stays simple, transparent, and easy to inspect during demo and viva.
+- Scoring is deliberately modular through `SkillScoringProvider` so the offline explainable path and the optional external-model path can coexist safely.
+- Notifications, admin workload checks, and recommendation text are implemented inside the same lightweight architecture rather than through background services or external infrastructure.
+- Final-delivery evidence is distributed across source code, test scripts, JavaDoc comments, the user manual, and the requirement checklist in this folder.

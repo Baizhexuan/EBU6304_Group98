@@ -1,0 +1,23 @@
+# Final Requirement Checklist
+
+This checklist maps the current `ver_1.0` demo to the final coursework expectations in an evidence-oriented format.
+
+| Requirement | Implemented evidence | How to demonstrate it | Testing evidence | Remaining limitation |
+| --- | --- | --- | --- | --- |
+| Stand-alone Java application | `src/Main.java`, Swing frames and dashboards | Run `./run.sh` and navigate login -> TA/MO/Admin flows | `SystemSmokeTest`, manual demo | No web deployment variant is included |
+| Text-file persistence only | `src/FileStorage.java`, `data/*.csv` | Show data files updating after profile save, application, or notification events | `CsvPersistenceTest` | CSV is intentionally simple and not a full enterprise persistence layer |
+| TA can create applicant profile | `src/TADashboard.java`, `src/TAProfile.java` | Log in as TA, open `My Profile`, save a complete profile | `WorkflowRulesTest`, manual TA flow | No file upload storage beyond local CV path reference |
+| TA can record CV details | `src/TADashboard.java` with `JFileChooser` | Use the CV browse button and save the chosen path | Manual TA flow | CV contents are not parsed or validated |
+| TA can browse available jobs | `src/TADashboard.java`, `src/FilterToolbar.java` | Open `Browse Jobs`, use both toolbar and aligned filters | `WorkflowRulesTest`, manual TA flow | Search is UI-driven, not full-text ranked |
+| TA can apply for jobs | `src/TADashboard.java`, `src/Application.java` | Apply to an open job and verify the new row in `My Applications` | `WorkflowRulesTest` | No multi-step approval workflow beyond status updates |
+| TA can check application status | `src/TADashboard.java` | Open `My Applications` and show status, note, and withdraw action | Manual TA flow | No separate notification center outside the app |
+| MO can post jobs | `src/MODashboard.java`, `src/Job.java` | Post a new job and refresh `My Job Posts` | Manual MO flow | No separate approval gate before a post becomes visible |
+| MO can select or reject applicants | `src/MODashboard.java`, `src/NotificationService.java` | Change an applicant status and show the generated TA notification | `WorkflowRulesTest`, manual MO flow | Bulk review tools are not implemented |
+| Admin can check TA workload | `src/AdminDashboard.java`, `src/AdminRecommendationService.java` | Open `Workload Monitor`, inspect summaries, export a report | `WorkflowRulesTest`, `SystemSmokeTest`, manual admin flow | Workload is based on selected job hours rather than calendar integration |
+| AI-assisted skill matching | `src/MatchingService.java`, `src/ScoringService.java`, providers in `src/*SkillScoringProvider*.java` | Show match score, summary, missing skills, and provider status | `SystemSmokeTest`, `WorkflowRulesTest` | Recommendation quality depends on local skills text or optional external model |
+| Explainable AI / responsible fallback | `src/ScoringService.java`, `src/AIConversationService.java`, `src/AIConversationDialog.java` | Show local rule-based source labels or external-model readiness in Admin UI | `WorkflowRulesTest`, manual admin AI flow | External AI still requires local API key and internet access |
+| US-8 notification support | `src/NotificationService.java`, `src/TADashboard.java`, `src/MODashboard.java`, `src/AdminDashboard.java` | Show decision notifications, profile reminders, and job-closure alerts | `SystemSmokeTest`, `WorkflowRulesTest` | No email/SMS delivery outside the app |
+| Final-delivery test evidence | `src/SystemSmokeTest.java`, `src/AuthFlowTest.java`, `src/WorkflowRulesTest.java`, `src/CsvPersistenceTest.java`, `test.sh` | Run `./test.sh` and review console output | The scripts themselves are the evidence | Still lighter than a full JUnit/coverage suite |
+| JavaDoc / code documentation | JavaDoc comments in storage, scoring, notification, admin recommendation, and dashboard entry classes | Run `./javadoc.sh` and inspect generated HTML | Manual documentation generation | Not every internal UI helper method is individually documented |
+| User manual with screenshots | `docs/user_manual.md`, `screenshots/*.png` | Open the manual and cross-check screenshot references during demo prep | Manual review | Screenshots must stay aligned with the latest UI build |
+| README with setup instructions | `README.md`, `compile.sh`, `run.sh`, `javadoc.sh`, `test.sh` | Open README and follow setup, test, and AI configuration steps | Manual review | Wider agile/report evidence still lives outside this folder |
