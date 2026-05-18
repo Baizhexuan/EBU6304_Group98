@@ -1,5 +1,4 @@
-# Copy this file to config/ai.properties and fill in your own key.
-# Do not commit config/ai.properties to GitHub.
+# API application URL:https://bailian.console.aliyun.com/cn-beijing?tab=model#/api-key
 OPENAI_API_KEY=your_bailian_key_here
 OPENAI_MODEL=qwen-plus
 OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
