@@ -166,7 +166,13 @@ No database or external persistence framework is used.
 
 ![Admin workload](screenshots/admin_workload.png)
 
+### AI Recommendations
+
+![Admin recommendations](screenshots/admin_recommendations1.png)
+
 ![Admin recommendations](screenshots/admin_recommendations.png)
+
+![Admin recommendations](screenshots/admin_recommendations2.png)
 
 ## Final-Delivery Documents
 
