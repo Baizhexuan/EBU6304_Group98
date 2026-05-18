@@ -33,6 +33,13 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+/**
+ * Admin dashboard for workload monitoring, overview editing, recommendations, reporting, and AI
+ * support.
+ *
+ * <p>This frame demonstrates the higher-level recruitment monitoring features requested in the
+ * coursework brief while keeping the underlying logic explainable and CSV-backed.</p>
+ */
 public class AdminDashboard extends BaseDashboard {
     private static final String[] APPLICATION_STATUSES = {"PENDING", "SELECTED", "REJECTED", "WITHDRAWN"};
     private static final String[] JOB_STATUSES = {"OPEN", "CLOSED"};

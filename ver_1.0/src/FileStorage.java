@@ -7,10 +7,24 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Central CSV persistence helper for the stand-alone demo.
+ *
+ * <p>The coursework requires simple text-file storage rather than a database, so every major
+ * entity is loaded from and saved to CSV files under {@code data/}. The class also seeds a small
+ * deterministic dataset when those files do not yet exist.</p>
+ *
+ * <p>The implementation intentionally stays lightweight and dependency-free. It now includes a
+ * compact CSV parser/writer that preserves commas, quotes, and empty values while remaining
+ * compatible with the earlier plain rows already stored in the repository.</p>
+ */
 public class FileStorage {
     private static final String DATA_DIR = "data" + File.separator;
     private static final int OVERLOAD_LIMIT = 20;
 
+    /**
+     * Ensures the CSV storage directory and seed files exist before the UI or tests access them.
+     */
     public static void initialise() {
         new File(DATA_DIR).mkdirs();
         ensureUsers();
@@ -20,6 +34,9 @@ public class FileStorage {
         ensureNotifications();
     }
 
+    /**
+     * Returns the shared workload threshold used by admin monitoring and recommendation features.
+     */
     public static int getOverloadLimit() {
         return OVERLOAD_LIMIT;
     }
@@ -98,22 +115,25 @@ public class FileStorage {
         }
     }
 
+    /**
+     * Loads all users from {@code data/users.csv}.
+     */
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<User>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "users.csv"))) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", 5);
-                if (parts.length < 5) {
+                List<String> parts = parseCsvRow(line, 5);
+                if (parts.size() < 5) {
                     continue;
                 }
                 User user = new User();
-                user.id = ValidationUtils.parseInt(parts[0], 0);
-                user.username = parts[1].trim();
-                user.password = parts[2].trim();
-                user.role = parts[3].trim();
-                user.displayName = parts[4].trim();
+                user.id = ValidationUtils.parseInt(parts.get(0), 0);
+                user.username = parts.get(1).trim();
+                user.password = parts.get(2).trim();
+                user.role = parts.get(3).trim();
+                user.displayName = parts.get(4).trim();
                 users.add(user);
             }
         } catch (IOException e) {
@@ -122,39 +142,44 @@ public class FileStorage {
         return users;
     }
 
+    /**
+     * Persists the full user list back to {@code data/users.csv}.
+     */
     public static void saveUsers(List<User> users) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "users.csv"))) {
             writer.println("id,username,password,role,displayName");
             for (User user : users) {
-                writer.println(user.id + "," + safe(user.username) + "," + safe(user.password) + "," + safe(user.role)
-                        + "," + safe(user.displayName));
+                writer.println(csvLine(String.valueOf(user.id), user.username, user.password, user.role, user.displayName));
             }
         } catch (IOException e) {
             System.err.println("Unable to save users: " + e.getMessage());
         }
     }
 
+    /**
+     * Loads TA profiles used by the TA dashboard and matching logic.
+     */
     public static List<TAProfile> loadProfiles() {
         List<TAProfile> profiles = new ArrayList<TAProfile>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "profiles.csv"))) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", 10);
-                if (parts.length < 10) {
+                List<String> parts = parseCsvRow(line, 10);
+                if (parts.size() < 10) {
                     continue;
                 }
                 TAProfile profile = new TAProfile();
-                profile.id = ValidationUtils.parseInt(parts[0], 0);
-                profile.userId = ValidationUtils.parseInt(parts[1], 0);
-                profile.fullName = parts[2].trim();
-                profile.email = parts[3].trim();
-                profile.studentId = parts[4].trim();
-                profile.skills = parts[5].trim();
-                profile.gpa = ValidationUtils.parseDouble(parts[6], 0.0);
-                profile.cvPath = parts[7].trim();
-                profile.availability = parts[8].trim();
-                profile.statement = parts[9].trim();
+                profile.id = ValidationUtils.parseInt(parts.get(0), 0);
+                profile.userId = ValidationUtils.parseInt(parts.get(1), 0);
+                profile.fullName = parts.get(2).trim();
+                profile.email = parts.get(3).trim();
+                profile.studentId = parts.get(4).trim();
+                profile.skills = parts.get(5).trim();
+                profile.gpa = ValidationUtils.parseDouble(parts.get(6), 0.0);
+                profile.cvPath = parts.get(7).trim();
+                profile.availability = parts.get(8).trim();
+                profile.statement = parts.get(9).trim();
                 profiles.add(profile);
             }
         } catch (IOException e) {
@@ -163,39 +188,53 @@ public class FileStorage {
         return profiles;
     }
 
+    /**
+     * Saves all TA profiles while preserving commas and empty fields in text columns.
+     */
     public static void saveProfiles(List<TAProfile> profiles) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "profiles.csv"))) {
             writer.println("id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement");
             for (TAProfile profile : profiles) {
-                writer.println(profile.id + "," + profile.userId + "," + safe(profile.fullName) + "," + safe(profile.email)
-                        + "," + safe(profile.studentId) + "," + safe(profile.skills) + "," + profile.gpa + ","
-                        + safe(profile.cvPath) + "," + safe(profile.availability) + "," + safe(profile.statement));
+                writer.println(csvLine(
+                        String.valueOf(profile.id),
+                        String.valueOf(profile.userId),
+                        profile.fullName,
+                        profile.email,
+                        profile.studentId,
+                        profile.skills,
+                        String.valueOf(profile.gpa),
+                        profile.cvPath,
+                        profile.availability,
+                        profile.statement));
             }
         } catch (IOException e) {
             System.err.println("Unable to save profiles: " + e.getMessage());
         }
     }
 
+    /**
+     * Loads all jobs visible to MO, TA, and Admin workflows.
+     */
     public static List<Job> loadJobs() {
         List<Job> jobs = new ArrayList<Job>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "jobs.csv"))) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", 9);
-                if (parts.length < 9) {
+                List<String> parts = parseCsvRow(line, 9);
+                if (parts.size() < 9) {
                     continue;
                 }
                 Job job = new Job();
-                job.id = ValidationUtils.parseInt(parts[0], 0);
-                job.moId = ValidationUtils.parseInt(parts[1], 0);
-                job.title = parts[2].trim();
-                job.module = parts[3].trim();
-                job.description = parts[4].trim();
-                job.requiredSkills = parts[5].trim();
-                job.maxHours = ValidationUtils.parseInt(parts[6], 0);
-                job.status = parts[7].trim();
-                job.location = parts[8].trim();
+                job.id = ValidationUtils.parseInt(parts.get(0), 0);
+                job.moId = ValidationUtils.parseInt(parts.get(1), 0);
+                job.title = parts.get(2).trim();
+                job.module = parts.get(3).trim();
+                job.description = parts.get(4).trim();
+                job.requiredSkills = parts.get(5).trim();
+                job.maxHours = ValidationUtils.parseInt(parts.get(6), 0);
+                job.status = parts.get(7).trim();
+                job.location = parts.get(8).trim();
                 jobs.add(job);
             }
         } catch (IOException e) {
@@ -204,38 +243,51 @@ public class FileStorage {
         return jobs;
     }
 
+    /**
+     * Saves jobs to CSV for use across MO posting, TA browsing, and admin review screens.
+     */
     public static void saveJobs(List<Job> jobs) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "jobs.csv"))) {
             writer.println("id,moId,title,module,description,requiredSkills,maxHours,status,location");
             for (Job job : jobs) {
-                writer.println(job.id + "," + job.moId + "," + safe(job.title) + "," + safe(job.module) + ","
-                        + safe(job.description) + "," + safe(job.requiredSkills) + "," + job.maxHours + ","
-                        + safe(job.status) + "," + safe(job.location));
+                writer.println(csvLine(
+                        String.valueOf(job.id),
+                        String.valueOf(job.moId),
+                        job.title,
+                        job.module,
+                        job.description,
+                        job.requiredSkills,
+                        String.valueOf(job.maxHours),
+                        job.status,
+                        job.location));
             }
         } catch (IOException e) {
             System.err.println("Unable to save jobs: " + e.getMessage());
         }
     }
 
+    /**
+     * Loads job applications, including AI match summaries and reviewer notes.
+     */
     public static List<Application> loadApplications() {
         List<Application> applications = new ArrayList<Application>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "applications.csv"))) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", 8);
-                if (parts.length < 8) {
+                List<String> parts = parseCsvRow(line, 8);
+                if (parts.size() < 8) {
                     continue;
                 }
                 Application app = new Application();
-                app.id = ValidationUtils.parseInt(parts[0], 0);
-                app.taId = ValidationUtils.parseInt(parts[1], 0);
-                app.jobId = ValidationUtils.parseInt(parts[2], 0);
-                app.status = parts[3].trim();
-                app.appliedAt = parts[4].trim();
-                app.matchScore = ValidationUtils.parseInt(parts[5], 0);
-                app.matchSummary = parts[6].trim();
-                app.reviewerNote = parts[7].trim();
+                app.id = ValidationUtils.parseInt(parts.get(0), 0);
+                app.taId = ValidationUtils.parseInt(parts.get(1), 0);
+                app.jobId = ValidationUtils.parseInt(parts.get(2), 0);
+                app.status = parts.get(3).trim();
+                app.appliedAt = parts.get(4).trim();
+                app.matchScore = ValidationUtils.parseInt(parts.get(5), 0);
+                app.matchSummary = parts.get(6).trim();
+                app.reviewerNote = parts.get(7).trim();
                 applications.add(app);
             }
         } catch (IOException e) {
@@ -244,37 +296,49 @@ public class FileStorage {
         return applications;
     }
 
+    /**
+     * Saves applications while preserving reviewer notes and explainable AI summaries.
+     */
     public static void saveApplications(List<Application> applications) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "applications.csv"))) {
             writer.println("id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote");
             for (Application app : applications) {
-                writer.println(app.id + "," + app.taId + "," + app.jobId + "," + safe(app.status) + ","
-                        + safe(app.appliedAt) + "," + app.matchScore + "," + safe(app.matchSummary) + ","
-                        + safe(app.reviewerNote));
+                writer.println(csvLine(
+                        String.valueOf(app.id),
+                        String.valueOf(app.taId),
+                        String.valueOf(app.jobId),
+                        app.status,
+                        app.appliedAt,
+                        String.valueOf(app.matchScore),
+                        app.matchSummary,
+                        app.reviewerNote));
             }
         } catch (IOException e) {
             System.err.println("Unable to save applications: " + e.getMessage());
         }
     }
 
+    /**
+     * Loads in-app notifications stored in {@code data/notifications.csv}.
+     */
     public static List<Notification> loadNotifications() {
         List<Notification> notifications = new ArrayList<Notification>();
         try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "notifications.csv"))) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", 7);
-                if (parts.length < 7) {
+                List<String> parts = parseCsvRow(line, 7);
+                if (parts.size() < 7) {
                     continue;
                 }
                 Notification notification = new Notification();
-                notification.id = ValidationUtils.parseInt(parts[0], 0);
-                notification.userId = ValidationUtils.parseInt(parts[1], 0);
-                notification.title = parts[2].trim();
-                notification.message = parts[3].trim();
-                notification.status = parts[4].trim();
-                notification.createdAt = parts[5].trim();
-                notification.actionHint = parts[6].trim();
+                notification.id = ValidationUtils.parseInt(parts.get(0), 0);
+                notification.userId = ValidationUtils.parseInt(parts.get(1), 0);
+                notification.title = parts.get(2).trim();
+                notification.message = parts.get(3).trim();
+                notification.status = parts.get(4).trim();
+                notification.createdAt = parts.get(5).trim();
+                notification.actionHint = parts.get(6).trim();
                 notifications.add(notification);
             }
         } catch (IOException e) {
@@ -283,19 +347,30 @@ public class FileStorage {
         return notifications;
     }
 
+    /**
+     * Persists notifications generated by MO decisions, profile reminders, and job closures.
+     */
     public static void saveNotifications(List<Notification> notifications) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "notifications.csv"))) {
             writer.println("id,userId,title,message,status,createdAt,actionHint");
             for (Notification notification : notifications) {
-                writer.println(notification.id + "," + notification.userId + "," + safe(notification.title) + ","
-                        + safe(notification.message) + "," + safe(notification.status) + ","
-                        + safe(notification.createdAt) + "," + safe(notification.actionHint));
+                writer.println(csvLine(
+                        String.valueOf(notification.id),
+                        String.valueOf(notification.userId),
+                        notification.title,
+                        notification.message,
+                        notification.status,
+                        notification.createdAt,
+                        notification.actionHint));
             }
         } catch (IOException e) {
             System.err.println("Unable to save notifications: " + e.getMessage());
         }
     }
 
+    /**
+     * Finds a user by numeric identifier in the current CSV snapshot.
+     */
     public static User findUserById(int id) {
         for (User user : loadUsers()) {
             if (user.id == id) {
@@ -305,6 +380,9 @@ public class FileStorage {
         return null;
     }
 
+    /**
+     * Finds a user by username using a case-insensitive comparison to match login behaviour.
+     */
     public static User findUserByUsername(String username) {
         for (User user : loadUsers()) {
             if (user.username.equalsIgnoreCase(username)) {
@@ -384,10 +462,63 @@ public class FileStorage {
         return max + 1;
     }
 
-    private static String safe(String value) {
+    private static List<String> parseCsvRow(String line, int expectedColumns) {
+        List<String> values = new ArrayList<String>();
+        if (line == null) {
+            return values;
+        }
+
+        StringBuilder cell = new StringBuilder();
+        boolean quoted = false;
+        for (int i = 0; i < line.length(); i++) {
+            char ch = line.charAt(i);
+            if (quoted) {
+                if (ch == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        cell.append('"');
+                        i++;
+                    } else {
+                        quoted = false;
+                    }
+                } else {
+                    cell.append(ch);
+                }
+            } else if (ch == '"') {
+                quoted = true;
+            } else if (ch == ',') {
+                values.add(cell.toString());
+                cell.setLength(0);
+            } else {
+                cell.append(ch);
+            }
+        }
+        values.add(cell.toString());
+        while (values.size() < expectedColumns) {
+            values.add("");
+        }
+        return values;
+    }
+
+    private static String csvLine(String... values) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append(csvCell(values[i]));
+        }
+        return builder.toString();
+    }
+
+    private static String csvCell(String value) {
         if (value == null) {
             return "";
         }
-        return value.replace(',', ';').replace('\n', ' ').replace('\r', ' ');
+        String cleaned = value.replace('\n', ' ').replace('\r', ' ');
+        boolean shouldQuote = cleaned.indexOf(',') >= 0 || cleaned.indexOf('"') >= 0;
+        if (!shouldQuote) {
+            return cleaned;
+        }
+        return "\"" + cleaned.replace("\"", "\"\"") + "\"";
     }
 }

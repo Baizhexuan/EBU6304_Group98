@@ -26,6 +26,13 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+/**
+ * TA-facing dashboard covering profile editing, job browsing, application tracking, and
+ * notifications.
+ *
+ * <p>This frame represents the main applicant workflow required by the coursework brief and is a
+ * key part of the live demo path.</p>
+ */
 public class TADashboard extends BaseDashboard {
     private JTextField nameField;
     private JTextField emailField;

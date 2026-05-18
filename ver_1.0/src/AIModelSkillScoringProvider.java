@@ -7,6 +7,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Optional external scoring provider for live AI-backed skill matching.
+ *
+ * <p>The class is deliberately conservative for coursework use: it accepts local configuration,
+ * makes a short network call to a compatible chat-completions endpoint, parses a compact plain
+ * text result, and falls back cleanly when configuration or connectivity is unavailable.</p>
+ */
 public class AIModelSkillScoringProvider implements SkillScoringProvider {
     private static final int CONNECT_TIMEOUT_MS = 3000;
     private static final int READ_TIMEOUT_MS = 6000;
@@ -93,7 +100,7 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
                 + "Local fallback summary: " + safe(fallback.summary);
 
         return "{"
-                + "\"model\":\"" + escapeJson(getModelName()) + "\"," 
+                + "\"model\":\"" + escapeJson(getModelName()) + "\","
                 + "\"messages\":["
                 + "{\"role\":\"system\",\"content\":\"You score TA recruitment matches for a demo system.\"},"
                 + "{\"role\":\"user\",\"content\":\"" + escapeJson(prompt) + "\"}"

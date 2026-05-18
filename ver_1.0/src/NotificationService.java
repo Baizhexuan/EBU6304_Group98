@@ -5,12 +5,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Service for CSV-backed in-app notifications.
+ *
+ * <p>The demo uses notifications to make important workflow state visible without introducing a
+ * heavier messaging system. Messages are generated for MO decisions, missing profiles, and job
+ * closure events, then persisted through {@link FileStorage} so the behaviour is easy to
+ * demonstrate and test.</p>
+ */
 public final class NotificationService {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private NotificationService() {
     }
 
+    /**
+     * Creates one notification for a TA after an MO updates an application decision.
+     */
     public static void notifyApplicationDecision(Application application, User reviewer, Job job, String decision) {
         if (application == null || reviewer == null || job == null || ValidationUtils.isBlank(decision)) {
             return;
@@ -40,6 +51,9 @@ public final class NotificationService {
         FileStorage.saveNotifications(notifications);
     }
 
+    /**
+     * Adds a deduplicated reminder when a TA profile is missing or incomplete.
+     */
     public static void notifyProfileRequired(User taUser) {
         if (taUser == null) {
             return;
@@ -51,6 +65,9 @@ public final class NotificationService {
                 "Open My Profile and complete all required fields before submitting applications.");
     }
 
+    /**
+     * Sends closure alerts to TAs with active applications when a job is closed.
+     */
     public static int notifyJobClosed(Job job, User actor) {
         if (job == null) {
             return 0;
@@ -79,6 +96,9 @@ public final class NotificationService {
         return created;
     }
 
+    /**
+     * Returns all notifications for one user in stored order.
+     */
     public static List<Notification> getNotificationsForUser(int userId) {
         List<Notification> all = FileStorage.loadNotifications();
         List<Notification> result = new ArrayList<Notification>();
@@ -90,6 +110,9 @@ public final class NotificationService {
         return result;
     }
 
+    /**
+     * Counts unread notifications for badge and summary displays.
+     */
     public static int countUnreadForUser(int userId) {
         int unread = 0;
         for (Notification notification : getNotificationsForUser(userId)) {
@@ -100,7 +123,9 @@ public final class NotificationService {
         return unread;
     }
 
-
+    /**
+     * Marks outstanding profile reminders as resolved after a complete profile is saved.
+     */
     public static void markProfileReminderResolved(User taUser) {
         if (taUser == null) {
             return;
@@ -116,6 +141,9 @@ public final class NotificationService {
         FileStorage.saveNotifications(notifications);
     }
 
+    /**
+     * Marks a single notification as read.
+     */
     public static void markAsRead(int notificationId) {
         List<Notification> notifications = FileStorage.loadNotifications();
         for (Notification notification : notifications) {
@@ -127,6 +155,9 @@ public final class NotificationService {
         FileStorage.saveNotifications(notifications);
     }
 
+    /**
+     * Marks every stored notification for one user as read.
+     */
     public static void markAllAsRead(int userId) {
         List<Notification> notifications = FileStorage.loadNotifications();
         for (Notification notification : notifications) {

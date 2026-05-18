@@ -1,3 +1,9 @@
+/**
+ * Default offline scorer used by the demo when no external model is configured.
+ *
+ * <p>It wraps the token-based {@link MatchingService} result and labels the output clearly so the
+ * user can see that the recommendation came from local explainable logic.</p>
+ */
 public class RuleBasedSkillScoringProvider implements SkillScoringProvider {
     @Override
     public MatchResult evaluate(TAProfile profile, Job job) {

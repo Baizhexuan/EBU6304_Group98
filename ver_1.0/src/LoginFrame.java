@@ -23,6 +23,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+/**
+ * Entry screen for the stand-alone recruitment demo.
+ *
+ * <p>The frame provides login access to TA, MO, and Admin workflows while keeping the first-run
+ * experience suitable for live demonstration on macOS, Windows, and Linux.</p>
+ */
 public class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;

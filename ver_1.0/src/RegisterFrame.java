@@ -21,6 +21,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.plaf.basic.BasicButtonUI;
 
+/**
+ * Registration frame for creating additional TA or MO demo accounts.
+ *
+ * <p>The workflow stays intentionally lightweight for coursework purposes: it validates basic
+ * fields, prevents duplicate usernames, and then stores the new account directly in CSV.</p>
+ */
 public class RegisterFrame extends JFrame {
     private final LoginFrame loginFrame;
     private JTextField usernameField;

@@ -1,7 +1,17 @@
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Lightweight explainable matcher used by the offline demo path.
+ *
+ * <p>The algorithm intentionally stays simple: it tokenises TA skills and required skills,
+ * computes a match percentage, and returns a summary that explicitly lists matched and missing
+ * skills. That makes the recommendation easy to explain during demo and viva discussion.</p>
+ */
 public class MatchingService {
+    /**
+     * Evaluates one TA profile against one job using deterministic token matching.
+     */
     public static MatchResult evaluate(TAProfile profile, Job job) {
         if (profile == null || job == null) {
             return new MatchResult(0, "Profile or job data is missing.");
@@ -44,6 +54,9 @@ public class MatchingService {
         return new MatchResult(score, builder.toString());
     }
 
+    /**
+     * Normalises a raw skills string into lowercase tokens split by common separators.
+     */
     public static Set<String> tokenise(String rawSkills) {
         Set<String> skills = new LinkedHashSet<String>();
         if (rawSkills == null) {

@@ -27,6 +27,12 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+/**
+ * Module Organiser dashboard for posting jobs, reviewing applicants, and updating decisions.
+ *
+ * <p>The MO workflow stays directly connected to CSV persistence and the notification service so
+ * recruitment decisions remain visible and easy to explain in the final demo.</p>
+ */
 public class MODashboard extends BaseDashboard {
     private JTextField titleField;
     private JTextField moduleField;

@@ -3,10 +3,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Builds explainable admin-side workload alerts and replacement suggestions.
+ *
+ * <p>The service stays intentionally rule-based so admins can justify recommendations during the
+ * demo. It combines current selected hours, skill-fit scores, and projected hours to produce a
+ * concise text report rather than making opaque automatic decisions.</p>
+ */
 public final class AdminRecommendationService {
     private AdminRecommendationService() {
     }
 
+    /**
+     * Summarises the global overload situation for the current CSV snapshot.
+     */
     public static String buildGlobalAlertSummary() {
         List<User> users = FileStorage.loadUsers();
         StringBuilder builder = new StringBuilder();
@@ -45,6 +55,9 @@ public final class AdminRecommendationService {
         return builder.toString().trim();
     }
 
+    /**
+     * Builds a TA-specific narrative report suitable for the Admin recommendation panel.
+     */
     public static String buildRecommendationReportForTa(int taId) {
         User ta = FileStorage.findUserById(taId);
         if (ta == null) {
@@ -97,4 +110,153 @@ public final class AdminRecommendationService {
         return builder.toString().trim();
     }
 
+    /**
+     * Returns the checklist shown to admins before approving reallocation changes.
+     */
     public static String buildOperationalChecklist() {
+        return "1. Review overload rows first.\n"
+                + "2. Confirm whether the current match score is still acceptable.\n"
+                + "3. Prefer candidates who stay under the " + FileStorage.getOverloadLimit() + "h safe limit.\n"
+                + "4. Record a reviewer note after reallocation or rejection.";
+    }
+
+    /**
+     * Produces a concise action memo for one TA based on current selected hours.
+     */
+    public static String buildActionMemoForTa(int taId) {
+        int hours = getSelectedHours(taId);
+        if (hours > FileStorage.getOverloadLimit()) {
+            return "Immediate redistribution recommended before further selections are approved.";
+        }
+        if (hours >= FileStorage.getOverloadLimit() - 2) {
+            return "Monitor closely and consider backup candidates for the heaviest assigned job.";
+        }
+        return "Current allocation is stable. Reallocation is optional rather than urgent.";
+    }
+
+    private static List<CandidateRecommendation> findTopCandidates(int overloadedTaId, Job job, int limit) {
+        List<CandidateRecommendation> candidates = new ArrayList<CandidateRecommendation>();
+        for (User user : FileStorage.loadUsers()) {
+            if (!"TA".equalsIgnoreCase(user.role) || user.id == overloadedTaId) {
+                continue;
+            }
+            TAProfile profile = FileStorage.findProfileByUserId(user.id);
+            if (profile == null || !profile.isComplete()) {
+                continue;
+            }
+            if (hasActiveApplication(user.id, job.id)) {
+                continue;
+            }
+            int currentHours = getSelectedHours(user.id);
+            MatchResult match = ScoringService.evaluate(profile, job);
+            int projectedHours = currentHours + job.maxHours;
+            String riskLabel = buildCandidateRiskLabel(match.score, projectedHours);
+            String reason = projectedHours > FileStorage.getOverloadLimit()
+                    ? "strong fit but would still exceed safe hours after reassignment"
+                    : "keeps projected load at " + projectedHours + "h and aligns with job skills";
+            String nextStep = match.score >= 70 && projectedHours <= FileStorage.getOverloadLimit()
+                    ? "shortlist for MO confirmation"
+                    : "check missing skills before reassignment";
+            candidates.add(new CandidateRecommendation(user.getSafeDisplayName(), match.score, currentHours,
+                    projectedHours, riskLabel, reason, nextStep));
+        }
+
+        Collections.sort(candidates, new Comparator<CandidateRecommendation>() {
+            @Override
+            public int compare(CandidateRecommendation left, CandidateRecommendation right) {
+                int leftPenalty = left.projectedHours > FileStorage.getOverloadLimit() ? 1 : 0;
+                int rightPenalty = right.projectedHours > FileStorage.getOverloadLimit() ? 1 : 0;
+                if (leftPenalty != rightPenalty) {
+                    return leftPenalty - rightPenalty;
+                }
+                if (left.matchScore != right.matchScore) {
+                    return right.matchScore - left.matchScore;
+                }
+                return left.currentHours - right.currentHours;
+            }
+        });
+
+        if (candidates.size() > limit) {
+            return new ArrayList<CandidateRecommendation>(candidates.subList(0, limit));
+        }
+        return candidates;
+    }
+
+    private static boolean hasActiveApplication(int taId, int jobId) {
+        for (Application application : FileStorage.loadApplications()) {
+            if (application.taId == taId && application.jobId == jobId
+                    && !"WITHDRAWN".equalsIgnoreCase(application.status)
+                    && !"REJECTED".equalsIgnoreCase(application.status)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<Application> getSelectedApplications(int taId) {
+        List<Application> selected = new ArrayList<Application>();
+        for (Application application : FileStorage.loadApplications()) {
+            if (application.taId == taId && "SELECTED".equalsIgnoreCase(application.status)) {
+                selected.add(application);
+            }
+        }
+        return selected;
+    }
+
+    private static int getSelectedHours(int taId) {
+        int hours = 0;
+        for (Application application : FileStorage.loadApplications()) {
+            if (application.taId == taId && "SELECTED".equalsIgnoreCase(application.status)) {
+                Job job = FileStorage.findJobById(application.jobId);
+                if (job != null) {
+                    hours += job.maxHours;
+                }
+            }
+        }
+        return hours;
+    }
+
+    private static String buildCandidateRiskLabel(int matchScore, int projectedHours) {
+        if (projectedHours > FileStorage.getOverloadLimit()) {
+            return "HIGH workload risk";
+        }
+        if (matchScore < 50) {
+            return "MEDIUM skill-fit risk";
+        }
+        if (projectedHours >= FileStorage.getOverloadLimit() - 2) {
+            return "MEDIUM load buffer risk";
+        }
+        return "LOW risk";
+    }
+
+    private static String buildLoadStatus(int hours) {
+        if (hours > FileStorage.getOverloadLimit()) {
+            return "OVERLOAD - action recommended";
+        }
+        if (hours >= FileStorage.getOverloadLimit() - 2) {
+            return "NEAR LIMIT - monitor closely";
+        }
+        return "OK";
+    }
+
+    private static final class CandidateRecommendation {
+        private final String name;
+        private final int matchScore;
+        private final int currentHours;
+        private final int projectedHours;
+        private final String riskLabel;
+        private final String reason;
+        private final String nextStep;
+
+        private CandidateRecommendation(String name, int matchScore, int currentHours, int projectedHours,
+                String riskLabel, String reason, String nextStep) {
+            this.name = name;
+            this.matchScore = matchScore;
+            this.currentHours = currentHours;
+            this.projectedHours = projectedHours;
+            this.riskLabel = riskLabel;
+            this.reason = reason;
+            this.nextStep = nextStep;
+        }
+    }
+}
