@@ -2,9 +2,20 @@
 
 BUPT International School Teaching Assistant Recruitment System.
 
+## Final Submission Position
+
+This `ver_1.0` folder is a stand-alone Java Swing demo that focuses on the selected set of core recruitment features required by the coursework brief. It stays within the mandatory coursework constraints:
+
+- stand-alone Java application
+- CSV text-file storage only
+- no database
+- explainable AI-assisted features with an offline fallback path
+
+The wider coursework still depends on repository-level Agile evidence and the final report, but this folder now includes the code, test scripts, JavaDoc generation support, user manual, screenshots, and requirement-check documents needed for a strong product-demo submission package.
+
 ## Product Scope
 
-This demo implements the core recruitment workflow required for a stand-alone Java application:
+This demo implements the core recruitment workflow:
 
 - TA can create and edit an applicant profile
 - TA can browse open jobs and apply for them
@@ -12,64 +23,122 @@ This demo implements the core recruitment workflow required for a stand-alone Ja
 - TA can receive in-app notifications about application decisions, missing profile details, and closed jobs
 - MO can post jobs, manage their own posts, and review applicants
 - Admin can monitor TA workload, edit global application and job records, export reports, and inspect replacement recommendations
-- AI-assisted scoring is included through an explainable rule-based engine and an API-ready placeholder provider
+- AI-assisted scoring is included through an explainable rule-based engine and an optional external model provider
 
-## Requirement Check
+## Final Submission Checklist
 
-### Basic requirements covered
+- [x] stand-alone Java application
+- [x] CSV-based persistence with no database
+- [x] TA / MO / Admin core workflow
+- [x] in-app notification support for key recruitment events
+- [x] explainable AI-assisted matching and admin recommendation support
+- [x] setup and run instructions
+- [x] lightweight automated regression tests
+- [x] JavaDoc generation script
+- [x] user manual with screenshot references
+- [x] requirement checklist and testing strategy documents
 
-- stand-alone Java desktop application
-- all data stored in CSV text files
-- TA profile creation
-- CV path selection through a local file chooser
-- available job browsing
-- job application flow
-- application status checking
-- MO job posting
-- MO applicant selection and rejection
-- Admin workload monitoring
-- in-app notification support for applicant status updates, profile-completion reminders, and job-closure alerts
+## Demo Accounts
 
-### AI-assisted functions currently covered
+- `admin / admin123`
+- `ta1 / ta123`
+- `ta2 / ta456`
+- `mo1 / mo123`
+- `mo2 / mo456`
 
-- matching skills between jobs and applicants
-- identifying missing skills through dedicated UI output and match summaries
-- workload balancing support through admin-side replacement recommendations and load warnings
-- explainable recommendation text showing score source, missing skills, projected load, and action memo guidance
+## Build, Run, and Test
 
-### Current project position
+### Compile
 
-This `ver_1.0` folder now meets the mandatory platform and storage restrictions and demonstrates a selected set of core features as required by the coursework brief. It is still an iterative demo build rather than the full final coursework package, because the broader Agile evidence, formal test suite, JavaDoc delivery, and complete report package belong to the wider repository work rather than only this folder.
+```bash
+./compile.sh
+```
 
-## Iteration 1.7 Update
+### Run the desktop application
 
-This iteration moves `US-8` closer to a complete notification workflow by adding additional triggers beyond MO decision updates.
+```bash
+./run.sh
+```
 
-New updates in this version:
+### Run the lightweight regression tests
 
-- added profile-completion reminders when a TA opens an incomplete profile or tries to apply before finishing required details
-- added automatic job-closure alerts for TAs with active applications when MO or Admin closes a job
-- resolved unread profile reminders after the TA saves a complete profile
-- kept notifications CSV-backed so the implementation remains compatible with the coursework storage rule
-- preserved the aligned table filters, missing-skills output, and explainable AI recommendation notes from the previous iteration
+```bash
+./test.sh
+```
 
+The test script compiles the project and runs:
 
+- `SystemSmokeTest`
+- `AuthFlowTest`
+- `WorkflowRulesTest`
+- `CsvPersistenceTest`
 
-## Iteration 1.8 Update
+### Generate JavaDocs
 
-This iteration focuses on final-demo usability across macOS, Windows, and Linux while making the AI-assisted workflow more interactive.
+```bash
+./javadoc.sh
+```
 
-New updates in this version:
+Generated output will be written to `javadocs/`.
 
-- fixed cross-platform Swing button rendering so registration and dashboard buttons keep visible text and borders
-- added compact search controls with an attribute selector and keyword input above aligned per-column filters
-- added an Admin AI Assistant dialog for interactive recruitment questions using the external model when configured, with a local explainable fallback
-- enriched admin recommendations with risk labels, projected load reasoning, and suggested next actions
-- kept the previous `US-8` notification improvements for profile reminders and job-closure alerts
+## AI Configuration
+
+### Offline demo mode
+
+No external key is required for the core workflow. When no live configuration is available, the project falls back to local explainable rule-based matching so the demo remains usable offline.
+
+### Optional live `qwen-plus` mode
+
+Copy the example file and keep the real key local:
+
+```bash
+cp config/ai.properties.example config/ai.properties
+```
+
+Then edit `config/ai.properties` with your own values. The real local config file is ignored by Git.
+
+Equivalent environment-variable setup:
+
+```bash
+export OPENAI_API_KEY=your_bailian_key_here
+export OPENAI_MODEL=qwen-plus
+export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+export AI_API_MODE=CHAT_COMPLETIONS
+export AI_SCORING_MODE=AI
+```
+
+When configured, the Admin AI Assistant can call the compatible chat-completions endpoint. If the model is unavailable or the key is missing, the system still exposes local explainable guidance through the rule-based scoring path.
+
+## Storage Constraint
+
+All persistent input/output data remain in CSV files under `data/`:
+
+- `users.csv`
+- `profiles.csv`
+- `jobs.csv`
+- `applications.csv`
+- `notifications.csv`
+- exported `admin_workload_report_*.csv`
+
+No database or external persistence framework is used.
+
+## Project Layout
+
+- `src/`: Java source code
+- `data/`: CSV data files used by the demo
+- `config/ai.properties.example`: local AI configuration template
+- `docs/architecture.md`: structure overview
+- `docs/task_plan_alignment.md`: requirement and task-plan comparison notes
+- `docs/final_requirement_checklist.md`: requirement-to-evidence mapping
+- `docs/testing_strategy.md`: test strategy and workflow coverage
+- `docs/user_manual.md`: final user manual with screenshot references
+- `screenshots/`: demo screenshots used by the manual and README
+- `compile.sh`: compile script
+- `run.sh`: GUI launch script
+- `test.sh`: lightweight regression-test script
+- `javadoc.sh`: JavaDoc generation script
 
 ## Product Screenshots
-
-Place the final product screenshots in `screenshots/` using the file names below. The images will render automatically on GitHub after the files are added.
 
 ### Login and Registration
 
@@ -99,64 +168,24 @@ Place the final product screenshots in `screenshots/` using the file names below
 
 ![Admin recommendations](screenshots/admin_recommendations.png)
 
-## Run
+## Final-Delivery Documents
 
-```bash
-./compile.sh
-./run.sh
-```
-
-## Optional AI Model Configuration
-
-The Admin AI Assistant dialog can call `qwen-plus` through Alibaba Bailian / DashScope OpenAI-compatible mode. API keys must stay local and must not be committed to GitHub.
-
-Recommended local file setup:
-
-```bash
-cp config/ai.properties.example config/ai.properties
-# then edit config/ai.properties and add your own Bailian API key
-```
-
-Equivalent environment-variable setup:
-
-```bash
-export OPENAI_API_KEY=your_bailian_key_here
-export OPENAI_MODEL=qwen-plus
-export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-export AI_API_MODE=CHAT_COMPLETIONS
-export AI_SCORING_MODE=AI
-```
-
-If these settings are not available, the dialog and scoring flow fall back to local explainable recommendation logic so the demo remains usable offline.
-
-## Demo Accounts
-
-- `admin / admin123`
-- `ta1 / ta123`
-- `ta2 / ta456`
-- `mo1 / mo123`
-- `mo2 / mo456`
-
-## Project Layout
-
-- `src/`: Java source code
-- `data/`: CSV data files
-- `docs/architecture.md`: structure overview
-- `docs/task_plan_alignment.md`: requirement and task-plan comparison notes
-- `docs/final_requirement_checklist.md`: final feature and requirement checklist
-- `compile.sh`: compile script
-- `run.sh`: run script
+- `docs/final_requirement_checklist.md`
+- `docs/testing_strategy.md`
+- `docs/user_manual.md`
+- `docs/architecture.md`
+- `docs/task_plan_alignment.md`
 
 ## Version Notes
 
 - `ver_1.0`: first complete integrated demo build
 - `ver_1.1`: usability-focused iteration with filtering and improved admin monitoring feedback
 - `ver_1.2`: task-plan alignment update with shared dashboard base and stronger L2 authentication checks
-- `ver_1.3`: stronger admin operations and AI-ready scoring abstraction for the next integration stage
-- `ver_1.4`: live AI placeholder path, admin reallocation recommendations, and UI polish for the next demo stage
-- `ver_1.5`: macOS-friendly entry screens, cleaner final-product styling, and stronger final-demo usability
-- `ver_1.6`: CSV-backed notifications, richer AI explanation surfaces, and aligned multi-field search across key tables
+- `ver_1.3`: stronger admin operations and AI-ready scoring abstraction
+- `ver_1.4`: live AI placeholder path, admin reallocation recommendations, and UI polish
+- `ver_1.5`: macOS-friendly entry screens and stronger final-demo usability
+- `ver_1.6`: CSV-backed notifications and aligned multi-field search across key tables
 - `ver_1.7`: expanded US-8 triggers with profile-completion reminders and job-closure alerts
 - `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog
 - `ver_1.9`: Admin AI Assistant supports real external model calls, including qwen-plus via DashScope compatible chat completions
-- `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, and final requirement checklist
+- `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, lightweight regression tests, JavaDoc generation support, and final-delivery documentation
