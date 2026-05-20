@@ -1,9 +1,9 @@
 public final class DemoMetadata {
     public static final String APP_TITLE = "BUPT TA Recruitment System";
     public static final String APP_SUBTITLE = "Teaching Assistant Recruitment Demo";
-    public static final String VERSION_LABEL = "ver_1.8";
-    public static final String ITERATION_NOTE = "Current focus: improve cross-platform UI reliability, add compact attribute search controls, and provide an interactive AI assistant dialog for explainable recruitment guidance.";
-    public static final String NEXT_STEP_NOTE = "Planned next steps: separate more business logic into dedicated services, expand automated tests, and harden the production AI contract.";
+    public static final String VERSION_LABEL = "ver_1.11";
+    public static final String ITERATION_NOTE = "Current focus: faster page refresh, cleaner search interactions, board-level AI matching support, and smoother final-demo responsiveness.";
+    public static final String NEXT_STEP_NOTE = "Planned next steps: package the final report, capture polished screenshots, and submit the final software bundle with documentation and tests.";
 
     private DemoMetadata() {
     }
