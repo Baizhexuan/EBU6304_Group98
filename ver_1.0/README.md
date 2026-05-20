@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.10
+# EBU6304 Group 98 Demo Version 1.11
 
 BUPT International School Teaching Assistant Recruitment System.
 
@@ -166,21 +166,8 @@ No database or external persistence framework is used.
 
 ![Admin workload](screenshots/admin_workload.png)
 
-### AI Recommendations
-
-![Admin recommendations](screenshots/admin_recommendations1.png)
-
 ![Admin recommendations](screenshots/admin_recommendations.png)
 
-![Admin recommendations](screenshots/admin_recommendations2.png)
-
-## Final-Delivery Documents
-
-- `docs/final_requirement_checklist.md`
-- `docs/testing_strategy.md`
-- `docs/user_manual.md`
-- `docs/architecture.md`
-- `docs/task_plan_alignment.md`
 
 ## Version Notes
 
@@ -195,3 +182,4 @@ No database or external persistence framework is used.
 - `ver_1.8`: cross-platform UI fixes, compact attribute search, and interactive AI assistant dialog
 - `ver_1.9`: Admin AI Assistant supports real external model calls, including qwen-plus via DashScope compatible chat completions
 - `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, lightweight regression tests, JavaDoc generation support, and final-delivery documentation
+- `ver_1.11`: faster search and page-refresh behaviour, explicit Search actions for filter toolbars, lighter refresh feedback, and reduced repeated CSV reads across TA, MO, and Admin dashboards
