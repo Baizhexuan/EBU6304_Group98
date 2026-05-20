@@ -51,19 +51,19 @@ This demo implements the core recruitment workflow:
 ### Compile
 
 ```bash
-./compile.sh
+sh compile.sh
 ```
 
 ### Run the desktop application
 
 ```bash
-./run.sh
+sh run.sh
 ```
 
 ### Run the lightweight regression tests
 
 ```bash
-./test.sh
+sh test.sh
 ```
 
 The test script compiles the project and runs:
