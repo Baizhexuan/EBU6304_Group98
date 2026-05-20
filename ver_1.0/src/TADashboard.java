@@ -17,6 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -51,6 +52,7 @@ public class TADashboard extends BaseDashboard {
     private JTextField jobSkillsFilterField;
     private JTextField jobLocationFilterField;
     private JLabel jobInsightLabel;
+    private JTextArea jobAiRankingArea;
 
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
@@ -69,15 +71,8 @@ public class TADashboard extends BaseDashboard {
         addTab("Browse Jobs", createBrowseJobsPanel());
         addTab("My Applications", createApplicationsPanel());
         addTab("Notifications", createNotificationsPanel());
-        installRefreshOnTabSwitch(() -> {
-            refreshJobs();
-            refreshApplications();
-            refreshNotifications();
-        });
+        installRefreshOnTabSwitch(this::refreshVisibleTab);
         loadProfile();
-        refreshJobs();
-        refreshApplications();
-        refreshNotifications();
         setVisible(true);
     }
 
@@ -204,7 +199,26 @@ public class TADashboard extends BaseDashboard {
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
         center.add(filters, BorderLayout.NORTH);
-        center.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+
+        jobAiRankingArea = new JTextArea();
+        jobAiRankingArea.setEditable(false);
+        jobAiRankingArea.setLineWrap(true);
+        jobAiRankingArea.setWrapStyleWord(true);
+        jobAiRankingArea.setBackground(SURFACE_COLOR);
+        jobAiRankingArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel aiPanel = new JPanel(new BorderLayout(6, 6));
+        aiPanel.setBackground(SURFACE_COLOR);
+        aiPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        aiPanel.add(new JLabel("AI Match Ranking"), BorderLayout.NORTH);
+        aiPanel.add(new JScrollPane(jobAiRankingArea), BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(jobsTable), aiPanel);
+        splitPane.setResizeWeight(0.68);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        center.add(splitPane, BorderLayout.CENTER);
         panel.add(center, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new BorderLayout(8, 8));
@@ -215,15 +229,19 @@ public class TADashboard extends BaseDashboard {
         JPanel buttons = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton applyButton = new JButton("Apply for Selected Job");
+        JButton aiButton = new JButton("Ask AI About Matches");
         styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
         styleActionButton(applyButton, ACCENT_COLOR, Color.WHITE);
+        styleActionButton(aiButton, new Color(220, 232, 222), new Color(36, 78, 54));
         buttons.add(refreshButton);
         buttons.add(applyButton);
+        buttons.add(aiButton);
         bottom.add(buttons, BorderLayout.EAST);
         panel.add(bottom, BorderLayout.SOUTH);
 
         refreshButton.addActionListener(e -> refreshJobs());
         applyButton.addActionListener(e -> applyForSelectedJob());
+        aiButton.addActionListener(e -> openTaAiAssistantDialog());
         installFieldListener(jobTitleFilterField, this::refreshJobs);
         installFieldListener(jobModuleFilterField, this::refreshJobs);
         installFieldListener(jobSkillsFilterField, this::refreshJobs);
@@ -396,7 +414,18 @@ public class TADashboard extends BaseDashboard {
     }
 
     private void installFieldListener(JTextField field, Runnable action) {
-        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
+        field.addActionListener(e -> action.run());
+    }
+
+    private void refreshVisibleTab() {
+        int index = tabs.getSelectedIndex();
+        if (index == 1) {
+            refreshJobs();
+        } else if (index == 2) {
+            refreshApplications();
+        } else if (index == 3) {
+            refreshNotifications();
+        }
     }
 
     private void chooseCv() {
@@ -492,46 +521,64 @@ public class TADashboard extends BaseDashboard {
     }
 
     private void refreshJobs() {
-        jobsModel.setRowCount(0);
-        TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
-        String titleFilter = getLower(jobTitleFilterField);
-        String moduleFilter = getLower(jobModuleFilterField);
-        String skillsFilter = getLower(jobSkillsFilterField);
-        String locationFilter = getLower(jobLocationFilterField);
-        int visibleJobs = 0;
-        int bestScore = -1;
-        String bestJob = "";
-        for (Job job : FileStorage.loadJobs()) {
-            if (!job.isOpen()) {
-                continue;
+        beginRefreshFeedback(jobInsightLabel, jobsModel, jobAiRankingArea, "Refreshing open jobs and match ranking...");
+        try {
+            TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
+            String titleFilter = getLower(jobTitleFilterField);
+            String moduleFilter = getLower(jobModuleFilterField);
+            String skillsFilter = getLower(jobSkillsFilterField);
+            String locationFilter = getLower(jobLocationFilterField);
+            int visibleJobs = 0;
+            int bestScore = -1;
+            String bestJob = "";
+            for (Job job : FileStorage.loadJobs()) {
+                if (!job.isOpen()) {
+                    continue;
+                }
+                if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
+                    continue;
+                }
+                MatchResult match = ScoringService.evaluate(profile, job);
+                jobsModel.addRow(new Object[] {
+                        job.id,
+                        job.title,
+                        job.module,
+                        job.requiredSkills,
+                        job.maxHours,
+                        job.location,
+                        match.score + "%",
+                        extractMissingSkills(match.summary),
+                        match.summary
+                });
+                visibleJobs++;
+                if (match.score > bestScore) {
+                    bestScore = match.score;
+                    bestJob = job.title + " (" + job.module + ")";
+                }
             }
-            if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
-                continue;
+            if (visibleJobs == 0) {
+                jobInsightLabel.setText("No open jobs match the current filters.");
+            } else {
+                jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
+                        + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
             }
-            MatchResult match = ScoringService.evaluate(profile, job);
-            jobsModel.addRow(new Object[] {
-                    job.id,
-                    job.title,
-                    job.module,
-                    job.requiredSkills,
-                    job.maxHours,
-                    job.location,
-                    match.score + "%",
-                    extractMissingSkills(match.summary),
-                    match.summary
-            });
-            visibleJobs++;
-            if (match.score > bestScore) {
-                bestScore = match.score;
-                bestJob = job.title + " (" + job.module + ")";
+            if (jobAiRankingArea != null) {
+                jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
+                jobAiRankingArea.setCaretPosition(0);
             }
+        } finally {
+            endRefreshFeedback();
         }
-        if (visibleJobs == 0) {
-            jobInsightLabel.setText("No open jobs match the current filters.");
-        } else {
-            jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
-                    + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
-        }
+    }
+
+    private void openTaAiAssistantDialog() {
+        AIConversationDialog dialog = new AIConversationDialog(
+                this,
+                "TA AI Matching Assistant",
+                "Ask AI about your strongest MO and job matches",
+                "Which job and MO should I prioritise next, and what skills do I still need to improve?",
+                BoardAIInsightsService.buildTaAiContext(currentUser));
+        dialog.setVisible(true);
     }
 
     private boolean matchesJobFilters(Job job, String titleFilter, String moduleFilter, String skillsFilter,
@@ -593,67 +640,80 @@ public class TADashboard extends BaseDashboard {
     }
 
     private void refreshApplications() {
-        applicationsModel.setRowCount(0);
-        String jobFilter = getLower(applicationJobFilterField);
-        String moduleFilter = getLower(applicationModuleFilterField);
-        String statusFilter = getLower(applicationStatusFilterField);
-        int pending = 0;
-        int selected = 0;
-        int rejected = 0;
-        int withdrawn = 0;
-        for (Application app : FileStorage.loadApplications()) {
-            if (app.taId != currentUser.id) {
-                continue;
+        beginRefreshFeedback(applicationInsightLabel, applicationsModel, null, "Refreshing your applications...");
+        try {
+            String jobFilter = getLower(applicationJobFilterField);
+            String moduleFilter = getLower(applicationModuleFilterField);
+            String statusFilter = getLower(applicationStatusFilterField);
+            List<Job> jobs = FileStorage.loadJobs();
+            java.util.Map<Integer, Job> jobsById = new java.util.HashMap<Integer, Job>();
+            for (Job job : jobs) {
+                jobsById.put(job.id, job);
             }
-            Job job = FileStorage.findJobById(app.jobId);
-            String jobTitle = job == null ? "Unknown" : job.title;
-            String module = job == null ? "Unknown" : job.module;
-            if (!contains(jobTitle, jobFilter) || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
-                continue;
+            int pending = 0;
+            int selected = 0;
+            int rejected = 0;
+            int withdrawn = 0;
+            for (Application app : FileStorage.loadApplications()) {
+                if (app.taId != currentUser.id) {
+                    continue;
+                }
+                Job job = jobsById.get(app.jobId);
+                String jobTitle = job == null ? "Unknown" : job.title;
+                String module = job == null ? "Unknown" : job.module;
+                if (!contains(jobTitle, jobFilter) || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
+                    continue;
+                }
+                applicationsModel.addRow(new Object[] {
+                        app.id,
+                        jobTitle,
+                        module,
+                        app.status,
+                        app.appliedAt,
+                        app.matchScore + "%",
+                        app.reviewerNote
+                });
+                if ("PENDING".equalsIgnoreCase(app.status)) {
+                    pending++;
+                } else if ("SELECTED".equalsIgnoreCase(app.status)) {
+                    selected++;
+                } else if ("REJECTED".equalsIgnoreCase(app.status)) {
+                    rejected++;
+                } else if ("WITHDRAWN".equalsIgnoreCase(app.status)) {
+                    withdrawn++;
+                }
             }
-            applicationsModel.addRow(new Object[] {
-                    app.id,
-                    jobTitle,
-                    module,
-                    app.status,
-                    app.appliedAt,
-                    app.matchScore + "%",
-                    app.reviewerNote
-            });
-            if ("PENDING".equalsIgnoreCase(app.status)) {
-                pending++;
-            } else if ("SELECTED".equalsIgnoreCase(app.status)) {
-                selected++;
-            } else if ("REJECTED".equalsIgnoreCase(app.status)) {
-                rejected++;
-            } else if ("WITHDRAWN".equalsIgnoreCase(app.status)) {
-                withdrawn++;
-            }
+            applicationInsightLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: "
+                    + rejected + " | Withdrawn: " + withdrawn + " | Unread notifications: "
+                    + NotificationService.countUnreadForUser(currentUser.id));
+        } finally {
+            endRefreshFeedback();
         }
-        applicationInsightLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: "
-                + rejected + " | Withdrawn: " + withdrawn + " | Unread notifications: "
-                + NotificationService.countUnreadForUser(currentUser.id));
     }
 
     private void refreshNotifications() {
-        notificationsModel.setRowCount(0);
-        List<Notification> notifications = NotificationService.getNotificationsForUser(currentUser.id);
-        int unread = 0;
-        for (Notification notification : notifications) {
-            notificationsModel.addRow(new Object[] {
-                    notification.id,
-                    notification.title,
-                    notification.message,
-                    notification.status,
-                    notification.createdAt,
-                    notification.actionHint
-            });
-            if (notification.isUnread()) {
-                unread++;
+        beginRefreshFeedback(notificationSummaryLabel, notificationsModel, null, "Refreshing notifications...");
+        try {
+            List<Notification> notifications = NotificationService.getNotificationsForUser(currentUser.id);
+            int unread = 0;
+            for (Notification notification : notifications) {
+                notificationsModel.addRow(new Object[] {
+                        notification.id,
+                        notification.title,
+                        notification.message,
+                        notification.status,
+                        notification.createdAt,
+                        notification.actionHint
+                });
+                if (notification.isUnread()) {
+                    unread++;
+                }
             }
+            notificationSummaryLabel.setText("Total notifications: " + notifications.size() + " | Unread: " + unread);
+            tabs.setTitleAt(3, unread > 0 ? "Notifications (" + unread + ")" : "Notifications");
+        } finally {
+            endRefreshFeedback();
         }
-        notificationSummaryLabel.setText("Total notifications: " + notifications.size() + " | Unread: " + unread);
-        tabs.setTitleAt(3, unread > 0 ? "Notifications (" + unread + ")" : "Notifications");
     }
 
     private void markSelectedNotificationAsRead() {
