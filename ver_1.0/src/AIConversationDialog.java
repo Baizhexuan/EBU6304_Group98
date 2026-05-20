@@ -22,7 +22,12 @@ public class AIConversationDialog extends JDialog {
     private final String context;
 
     public AIConversationDialog(JFrame owner, String context) {
-        super(owner, "AI Recruitment Assistant", false);
+        this(owner, "AI Recruitment Assistant", "Ask AI about matching, workload, or applicant risk",
+                "Which TA should be considered as a safer replacement, and why?", context);
+    }
+
+    public AIConversationDialog(JFrame owner, String dialogTitle, String heading, String defaultQuestion, String context) {
+        super(owner, dialogTitle, false);
         this.context = context;
         setMinimumSize(new Dimension(760, 560));
         setSize(820, 620);
@@ -34,7 +39,7 @@ public class AIConversationDialog extends JDialog {
 
         JPanel header = new JPanel(new BorderLayout(6, 6));
         header.setOpaque(false);
-        JLabel title = new JLabel("Ask AI about matching, workload, or applicant risk");
+        JLabel title = new JLabel(heading);
         title.setFont(BaseDashboard.UI_TITLE_FONT);
         statusLabel = new JLabel(AIConversationService.buildStatusText());
         statusLabel.setForeground(new Color(82, 91, 96));
@@ -45,7 +50,7 @@ public class AIConversationDialog extends JDialog {
         questionArea = new JTextArea(5, 52);
         questionArea.setLineWrap(true);
         questionArea.setWrapStyleWord(true);
-        questionArea.setText("Which TA should be considered as a safer replacement, and why?");
+        questionArea.setText(defaultQuestion);
         answerArea = new JTextArea();
         answerArea.setEditable(false);
         answerArea.setLineWrap(true);
