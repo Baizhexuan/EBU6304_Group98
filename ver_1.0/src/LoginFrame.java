@@ -33,6 +33,12 @@ public class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
 
+    /**
+     * Constructs and displays the login frame.
+     *
+     * <p>Pre-populates the credential fields with demo values so evaluators
+     * can start the live walkthrough without typing credentials manually.</p>
+     */
     public LoginFrame() {
         setTitle(DemoMetadata.APP_TITLE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

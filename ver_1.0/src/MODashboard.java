@@ -61,6 +61,15 @@ public class MODashboard extends BaseDashboard {
     private JLabel applicantSummaryLabel;
     private JTextArea applicantAiRankingArea;
 
+    /**
+     * Constructs and displays the MO dashboard for the given user.
+     *
+     * <p>Tabs are created for job posting, managing existing posts, and
+     * reviewing applicants. A tab-switch listener triggers data refreshes
+     * automatically to reflect the latest CSV state.</p>
+     *
+     * @param currentUser the authenticated Module Organiser user
+     */
     public MODashboard(User currentUser) {
         super(currentUser, "MO Dashboard", 1160, 760);
         addTab("Post Job", createPostJobPanel());

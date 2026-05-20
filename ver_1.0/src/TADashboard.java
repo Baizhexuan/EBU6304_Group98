@@ -65,6 +65,15 @@ public class TADashboard extends BaseDashboard {
     private DefaultTableModel notificationsModel;
     private JLabel notificationSummaryLabel;
 
+    /**
+     * Constructs and displays the TA dashboard for the given user.
+     *
+     * <p>Tabs are created for profile editing, job browsing, application
+     * tracking, and in-app notifications. The profile is loaded immediately
+     * so existing data is visible without requiring a manual refresh.</p>
+     *
+     * @param currentUser the authenticated TA user
+     */
     public TADashboard(User currentUser) {
         super(currentUser, "TA Dashboard", 1100, 760);
         addTab("My Profile", createProfilePanel());

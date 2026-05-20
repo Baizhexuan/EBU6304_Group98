@@ -23,18 +23,36 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 public abstract class BaseDashboard extends JFrame {
+    /** Bold font used for section headings throughout the UI. */
     protected static final Font UI_TITLE_FONT = new Font("SansSerif", Font.BOLD, 16);
+    /** Regular font used for body text and table cells. */
     protected static final Font UI_BODY_FONT = new Font("SansSerif", Font.PLAIN, 13);
+    /** Background colour for the main window content area. */
     protected static final Color APP_BACKGROUND = new Color(247, 248, 249);
+    /** Background colour for cards and panels placed on {@link #APP_BACKGROUND}. */
     protected static final Color SURFACE_COLOR = Color.WHITE;
+    /** Primary accent colour used for headings and active elements. */
     protected static final Color ACCENT_COLOR = new Color(32, 78, 92);
+    /** Lighter tint of {@link #ACCENT_COLOR} used for hover states and highlights. */
     protected static final Color SOFT_ACCENT = new Color(226, 237, 240);
+    /** Colour used for table grid lines and card borders. */
     protected static final Color BORDER_COLOR = new Color(218, 224, 228);
+    /** Muted foreground colour used for secondary labels. */
     protected static final Color TEXT_MUTED = new Color(82, 91, 96);
 
+    /** The currently authenticated user whose data populates this dashboard. */
     protected final User currentUser;
+    /** The tabbed pane that hosts each functional section of the dashboard. */
     protected final JTabbedPane tabs;
 
+    /**
+     * Constructs the base dashboard window.
+     *
+     * @param currentUser the authenticated user
+     * @param roleTitle   label shown in the window title bar alongside the username
+     * @param width       initial window width in pixels
+     * @param height      initial window height in pixels
+     */
     protected BaseDashboard(User currentUser, String roleTitle, int width, int height) {
         this.currentUser = currentUser;
         setTitle(roleTitle + " - " + currentUser.getSafeDisplayName());
@@ -74,14 +92,32 @@ public abstract class BaseDashboard extends JFrame {
         add(tabs, BorderLayout.CENTER);
     }
 
+    /**
+     * Adds a named tab containing the supplied component.
+     *
+     * @param title     tab label shown in the tabbed pane
+     * @param component content panel displayed when the tab is selected
+     */
     protected void addTab(String title, java.awt.Component component) {
         tabs.addTab(title, component);
     }
 
+    /**
+     * Installs a change listener that calls {@code refreshAction} whenever the
+     * user switches to a different tab.
+     *
+     * @param refreshAction action run on every tab-selection change event
+     */
     protected void installRefreshOnTabSwitch(Runnable refreshAction) {
         tabs.addChangeListener(e -> refreshAction.run());
     }
 
+    /**
+     * Wraps a component in a styled {@link JScrollPane}.
+     *
+     * @param component the component to wrap
+     * @return a scroll pane ready to be added to a layout
+     */
     protected JScrollPane wrapScrollable(Component component) {
         JScrollPane scrollPane = new JScrollPane(component);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -89,6 +125,14 @@ public abstract class BaseDashboard extends JFrame {
         return scrollPane;
     }
 
+    /**
+     * Builds a styled section header panel containing a bold title and a
+     * descriptive body paragraph.
+     *
+     * @param title section heading text
+     * @param body  HTML-safe body text rendered below the heading
+     * @return a panel ready to be placed above a table or form
+     */
     protected JPanel buildSectionIntro(String title, String body) {
         JPanel intro = new JPanel();
         intro.setLayout(new BoxLayout(intro, BoxLayout.Y_AXIS));
@@ -112,6 +156,14 @@ public abstract class BaseDashboard extends JFrame {
         return intro;
     }
 
+    /**
+     * Builds a small coloured pill label used to represent status values.
+     *
+     * @param text       text displayed inside the pill
+     * @param background pill background colour
+     * @param foreground pill text colour
+     * @return a styled label suitable for inline status display
+     */
     protected JLabel buildStatusPill(String text, Color background, Color foreground) {
         JLabel label = new JLabel(" " + text + " ");
         label.setOpaque(true);
@@ -122,10 +174,25 @@ public abstract class BaseDashboard extends JFrame {
         return label;
     }
 
+    /**
+     * Applies the standard button appearance to the given button.
+     *
+     * @param button     button to style
+     * @param background fill colour
+     * @param foreground text and border colour
+     */
     protected void styleActionButton(javax.swing.JButton button, Color background, Color foreground) {
         applyButtonStyle(button, background, foreground);
     }
 
+    /**
+     * Static variant of {@link #styleActionButton} so non-subclass code can
+     * apply the same styling (e.g. {@link FilterToolbar}).
+     *
+     * @param button     button to style
+     * @param background fill colour
+     * @param foreground text and border colour
+     */
     public static void applyButtonStyle(javax.swing.JButton button, Color background, Color foreground) {
         button.setUI(new BasicButtonUI());
         button.setOpaque(true);
@@ -143,6 +210,11 @@ public abstract class BaseDashboard extends JFrame {
                 BorderFactory.createEmptyBorder(7, 12, 7, 12)));
     }
 
+    /**
+     * Applies the standard appearance to a {@link JTable} used in all dashboards.
+     *
+     * @param table the table to style
+     */
     protected void styleTable(JTable table) {
         table.setRowHeight(30);
         table.setShowGrid(true);
@@ -157,12 +229,26 @@ public abstract class BaseDashboard extends JFrame {
         table.getTableHeader().setPreferredSize(new Dimension(0, 34));
     }
 
+    /**
+     * Creates an empty right-aligned action button row.
+     *
+     * @return panel with {@code FlowLayout.RIGHT} ready for buttons
+     */
     protected JPanel buildActionRow() {
         JPanel actions = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
         return actions;
     }
 
+    /**
+     * Prepares the UI for a potentially slow data refresh operation by showing
+     * a wait cursor, clearing the table model, and updating status labels.
+     *
+     * @param statusLabel label to update with {@code message} (may be {@code null})
+     * @param model       table model to clear (may be {@code null})
+     * @param detailArea  text area to show a waiting message (may be {@code null})
+     * @param message     status text to display while loading
+     */
     protected void beginRefreshFeedback(JLabel statusLabel, DefaultTableModel model, JTextArea detailArea,
             String message) {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -179,6 +265,9 @@ public abstract class BaseDashboard extends JFrame {
         }
     }
 
+    /**
+     * Restores the default cursor after a refresh operation completes.
+     */
     protected void endRefreshFeedback() {
         setCursor(Cursor.getDefaultCursor());
     }
@@ -190,6 +279,10 @@ public abstract class BaseDashboard extends JFrame {
         }
     }
 
+    /**
+     * Logs out the current user by disposing this window and returning to the
+     * {@link LoginFrame}.
+     */
     protected void logout() {
         dispose();
         new LoginFrame();

@@ -18,6 +18,16 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
     private static final int CONNECT_TIMEOUT_MS = 3000;
     private static final int READ_TIMEOUT_MS = 6000;
 
+    /**
+     * Evaluates TA-to-job skill compatibility using an external AI model.
+     *
+     * <p>Falls back to the local {@link MatchingService} result when the
+     * model is not configured or the network call fails.</p>
+     *
+     * @param profile the TA's academic and skills profile
+     * @param job     the target job posting
+     * @return a {@link MatchResult} containing a numeric score and explanation
+     */
     @Override
     public MatchResult evaluate(TAProfile profile, Job job) {
         MatchResult fallback = MatchingService.evaluate(profile, job);
@@ -39,21 +49,41 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
         }
     }
 
+    /**
+     * Returns the provider identifier including the configured model name.
+     *
+     * @return provider name string
+     */
     @Override
     public String getProviderName() {
         return "AIModelSkillScoringProvider(" + getModelName() + ")";
     }
 
+    /**
+     * Indicates that this provider delegates scoring to an external model.
+     *
+     * @return {@code true} always
+     */
     @Override
     public boolean isExternalModel() {
         return true;
     }
 
+    /**
+     * Returns {@code true} when an API key is configured for live scoring.
+     *
+     * @return {@code true} if the API key environment variable is set
+     */
     @Override
     public boolean isReady() {
         return ValidationUtils.notBlank(getApiKey());
     }
 
+    /**
+     * Returns a human-readable description of the current provider status.
+     *
+     * @return status string suitable for display in the Admin dashboard
+     */
     @Override
     public String getStatusDescription() {
         if (!isReady()) {
