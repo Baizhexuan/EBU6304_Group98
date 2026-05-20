@@ -18,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -58,20 +59,14 @@ public class MODashboard extends BaseDashboard {
     private JTextField applicantSkillsFilterField;
     private JTextField applicantStatusFilterField;
     private JLabel applicantSummaryLabel;
+    private JTextArea applicantAiRankingArea;
 
     public MODashboard(User currentUser) {
         super(currentUser, "MO Dashboard", 1160, 760);
         addTab("Post Job", createPostJobPanel());
         addTab("My Job Posts", createMyJobsPanel());
         addTab("Applicants", createApplicantsPanel());
-        installRefreshOnTabSwitch(() -> {
-            refreshMyJobs();
-            refreshJobSelector();
-            refreshApplicants();
-        });
-        refreshMyJobs();
-        refreshJobSelector();
-        refreshApplicants();
+        installRefreshOnTabSwitch(this::refreshVisibleTab);
         setVisible(true);
     }
 
@@ -277,11 +272,27 @@ public class MODashboard extends BaseDashboard {
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
         center.add(filters, BorderLayout.NORTH);
-        JPanel tableWrap = new JPanel(new BorderLayout());
-        tableWrap.setOpaque(false);
-        tableWrap.add(center, BorderLayout.NORTH);
-        tableWrap.add(new JScrollPane(applicantsTable), BorderLayout.CENTER);
-        panel.add(tableWrap, BorderLayout.CENTER);
+
+        applicantAiRankingArea = new JTextArea();
+        applicantAiRankingArea.setEditable(false);
+        applicantAiRankingArea.setLineWrap(true);
+        applicantAiRankingArea.setWrapStyleWord(true);
+        applicantAiRankingArea.setBackground(SURFACE_COLOR);
+        applicantAiRankingArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel aiPanel = new JPanel(new BorderLayout(6, 6));
+        aiPanel.setBackground(SURFACE_COLOR);
+        aiPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        aiPanel.add(new JLabel("AI Applicant Ranking"), BorderLayout.NORTH);
+        aiPanel.add(new JScrollPane(applicantAiRankingArea), BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(applicantsTable), aiPanel);
+        splitPane.setResizeWeight(0.7);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        center.add(splitPane, BorderLayout.CENTER);
+        panel.add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new BorderLayout(8, 8));
         actions.setOpaque(false);
@@ -291,15 +302,19 @@ public class MODashboard extends BaseDashboard {
         JPanel buttonRow = buildActionRow();
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
+        JButton aiButton = new JButton("Ask AI About Applicants");
         styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);
         styleActionButton(rejectButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(aiButton, new Color(220, 232, 222), new Color(36, 78, 54));
         buttonRow.add(acceptButton);
         buttonRow.add(rejectButton);
+        buttonRow.add(aiButton);
         actions.add(buttonRow, BorderLayout.EAST);
         panel.add(actions, BorderLayout.SOUTH);
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
+        aiButton.addActionListener(e -> openMoAiAssistantDialog());
         installFieldListener(applicantNameFilterField, this::refreshApplicants);
         installFieldListener(applicantEmailFilterField, this::refreshApplicants);
         installFieldListener(applicantSkillsFilterField, this::refreshApplicants);
@@ -324,7 +339,17 @@ public class MODashboard extends BaseDashboard {
     }
 
     private void installFieldListener(JTextField field, Runnable action) {
-        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
+        field.addActionListener(e -> action.run());
+    }
+
+    private void refreshVisibleTab() {
+        int index = tabs.getSelectedIndex();
+        if (index == 1) {
+            refreshMyJobs();
+        } else if (index == 2) {
+            refreshJobSelector();
+            refreshApplicants();
+        }
     }
 
     private void publishJob() {
@@ -370,28 +395,32 @@ public class MODashboard extends BaseDashboard {
     }
 
     private void refreshMyJobs() {
-        myJobsModel.setRowCount(0);
-        String titleFilter = getLower(myJobsTitleFilterField);
-        String moduleFilter = getLower(myJobsModuleFilterField);
-        String statusFilter = getLower(myJobsStatusFilterField);
-        int visibleJobs = 0;
-        int openJobs = 0;
-        for (Job job : FileStorage.loadJobs()) {
-            if (job.moId != currentUser.id) {
-                continue;
+        beginRefreshFeedback(myJobsSummaryLabel, myJobsModel, null, "Refreshing your job posts...");
+        try {
+            String titleFilter = getLower(myJobsTitleFilterField);
+            String moduleFilter = getLower(myJobsModuleFilterField);
+            String statusFilter = getLower(myJobsStatusFilterField);
+            int visibleJobs = 0;
+            int openJobs = 0;
+            for (Job job : FileStorage.loadJobs()) {
+                if (job.moId != currentUser.id) {
+                    continue;
+                }
+                if (!contains(job.title, titleFilter) || !contains(job.module, moduleFilter)
+                        || !contains(job.status, statusFilter)) {
+                    continue;
+                }
+                myJobsModel.addRow(new Object[] {job.id, job.title, job.module, job.requiredSkills, job.maxHours, job.status});
+                visibleJobs++;
+                if (job.isOpen()) {
+                    openJobs++;
+                }
             }
-            if (!contains(job.title, titleFilter) || !contains(job.module, moduleFilter)
-                    || !contains(job.status, statusFilter)) {
-                continue;
-            }
-            myJobsModel.addRow(new Object[] {job.id, job.title, job.module, job.requiredSkills, job.maxHours, job.status});
-            visibleJobs++;
-            if (job.isOpen()) {
-                openJobs++;
-            }
+            myJobsSummaryLabel.setText("Visible jobs: " + visibleJobs + " | Open jobs: " + openJobs + " | Closed jobs: "
+                    + Math.max(visibleJobs - openJobs, 0));
+        } finally {
+            endRefreshFeedback();
         }
-        myJobsSummaryLabel.setText("Visible jobs: " + visibleJobs + " | Open jobs: " + openJobs + " | Closed jobs: "
-                + Math.max(visibleJobs - openJobs, 0));
     }
 
     private void toggleSelectedJob() {
@@ -436,70 +465,106 @@ public class MODashboard extends BaseDashboard {
     }
 
     private void refreshApplicants() {
-        applicantsModel.setRowCount(0);
-        int selectedJobId = getSelectedJobId();
-        if (selectedJobId < 0) {
-            applicantSummaryLabel.setText("No job selected yet. Publish or choose a job to inspect applicants.");
-            return;
-        }
-        String nameFilter = getLower(applicantNameFilterField);
-        String emailFilter = getLower(applicantEmailFilterField);
-        String skillsFilter = getLower(applicantSkillsFilterField);
-        String statusFilter = getLower(applicantStatusFilterField);
+        beginRefreshFeedback(applicantSummaryLabel, applicantsModel, applicantAiRankingArea, "Refreshing applicants and match ranking...");
+        try {
+            int selectedJobId = getSelectedJobId();
+            if (selectedJobId < 0) {
+                applicantSummaryLabel.setText("No job selected yet. Publish or choose a job to inspect applicants.");
+                return;
+            }
+            String nameFilter = getLower(applicantNameFilterField);
+            String emailFilter = getLower(applicantEmailFilterField);
+            String skillsFilter = getLower(applicantSkillsFilterField);
+            String statusFilter = getLower(applicantStatusFilterField);
 
-        Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
-        for (TAProfile profile : FileStorage.loadProfiles()) {
-            profiles.put(profile.userId, profile);
-        }
+            Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
+            for (TAProfile profile : FileStorage.loadProfiles()) {
+                profiles.put(profile.userId, profile);
+            }
+            Map<Integer, User> usersById = new HashMap<Integer, User>();
+            for (User user : FileStorage.loadUsers()) {
+                usersById.put(user.id, user);
+            }
+            Map<Integer, Job> jobsById = new HashMap<Integer, Job>();
+            for (Job job : FileStorage.loadJobs()) {
+                jobsById.put(job.id, job);
+            }
+            Map<Integer, Integer> selectedHoursByTa = new HashMap<Integer, Integer>();
+            for (Application app : FileStorage.loadApplications()) {
+                if ("SELECTED".equalsIgnoreCase(app.status)) {
+                    Job job = jobsById.get(app.jobId);
+                    if (job != null) {
+                        Integer hours = selectedHoursByTa.get(app.taId);
+                        selectedHoursByTa.put(app.taId, (hours == null ? 0 : hours) + job.maxHours);
+                    }
+                }
+            }
 
-        int pending = 0;
-        int selected = 0;
-        int rejected = 0;
-        int strongestScore = -1;
-        String strongestName = "";
-        for (Application app : FileStorage.loadApplications()) {
-            if (app.jobId != selectedJobId) {
-                continue;
+            int pending = 0;
+            int selected = 0;
+            int rejected = 0;
+            int strongestScore = -1;
+            String strongestName = "";
+            for (Application app : FileStorage.loadApplications()) {
+                if (app.jobId != selectedJobId) {
+                    continue;
+                }
+                User taUser = usersById.get(app.taId);
+                TAProfile profile = profiles.get(app.taId);
+                String displayName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
+                String email = profile == null ? "N/A" : profile.email;
+                String skills = profile == null ? "N/A" : profile.skills;
+                if (!contains(displayName, nameFilter) || !contains(email, emailFilter)
+                        || !contains(skills, skillsFilter) || !contains(app.status, statusFilter)) {
+                    continue;
+                }
+                applicantsModel.addRow(new Object[] {
+                        app.id,
+                        displayName,
+                        email,
+                        skills,
+                        app.matchScore + "%",
+                        extractMissingSkills(app.matchSummary),
+                        app.matchSummary,
+                        app.status,
+                        selectedHoursByTa.containsKey(app.taId) ? selectedHoursByTa.get(app.taId) : 0
+                });
+                if ("PENDING".equalsIgnoreCase(app.status)) {
+                    pending++;
+                } else if ("SELECTED".equalsIgnoreCase(app.status)) {
+                    selected++;
+                } else if ("REJECTED".equalsIgnoreCase(app.status)) {
+                    rejected++;
+                }
+                if (app.matchScore > strongestScore) {
+                    strongestScore = app.matchScore;
+                    strongestName = displayName;
+                }
             }
-            User taUser = FileStorage.findUserById(app.taId);
-            TAProfile profile = profiles.get(app.taId);
-            String displayName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
-            String email = profile == null ? "N/A" : profile.email;
-            String skills = profile == null ? "N/A" : profile.skills;
-            if (!contains(displayName, nameFilter) || !contains(email, emailFilter)
-                    || !contains(skills, skillsFilter) || !contains(app.status, statusFilter)) {
-                continue;
-            }
-            applicantsModel.addRow(new Object[] {
-                    app.id,
-                    displayName,
-                    email,
-                    skills,
-                    app.matchScore + "%",
-                    extractMissingSkills(app.matchSummary),
-                    app.matchSummary,
-                    app.status,
-                    calculateCurrentHours(app.taId)
-            });
-            if ("PENDING".equalsIgnoreCase(app.status)) {
-                pending++;
-            } else if ("SELECTED".equalsIgnoreCase(app.status)) {
-                selected++;
-            } else if ("REJECTED".equalsIgnoreCase(app.status)) {
-                rejected++;
-            }
-            if (app.matchScore > strongestScore) {
-                strongestScore = app.matchScore;
-                strongestName = displayName;
-            }
-        }
 
-        if (applicantsModel.getRowCount() == 0) {
-            applicantSummaryLabel.setText("No applicants match the current selection or filters.");
-            return;
+            if (applicantAiRankingArea != null) {
+                applicantAiRankingArea.setText(BoardAIInsightsService.buildMoApplicantRanking(currentUser, selectedJobId, 5));
+                applicantAiRankingArea.setCaretPosition(0);
+            }
+            if (applicantsModel.getRowCount() == 0) {
+                applicantSummaryLabel.setText("No applicants match the current selection or filters.");
+                return;
+            }
+            applicantSummaryLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: " + rejected
+                    + " | Strongest visible fit: " + strongestName + " at " + Math.max(strongestScore, 0) + "%");
+        } finally {
+            endRefreshFeedback();
         }
-        applicantSummaryLabel.setText("Pending: " + pending + " | Selected: " + selected + " | Rejected: " + rejected
-                + " | Strongest visible fit: " + strongestName + " at " + Math.max(strongestScore, 0) + "%");
+    }
+
+    private void openMoAiAssistantDialog() {
+        AIConversationDialog dialog = new AIConversationDialog(
+                this,
+                "MO AI Matching Assistant",
+                "Ask AI about the best TA candidates for this job",
+                "Which applicant is the strongest fit for the selected job, and what risks should I review before deciding?",
+                BoardAIInsightsService.buildMoAiContext(currentUser, getSelectedJobId()));
+        dialog.setVisible(true);
     }
 
     private int getSelectedJobId() {
