@@ -14,6 +14,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingWorker;
 
+/**
+ * A non-blocking dialog that lets Admin users ask free-form questions
+ * to the AI recruitment assistant.
+ *
+ * <p>The dialog sends requests asynchronously via {@link AIConversationService}
+ * so the main UI thread is never blocked during network calls. When the
+ * external model is unavailable the response area shows the local fallback
+ * answer instead.</p>
+ */
 public class AIConversationDialog extends JDialog {
     private final JTextArea questionArea;
     private final JTextArea answerArea;
@@ -21,11 +30,26 @@ public class AIConversationDialog extends JDialog {
     private final JButton askButton;
     private final String context;
 
+    /**
+     * Constructs an AI assistant dialog with default title and prompt text.
+     *
+     * @param owner   the parent frame that owns this dialog
+     * @param context current recruitment data snapshot injected into the AI prompt
+     */
     public AIConversationDialog(JFrame owner, String context) {
         this(owner, "AI Recruitment Assistant", "Ask AI about matching, workload, or applicant risk",
                 "Which TA should be considered as a safer replacement, and why?", context);
     }
 
+    /**
+     * Constructs a fully customised AI assistant dialog.
+     *
+     * @param owner           the parent frame that owns this dialog
+     * @param dialogTitle     window title shown in the dialog header
+     * @param heading         bold heading displayed above the question area
+     * @param defaultQuestion pre-filled question shown when the dialog opens
+     * @param context         current recruitment data snapshot injected into the AI prompt
+     */
     public AIConversationDialog(JFrame owner, String dialogTitle, String heading, String defaultQuestion, String context) {
         super(owner, dialogTitle, false);
         this.context = context;

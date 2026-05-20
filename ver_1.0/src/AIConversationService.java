@@ -7,6 +7,19 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Sends natural-language questions to an external AI model and returns
+ * plain-text answers suitable for display in the Admin AI Assistant dialog.
+ *
+ * <p>The service supports two API protocols:
+ * <ul>
+ *   <li><b>chat/completions</b> — compatible with OpenAI and Alibaba DashScope
+ *       ({@code qwen-plus})</li>
+ *   <li><b>responses</b> — the OpenAI Responses API</li>
+ * </ul>
+ * When no API key is configured the service returns a structured local
+ * fallback answer so the demo remains usable offline.</p>
+ */
 public final class AIConversationService {
     private static final int CONNECT_TIMEOUT_MS = 6000;
     private static final int READ_TIMEOUT_MS = 20000;
@@ -15,6 +28,17 @@ public final class AIConversationService {
     private AIConversationService() {
     }
 
+    /**
+     * Sends a question with optional recruitment context to the AI service.
+     *
+     * <p>Falls back to a local structured answer when the external model is
+     * not configured or the network call fails. The fallback reason is
+     * appended to the response so operators can diagnose issues.</p>
+     *
+     * @param question natural-language question from the admin user
+     * @param context  current recruitment data snapshot injected into the prompt
+     * @return plain-text answer string, never {@code null}
+     */
     public static String ask(String question, String context) {
         if (ValidationUtils.isBlank(question)) {
             return "Please enter a question about TA matching, workload balancing, or applicant screening.";
@@ -37,10 +61,23 @@ public final class AIConversationService {
         }
     }
 
+    /**
+     * Returns {@code true} when an API key is available for external model calls.
+     *
+     * @return {@code true} if {@code OPENAI_API_KEY} is configured
+     */
     public static boolean isConfigured() {
         return ValidationUtils.notBlank(AIConfig.get("OPENAI_API_KEY"));
     }
 
+    /**
+     * Returns a short status string describing the active mode.
+     *
+     * <p>Used by the Admin AI Assistant dialog to show whether the live
+     * model or local fallback is active.</p>
+     *
+     * @return human-readable status message
+     */
     public static String buildStatusText() {
         if (!isConfigured()) {
             return "Local fallback mode: set OPENAI_API_KEY to call the external model.";

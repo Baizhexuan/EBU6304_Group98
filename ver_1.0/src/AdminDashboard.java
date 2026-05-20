@@ -74,6 +74,15 @@ public class AdminDashboard extends BaseDashboard {
     private boolean jobsDirty;
     private List<Job> jobSnapshot = new ArrayList<Job>();
 
+    /**
+     * Constructs and displays the Admin dashboard for the given user.
+     *
+     * <p>Tabs cover workload monitoring, applications overview, and jobs
+     * overview. An unsaved-changes guard is installed so inline edits are
+     * not silently discarded when the window is closed or the user logs out.</p>
+     *
+     * @param currentUser the authenticated Admin user
+     */
     public AdminDashboard(User currentUser) {
         super(currentUser, "Admin Dashboard", 1280, 820);
         addTab("Workload Monitor", createWorkloadPanel());

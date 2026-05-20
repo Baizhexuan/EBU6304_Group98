@@ -1,4 +1,16 @@
+/**
+ * Lightweight smoke test that verifies critical system invariants after startup.
+ *
+ * <p>Run this class from the command line after seeding the CSV data files to
+ * confirm that CSV loading, scoring, and notification generation are all
+ * functional. A non-zero exit code indicates a broken invariant.</p>
+ */
 public class SystemSmokeTest {
+    /**
+     * Entry point for the smoke test.
+     *
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         FileStorage.initialise();
         ScoringService.resetProviderFromEnvironment();

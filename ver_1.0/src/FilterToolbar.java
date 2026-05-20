@@ -12,12 +12,28 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+/**
+ * A reusable search toolbar that allows users to filter table data by
+ * multiple named fields.
+ *
+ * <p>Fields are registered via {@link #addField(String, JTextField)} and
+ * linked to external {@code JTextField} instances that drive
+ * {@code RowFilter} logic in the parent panel. When the user selects a
+ * field from the dropdown and types a query, the toolbar writes the value
+ * into the bound field and triggers the supplied {@code refreshAction}.</p>
+ */
 public class FilterToolbar extends JPanel {
     private final JComboBox<String> fieldSelector;
     private final JTextField searchField;
     private final JButton searchButton;
     private final Map<String, JTextField> mappedFields = new LinkedHashMap<String, JTextField>();
 
+    /**
+     * Constructs a {@code FilterToolbar} with a single free-text search field.
+     *
+     * @param placeholder  placeholder text shown in the search input
+     * @param refreshAction action run whenever the user submits or clears a search
+     */
     public FilterToolbar(String placeholder, Runnable refreshAction) {
         super(new BorderLayout(8, 8));
         setOpaque(false);
@@ -59,6 +75,16 @@ public class FilterToolbar extends JPanel {
         });
     }
 
+    /**
+     * Registers a named field and binds it to an external {@code JTextField}.
+     *
+     * <p>The label is added to the field-selector dropdown. When selected,
+     * the toolbar synchronises the search input with {@code targetField} so
+     * the parent panel's {@code RowFilter} can apply the query.</p>
+     *
+     * @param label       display name for the field in the dropdown
+     * @param targetField the external text field driven by this toolbar entry
+     */
     public void addField(String label, JTextField targetField) {
         mappedFields.put(label, targetField);
         fieldSelector.addItem(label);
