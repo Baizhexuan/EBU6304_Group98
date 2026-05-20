@@ -1,6 +1,7 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
@@ -16,7 +17,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 public abstract class BaseDashboard extends JFrame {
@@ -158,6 +161,33 @@ public abstract class BaseDashboard extends JFrame {
         JPanel actions = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
         return actions;
+    }
+
+    protected void beginRefreshFeedback(JLabel statusLabel, DefaultTableModel model, JTextArea detailArea,
+            String message) {
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        if (model != null) {
+            model.setRowCount(0);
+        }
+        if (detailArea != null) {
+            detailArea.setText("Refreshing...\nPlease wait a moment.");
+            paintNow(detailArea);
+        }
+        if (statusLabel != null) {
+            statusLabel.setText(message);
+            paintNow(statusLabel);
+        }
+    }
+
+    protected void endRefreshFeedback() {
+        setCursor(Cursor.getDefaultCursor());
+    }
+
+    private void paintNow(Component component) {
+        if (component instanceof javax.swing.JComponent && component.isShowing()) {
+            javax.swing.JComponent swingComponent = (javax.swing.JComponent) component;
+            swingComponent.paintImmediately(0, 0, swingComponent.getWidth(), swingComponent.getHeight());
+        }
     }
 
     protected void logout() {
