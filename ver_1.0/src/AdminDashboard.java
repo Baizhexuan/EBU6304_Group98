@@ -54,6 +54,7 @@ public class AdminDashboard extends BaseDashboard {
     private JLabel aiReadinessLabel;
     private JLabel recommendationTitleLabel;
     private JTextArea recommendationArea;
+    private JTextArea systemInsightArea;
 
     private JTable applicationsTable;
     private DefaultTableModel applicationsModel;
@@ -166,6 +167,14 @@ public class AdminDashboard extends BaseDashboard {
         filters.add(compactFilter, BorderLayout.NORTH);
         filters.add(filterPanel, BorderLayout.CENTER);
 
+        systemInsightArea = new JTextArea();
+        systemInsightArea.setEditable(false);
+        systemInsightArea.setLineWrap(true);
+        systemInsightArea.setWrapStyleWord(true);
+        systemInsightArea.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        systemInsightArea.setBackground(SURFACE_COLOR);
+        systemInsightArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
         recommendationArea = new JTextArea();
         recommendationArea.setEditable(false);
         recommendationArea.setLineWrap(true);
@@ -179,10 +188,14 @@ public class AdminDashboard extends BaseDashboard {
         recommendationPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(214, 220, 224)),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-        JLabel recommendationHeader = new JLabel("Reallocation Advice");
+        JLabel recommendationHeader = new JLabel("AI System Insight and Reallocation Advice");
         recommendationHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
         recommendationPanel.add(recommendationHeader, BorderLayout.NORTH);
-        recommendationPanel.add(new JScrollPane(recommendationArea), BorderLayout.CENTER);
+        JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                new JScrollPane(systemInsightArea), new JScrollPane(recommendationArea));
+        rightSplit.setResizeWeight(0.42);
+        rightSplit.setBorder(BorderFactory.createEmptyBorder());
+        recommendationPanel.add(rightSplit, BorderLayout.CENTER);
 
         JPanel tableWrap = new JPanel(new BorderLayout(8, 8));
         tableWrap.setOpaque(false);
@@ -401,7 +414,7 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void installFieldListener(JTextField field, Runnable action) {
-        field.getDocument().addDocumentListener(new SimpleDocumentListener(action));
+        field.addActionListener(e -> action.run());
     }
 
     private JLabel buildCardLabel(String text) {
@@ -441,63 +454,82 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void refreshWorkload() {
-        workloadModel.setRowCount(0);
-        Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
-        for (TAProfile profile : FileStorage.loadProfiles()) {
-            profiles.put(profile.userId, profile);
-        }
-
-        String usernameFilter = getLower(workloadUsernameFilterField);
-        String nameFilter = getLower(workloadNameFilterField);
-        String emailFilter = getLower(workloadEmailFilterField);
-        String selectedStatus = workloadStatusFilter == null ? "ALL" : String.valueOf(workloadStatusFilter.getSelectedItem());
-        int taCount = 0;
-        int overloadCount = 0;
-        int totalHours = 0;
-
-        for (User user : FileStorage.loadUsers()) {
-            if (!"TA".equalsIgnoreCase(user.role)) {
-                continue;
+        beginRefreshFeedback(adminSummaryLabel, workloadModel, systemInsightArea, "Refreshing workload overview...");
+        try {
+            Map<Integer, TAProfile> profiles = new HashMap<Integer, TAProfile>();
+            for (TAProfile profile : FileStorage.loadProfiles()) {
+                profiles.put(profile.userId, profile);
             }
-            TAProfile profile = profiles.get(user.id);
-            int selectedJobs = 0;
-            int currentHours = 0;
-            for (Application app : FileStorage.loadApplications()) {
-                if (app.taId == user.id && "SELECTED".equalsIgnoreCase(app.status)) {
-                    selectedJobs++;
-                    Job job = FileStorage.findJobById(app.jobId);
+            List<User> users = FileStorage.loadUsers();
+            List<Application> applications = FileStorage.loadApplications();
+            List<Job> jobs = FileStorage.loadJobs();
+            Map<Integer, Job> jobsById = new HashMap<Integer, Job>();
+            for (Job job : jobs) {
+                jobsById.put(job.id, job);
+            }
+            Map<Integer, Integer> selectedHoursByTa = new HashMap<Integer, Integer>();
+            Map<Integer, Integer> selectedJobsByTa = new HashMap<Integer, Integer>();
+            for (Application app : applications) {
+                if ("SELECTED".equalsIgnoreCase(app.status)) {
+                    Job job = jobsById.get(app.jobId);
                     if (job != null) {
-                        currentHours += job.maxHours;
+                        Integer hours = selectedHoursByTa.get(app.taId);
+                        selectedHoursByTa.put(app.taId, (hours == null ? 0 : hours) + job.maxHours);
+                        Integer count = selectedJobsByTa.get(app.taId);
+                        selectedJobsByTa.put(app.taId, (count == null ? 0 : count) + 1);
                     }
                 }
             }
 
-            String fullName = profile == null ? user.getSafeDisplayName() : profile.fullName;
-            String email = profile == null ? "N/A" : profile.email;
-            String status = buildWorkloadStatus(currentHours);
-            if (!contains(user.username, usernameFilter) || !contains(fullName, nameFilter)
-                    || !contains(email, emailFilter) || !matchesStatus(status, selectedStatus)) {
-                continue;
+            String usernameFilter = getLower(workloadUsernameFilterField);
+            String nameFilter = getLower(workloadNameFilterField);
+            String emailFilter = getLower(workloadEmailFilterField);
+            String selectedStatus = workloadStatusFilter == null ? "ALL" : String.valueOf(workloadStatusFilter.getSelectedItem());
+            int taCount = 0;
+            int overloadCount = 0;
+            int totalHours = 0;
+
+            for (User user : users) {
+                if (!"TA".equalsIgnoreCase(user.role)) {
+                    continue;
+                }
+                TAProfile profile = profiles.get(user.id);
+                int selectedJobs = selectedJobsByTa.containsKey(user.id) ? selectedJobsByTa.get(user.id) : 0;
+                int currentHours = selectedHoursByTa.containsKey(user.id) ? selectedHoursByTa.get(user.id) : 0;
+
+                String fullName = profile == null ? user.getSafeDisplayName() : profile.fullName;
+                String email = profile == null ? "N/A" : profile.email;
+                String status = buildWorkloadStatus(currentHours);
+                if (!contains(user.username, usernameFilter) || !contains(fullName, nameFilter)
+                        || !contains(email, emailFilter) || !matchesStatus(status, selectedStatus)) {
+                    continue;
+                }
+
+                taCount++;
+                totalHours += currentHours;
+                if (status.startsWith("OVERLOAD")) {
+                    overloadCount++;
+                }
+                workloadModel.addRow(new Object[] {user.username, fullName, email, selectedJobs, currentHours, status});
             }
 
-            taCount++;
-            totalHours += currentHours;
-            if (status.startsWith("OVERLOAD")) {
-                overloadCount++;
+            adminSummaryLabel.setText("<html><div style='width:300px;'>Visible TAs: " + taCount
+                    + " | Total allocated hours: " + totalHours
+                    + " | Overload cases: " + overloadCount
+                    + " | Overload limit: " + FileStorage.getOverloadLimit() + "h</div></html>");
+            aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary()
+                    + " | Explainability: score, missing skills, projected-load reasoning, and board-level ranking summaries are displayed in the UI.</div></html>");
+            if (systemInsightArea != null) {
+                systemInsightArea.setText(BoardAIInsightsService.buildAdminSystemOverview());
+                systemInsightArea.setCaretPosition(0);
             }
-            workloadModel.addRow(new Object[] {user.username, fullName, email, selectedJobs, currentHours, status});
+            if (workloadModel.getRowCount() > 0 && workloadTable.getSelectedRow() < 0) {
+                workloadTable.setRowSelectionInterval(0, 0);
+            }
+            refreshRecommendationPanel();
+        } finally {
+            endRefreshFeedback();
         }
-
-        adminSummaryLabel.setText("<html><div style='width:300px;'>Visible TAs: " + taCount
-                + " | Total allocated hours: " + totalHours
-                + " | Overload cases: " + overloadCount
-                + " | Overload limit: " + FileStorage.getOverloadLimit() + "h</div></html>");
-        aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary()
-                + " | Explainability: score, missing skills, and projected-load reasoning are displayed in the UI.</div></html>");
-        if (workloadModel.getRowCount() > 0 && workloadTable.getSelectedRow() < 0) {
-            workloadTable.setRowSelectionInterval(0, 0);
-        }
-        refreshRecommendationPanel();
     }
 
     private void refreshRecommendationPanel() {
@@ -526,34 +558,56 @@ public class AdminDashboard extends BaseDashboard {
 
     private void openAiAssistantDialog() {
         refreshRecommendationPanel();
-        String context = recommendationArea == null ? AdminRecommendationService.buildGlobalAlertSummary()
+        String recommendationContext = recommendationArea == null ? AdminRecommendationService.buildGlobalAlertSummary()
                 : recommendationArea.getText();
-        AIConversationDialog dialog = new AIConversationDialog(this, context);
+        String systemContext = systemInsightArea == null ? BoardAIInsightsService.buildAdminSystemOverview()
+                : systemInsightArea.getText();
+        String context = systemContext + "\n\n" + recommendationContext;
+        AIConversationDialog dialog = new AIConversationDialog(
+                this,
+                "Admin AI System Assistant",
+                "Ask AI about system status, workload, or allocation risk",
+                "What is the current system situation, which TAs look most overloaded, and what should Admin review first?",
+                context);
         dialog.setVisible(true);
     }
 
     private void refreshApplications() {
-        applicationsModel.setRowCount(0);
-        String taFilter = getLower(applicationTaFilterField);
-        String jobFilter = getLower(applicationJobFilterField);
-        String moduleFilter = getLower(applicationModuleFilterField);
-        String statusFilter = getLower(applicationStatusFilterField);
-        List<Application> applications = FileStorage.loadApplications();
-        applicationSnapshot = copyApplications(applications);
-        for (Application app : applications) {
-            User ta = FileStorage.findUserById(app.taId);
-            Job job = FileStorage.findJobById(app.jobId);
-            String taName = ta == null ? "Unknown" : ta.getSafeDisplayName();
-            String jobTitle = job == null ? "Unknown" : job.title;
-            String module = job == null ? "Unknown" : job.module;
-            if (!contains(taName, taFilter) || !contains(jobTitle, jobFilter)
-                    || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
-                continue;
+        beginRefreshFeedback(null, applicationsModel, null, null);
+        try {
+            String taFilter = getLower(applicationTaFilterField);
+            String jobFilter = getLower(applicationJobFilterField);
+            String moduleFilter = getLower(applicationModuleFilterField);
+            String statusFilter = getLower(applicationStatusFilterField);
+            List<Application> applications = FileStorage.loadApplications();
+            List<User> users = FileStorage.loadUsers();
+            List<Job> jobs = FileStorage.loadJobs();
+            Map<Integer, User> usersById = new HashMap<Integer, User>();
+            for (User user : users) {
+                usersById.put(user.id, user);
             }
-            applicationsModel.addRow(new Object[] {app.id, taName, jobTitle, module, app.status, app.appliedAt,
-                    app.matchScore + "%", app.matchSummary, app.reviewerNote});
+            Map<Integer, Job> jobsById = new HashMap<Integer, Job>();
+            for (Job job : jobs) {
+                jobsById.put(job.id, job);
+            }
+            applicationSnapshot = copyApplications(applications);
+            for (Application app : applications) {
+                User ta = usersById.get(app.taId);
+                Job job = jobsById.get(app.jobId);
+                String taName = ta == null ? "Unknown" : ta.getSafeDisplayName();
+                String jobTitle = job == null ? "Unknown" : job.title;
+                String module = job == null ? "Unknown" : job.module;
+                if (!contains(taName, taFilter) || !contains(jobTitle, jobFilter)
+                        || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
+                    continue;
+                }
+                applicationsModel.addRow(new Object[] {app.id, taName, jobTitle, module, app.status, app.appliedAt,
+                        app.matchScore + "%", app.matchSummary, app.reviewerNote});
+            }
+            applicationsDirty = false;
+        } finally {
+            endRefreshFeedback();
         }
-        applicationsDirty = false;
     }
 
     private void saveApplicationChanges() {
@@ -581,24 +635,33 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void refreshJobs() {
-        jobsModel.setRowCount(0);
-        String moFilter = getLower(jobMoFilterField);
-        String titleFilter = getLower(jobTitleFilterField);
-        String moduleFilter = getLower(jobModuleFilterField);
-        String statusFilter = getLower(jobStatusFilterField);
-        List<Job> jobs = FileStorage.loadJobs();
-        jobSnapshot = copyJobs(jobs);
-        for (Job job : jobs) {
-            User mo = FileStorage.findUserById(job.moId);
-            String moName = mo == null ? "Unknown" : mo.getSafeDisplayName();
-            if (!contains(moName, moFilter) || !contains(job.title, titleFilter)
-                    || !contains(job.module, moduleFilter) || !contains(job.status, statusFilter)) {
-                continue;
+        beginRefreshFeedback(null, jobsModel, null, null);
+        try {
+            String moFilter = getLower(jobMoFilterField);
+            String titleFilter = getLower(jobTitleFilterField);
+            String moduleFilter = getLower(jobModuleFilterField);
+            String statusFilter = getLower(jobStatusFilterField);
+            List<Job> jobs = FileStorage.loadJobs();
+            List<User> users = FileStorage.loadUsers();
+            Map<Integer, User> usersById = new HashMap<Integer, User>();
+            for (User user : users) {
+                usersById.put(user.id, user);
             }
-            jobsModel.addRow(new Object[] {job.id, moName, job.title, job.module, job.requiredSkills, job.maxHours,
-                    job.location, job.status});
+            jobSnapshot = copyJobs(jobs);
+            for (Job job : jobs) {
+                User mo = usersById.get(job.moId);
+                String moName = mo == null ? "Unknown" : mo.getSafeDisplayName();
+                if (!contains(moName, moFilter) || !contains(job.title, titleFilter)
+                        || !contains(job.module, moduleFilter) || !contains(job.status, statusFilter)) {
+                    continue;
+                }
+                jobsModel.addRow(new Object[] {job.id, moName, job.title, job.module, job.requiredSkills, job.maxHours,
+                        job.location, job.status});
+            }
+            jobsDirty = false;
+        } finally {
+            endRefreshFeedback();
         }
-        jobsDirty = false;
     }
 
     private void saveJobChanges() {
