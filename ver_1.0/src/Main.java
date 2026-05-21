@@ -9,6 +9,8 @@ import javax.swing.UIManager;
  * on the Swing event-dispatch thread.</p>
  */
 public class Main {
+    private Main() {
+    }
 
     /**
      * Starts the application.

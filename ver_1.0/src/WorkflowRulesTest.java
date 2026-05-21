@@ -4,6 +4,15 @@ import java.util.List;
  * Workflow-focused regression checks for TA, MO, Admin, notifications, and explainable scoring.
  */
 public class WorkflowRulesTest {
+    private WorkflowRulesTest() {
+    }
+
+    /**
+     * Runs workflow-rule regression checks against isolated CSV data.
+     *
+     * @param args command-line arguments, not used
+     * @throws Exception if the isolated test data setup fails
+     */
     public static void main(String[] args) throws Exception {
         TestSupport.withIsolatedData(new TestSupport.CheckedRunnable() {
             @Override

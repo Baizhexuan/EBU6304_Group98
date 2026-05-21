@@ -22,6 +22,13 @@ import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.basic.BasicButtonUI;
 
+/**
+ * Shared Swing frame base for role-specific dashboards.
+ *
+ * <p>The base frame centralises account menus, visual styling, tab helpers,
+ * refresh feedback, and common table formatting used by TA, MO, and Admin
+ * views.</p>
+ */
 public abstract class BaseDashboard extends JFrame {
     /** Bold font used for section headings throughout the UI. */
     protected static final Font UI_TITLE_FONT = new Font("SansSerif", Font.BOLD, 16);

@@ -19,6 +19,12 @@ public class AIModelSkillScoringProvider implements SkillScoringProvider {
     private static final int READ_TIMEOUT_MS = 6000;
 
     /**
+     * Creates an AI-backed scoring provider using the current local configuration.
+     */
+    public AIModelSkillScoringProvider() {
+    }
+
+    /**
      * Evaluates TA-to-job skill compatibility using an external AI model.
      *
      * <p>Falls back to the local {@link MatchingService} result when the

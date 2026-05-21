@@ -212,6 +212,11 @@ public class LoginFrame extends JFrame {
         button.setFont(new Font("SansSerif", Font.BOLD, 13));
     }
 
+    /**
+     * Pre-fills the username after registration and clears the password field.
+     *
+     * @param username username to place in the login form
+     */
     public void prefillCredentials(String username) {
         usernameField.setText(username);
         passwordField.setText("");

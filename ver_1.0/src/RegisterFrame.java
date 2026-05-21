@@ -35,6 +35,11 @@ public class RegisterFrame extends JFrame {
     private JTextField displayNameField;
     private JComboBox<String> roleBox;
 
+    /**
+     * Creates a registration form linked back to the login window.
+     *
+     * @param loginFrame login window to return to after successful registration
+     */
     public RegisterFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
         setTitle("Create Demo Account");

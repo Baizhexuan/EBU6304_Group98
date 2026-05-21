@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
  *   <li><b>responses</b> — the OpenAI Responses API</li>
  * </ul>
  * When no API key is configured the service returns a structured local
- * fallback answer so the demo remains usable offline.</p>
+ * fallback answer so the demo remains usable offline.
  */
 public final class AIConversationService {
     private static final int CONNECT_TIMEOUT_MS = 6000;

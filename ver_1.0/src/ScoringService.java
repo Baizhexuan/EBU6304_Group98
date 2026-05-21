@@ -13,6 +13,10 @@ public final class ScoringService {
 
     /**
      * Delegates one scoring request to the currently active provider.
+     *
+     * @param profile TA profile to evaluate
+     * @param job     job posting to compare with the profile
+     * @return match result from the active provider
      */
     public static MatchResult evaluate(TAProfile profile, Job job) {
         return activeProvider.evaluate(profile, job);
@@ -20,6 +24,8 @@ public final class ScoringService {
 
     /**
      * Returns the provider currently used by the UI and admin recommendation logic.
+     *
+     * @return active scoring provider
      */
     public static SkillScoringProvider getActiveProvider() {
         return activeProvider;
@@ -27,6 +33,8 @@ public final class ScoringService {
 
     /**
      * Allows tests or future wiring code to override the provider explicitly.
+     *
+     * @param provider scoring provider to activate
      */
     public static void setActiveProvider(SkillScoringProvider provider) {
         if (provider != null) {
@@ -43,6 +51,8 @@ public final class ScoringService {
 
     /**
      * Returns a short mode label for admin screens and exported reports.
+     *
+     * @return provider mode label such as {@code RULE} or {@code AI}
      */
     public static String getProviderMode() {
         return activeProvider.isExternalModel() ? "AI" : "RULE";

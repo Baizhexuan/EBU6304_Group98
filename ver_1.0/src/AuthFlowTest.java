@@ -4,6 +4,15 @@ import java.util.List;
  * Lightweight authentication and registration regression checks for final delivery.
  */
 public class AuthFlowTest {
+    private AuthFlowTest() {
+    }
+
+    /**
+     * Runs the authentication flow regression test.
+     *
+     * @param args command-line arguments, not used
+     * @throws Exception if the isolated test data setup fails
+     */
     public static void main(String[] args) throws Exception {
         TestSupport.withIsolatedData(new TestSupport.CheckedRunnable() {
             @Override

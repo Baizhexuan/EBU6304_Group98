@@ -5,7 +5,9 @@
  * instantiated. Conversions return a caller-supplied fallback on failure
  * rather than throwing exceptions, keeping UI code concise.</p>
  */
-public class ValidationUtils {
+public final class ValidationUtils {
+    private ValidationUtils() {
+    }
 
     /**
      * Returns {@code true} when the string is {@code null} or contains only whitespace.

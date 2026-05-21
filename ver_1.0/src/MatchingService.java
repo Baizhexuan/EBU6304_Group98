@@ -8,9 +8,16 @@ import java.util.Set;
  * computes a match percentage, and returns a summary that explicitly lists matched and missing
  * skills. That makes the recommendation easy to explain during demo and viva discussion.</p>
  */
-public class MatchingService {
+public final class MatchingService {
+    private MatchingService() {
+    }
+
     /**
      * Evaluates one TA profile against one job using deterministic token matching.
+     *
+     * @param profile TA profile to evaluate
+     * @param job     job whose required skills are compared with the profile
+     * @return score and explanation for the profile-job fit
      */
     public static MatchResult evaluate(TAProfile profile, Job job) {
         if (profile == null || job == null) {
@@ -56,6 +63,9 @@ public class MatchingService {
 
     /**
      * Normalises a raw skills string into lowercase tokens split by common separators.
+     *
+     * @param rawSkills raw semicolon-, comma-, slash-, or pipe-separated skills
+     * @return lowercase skill token set with empty tokens removed
      */
     public static Set<String> tokenise(String rawSkills) {
         Set<String> skills = new LinkedHashSet<String>();
