@@ -1,4 +1,4 @@
-﻿import java.util.List;
+import java.util.List;
 
 /**
  * Regression checks for notification generation, de-duplication, and read-state transitions.

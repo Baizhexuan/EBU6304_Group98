@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<main>
+    <h1>BUPT TA Recruitment System JavaDoc</h1>
+    <p>
+        This API documentation covers the standalone Swing demo for the Teaching Assistant
+        recruitment workflow. The code is organised around CSV persistence, role-specific
+        dashboards, notification services, and explainable TA-to-job matching.
+    </p>
+
+    <h2>Core Areas</h2>
+    <ul>
+        <li><strong>Application entry and UI:</strong> {@code Main}, {@code LoginFrame},
+            {@code RegisterFrame}, and the TA, MO, and Admin dashboard classes.</li>
+        <li><strong>Data model:</strong> {@code User}, {@code TAProfile}, {@code Job},
+            {@code Application}, {@code Notification}, and {@code MatchResult}.</li>
+        <li><strong>Persistence:</strong> {@code FileStorage} manages CSV-backed storage
+            and deterministic seed data.</li>
+        <li><strong>Workflow services:</strong> {@code NotificationService},
+            {@code MatchingService}, {@code ScoringService}, and admin recommendation helpers.</li>
+        <li><strong>AI support:</strong> optional external provider classes sit behind the
+            {@code SkillScoringProvider} interface while preserving a local rule-based fallback.</li>
+        <li><strong>Regression tests:</strong> console-based test classes document expected
+            behaviour without adding a third-party test framework.</li>
+    </ul>
+
+    <h2>How to Read This Documentation</h2>
+    <p>
+        Start with {@code Main} for the launch path, then review {@code FileStorage} for the
+        CSV schema assumptions. The dashboard classes show user-facing workflows, while the
+        service classes contain the most reusable logic.
+    </p>
+</main>
+</body>
+</html>

@@ -54,16 +54,34 @@ This demo implements the core recruitment workflow:
 sh compile.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+.\compile.ps1
+```
+
 ### Run the desktop application
 
 ```bash
 sh run.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+.\run.ps1
+```
+
 ### Run the lightweight regression tests
 
 ```bash
 sh test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\test.ps1
 ```
 
 The test script compiles the project and runs:
@@ -73,11 +91,24 @@ The test script compiles the project and runs:
 - `WorkflowRulesTest`
 - `CsvPersistenceTest`
 - `NotificationFlowTest`
+- `ValidationUtilsTest`
+- `MatchingServiceTest`
+- `ModelStateTest`
+- `ScoringServiceTest`
+- `NotificationReadStateTest`
+- `FileStorageLookupTest`
+- `DemoMetadataTest`
 
 ### Generate JavaDocs
 
 ```bash
 ./javadoc.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\javadoc.ps1
 ```
 
 Generated output will be written to `javadocs/`.
@@ -132,6 +163,14 @@ No database or external persistence framework is used.
 - `docs/task_plan_alignment.md`: requirement and task-plan comparison notes
 - `docs/final_requirement_checklist.md`: requirement-to-evidence mapping
 - `docs/testing_strategy.md`: test strategy and workflow coverage
+- `docs/windows_development.md`: Windows PowerShell setup and IDE notes
+- `docs/regression_test_matrix.md`: automated-test coverage matrix
+- `docs/commit_splitting_guide.md`: suggested maintenance commit groups
+- `docs/manual_qa_checklist.md`: manual demo verification checklist
+- `docs/maintenance_notes.md`: safe maintenance areas and verification routine
+- `docs/javadoc_notes.md`: JavaDoc generation and review notes
+- `docs/javadoc_review_checklist.md`: generated JavaDoc review checklist
+- `docs/javadoc_overview.html`: overview page injected into generated JavaDocs
 - `docs/user_manual.md`: final user manual with screenshot references
 - `screenshots/`: demo screenshots used by the manual and README
 - `compile.sh`: compile script

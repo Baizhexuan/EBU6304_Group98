@@ -10,6 +10,14 @@ The final demo needs evidence that the core TA, MO, Admin, notification, CSV, an
 ./test.sh
 ```
 
+On Windows PowerShell:
+
+```powershell
+.\test.ps1
+```
+
+For a reviewer-friendly coverage map, see `docs/regression_test_matrix.md`.
+
 This script performs:
 
 1. `sh ./compile.sh`
@@ -17,6 +25,14 @@ This script performs:
 3. `java -cp bin AuthFlowTest`
 4. `java -cp bin WorkflowRulesTest`
 5. `java -cp bin CsvPersistenceTest`
+6. `java -cp bin NotificationFlowTest`
+7. `java -cp bin ValidationUtilsTest`
+8. `java -cp bin MatchingServiceTest`
+9. `java -cp bin ModelStateTest`
+10. `java -cp bin ScoringServiceTest`
+11. `java -cp bin NotificationReadStateTest`
+12. `java -cp bin FileStorageLookupTest`
+13. `java -cp bin DemoMetadataTest`
 
 ## Automated Test Coverage
 
@@ -26,6 +42,14 @@ This script performs:
 | `AuthFlowTest` | Login credential lookup, blank-input rejection logic, duplicate username detection, and new-user persistence | Confirms registration/login assumptions used by the UI |
 | `WorkflowRulesTest` | Profile completeness, open-job browsing assumptions, application creation, duplicate prevention, MO decision notifications, admin overload alerts, explainable fallback scoring | Confirms the core recruitment workflow and US-8 triggers |
 | `CsvPersistenceTest` | CSV save/load round trips for commas, quotes, and empty values | Confirms the storage layer remains text-based but more robust |
+| `NotificationFlowTest` | Profile-reminder de-duplication, application-decision messaging, read-state transitions, and job-closure alerts | Confirms notification events stay visible without duplicate unread reminders |
+| `ValidationUtilsTest` | Blank checks, email validation, and numeric parse fallback behaviour | Confirms shared form-validation helpers keep stable edge-case behaviour |
+| `MatchingServiceTest` | Skill tokenisation, duplicate removal, deterministic scoring, and matched/missing summary text | Confirms explainable matching remains deterministic and easy to inspect |
+| `ModelStateTest` | Helper methods on core model objects such as profile completeness, job openness, notification read state, and safe display names | Confirms dashboard-facing state helpers stay stable |
+| `ScoringServiceTest` | Active scoring-provider mode, delegation, readiness summary, and null-provider guard behaviour | Confirms scoring integration remains explainable and offline-safe |
+| `NotificationReadStateTest` | Profile-reminder resolution, single notification read marking, and persisted read-state reloads | Confirms notification state transitions survive CSV round trips |
+| `FileStorageLookupTest` | Case-insensitive user lookup, display-name lookup, entity lookup, and next-ID allocation | Confirms CSV lookup helpers and ID allocation stay deterministic |
+| `DemoMetadataTest` | Version label, app title, and about-message readiness text | Confirms UI support metadata remains populated |
 
 ## Manual Demo Checks
 
@@ -70,6 +94,11 @@ This script performs:
 - notifications are generated for application decisions and profile reminders
 - workload alerts are generated when selected hours exceed the safe limit
 - CSV rows preserve commas, quotes, and empty values after a save/load cycle
+- helper validation methods keep predictable fallbacks for malformed input
+- skill matching normalises case, removes duplicates, and reports missing skills
+- notification read-state helpers persist changes across reloads
+- model helper methods keep dashboard assumptions stable
+- scoring metadata remains available for offline demonstration
 
 ## Remaining Limitations
 
