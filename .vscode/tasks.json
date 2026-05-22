@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "ver1-compile",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d ver_1.0 && if not exist bin mkdir bin && javac -d bin src\\*.java"
+			]
+		},
+		{
+			"label": "ver1-compile-2",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d ver_1.0 && if not exist bin mkdir bin && javac -d bin src\\*.java"
+			]
+		}
+	]
+}

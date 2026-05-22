@@ -72,6 +72,7 @@ The test script compiles the project and runs:
 - `AuthFlowTest`
 - `WorkflowRulesTest`
 - `CsvPersistenceTest`
+- `NotificationFlowTest`
 
 ### Generate JavaDocs
 

@@ -440,7 +440,13 @@ public class MODashboard extends BaseDashboard {
         }
 
         int modelRow = myJobsTable.convertRowIndexToModel(row);
-        int jobId = Integer.parseInt(String.valueOf(myJobsModel.getValueAt(modelRow, 0)));
+        int jobId = ValidationUtils.parseInt(String.valueOf(myJobsModel.getValueAt(modelRow, 0)), -1);
+        if (jobId <= 0) {
+            JOptionPane.showMessageDialog(this, "Selected job id is invalid. Please refresh and try again.",
+                "Data Error", JOptionPane.WARNING_MESSAGE);
+            refreshMyJobs();
+            return;
+        }
         List<Job> jobs = FileStorage.loadJobs();
         for (Job job : jobs) {
             if (job.id == jobId) {
@@ -606,8 +612,14 @@ public class MODashboard extends BaseDashboard {
         }
 
         int modelRow = applicantsTable.convertRowIndexToModel(row);
-        int appId = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)));
-        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 8)));
+        int appId = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)), -1);
+        int currentHours = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 8)), 0);
+        if (appId <= 0) {
+            JOptionPane.showMessageDialog(this, "Selected application id is invalid. Please refresh and try again.",
+                "Data Error", JOptionPane.WARNING_MESSAGE);
+            refreshApplicants();
+            return;
+        }
         Job job = FileStorage.findJobById(selectedJobId);
 
         if ("SELECTED".equals(decision) && job != null && currentHours + job.maxHours > FileStorage.getOverloadLimit()) {
@@ -668,7 +680,7 @@ public class MODashboard extends BaseDashboard {
                     column);
             if (!isSelected) {
                 String status = String.valueOf(table.getValueAt(row, 7));
-                int hours = Integer.parseInt(String.valueOf(table.getValueAt(row, 8)));
+                int hours = ValidationUtils.parseInt(String.valueOf(table.getValueAt(row, 8)), 0);
                 if ("SELECTED".equalsIgnoreCase(status)) {
                     component.setBackground(new Color(214, 245, 214));
                 } else if ("REJECTED".equalsIgnoreCase(status)) {

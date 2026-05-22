@@ -1,4 +1,4 @@
-# EBU6304 Project Work Record: L5 AI-Assisted Features (Pair A Review and Testing)
+﻿# EBU6304 Project Work Record: L5 AI-Assisted Features (Pair A Review and Testing)
 
 **Project**: BUPT International School TA Recruitment System  
 **Date**: 2026-05-21, based on the final `ver_1.0` integration  
@@ -92,4 +92,3 @@ Verification result:
 - The final report should clearly state that AI is used as decision support only.
 
 **Review status**: Completed.
-

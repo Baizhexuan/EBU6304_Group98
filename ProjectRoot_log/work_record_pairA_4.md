@@ -1,4 +1,4 @@
-# EBU6304 Project Work Record: L4 Admin and Advanced Features (Pair A Lead)
+﻿# EBU6304 Project Work Record: L4 Admin and Advanced Features (Pair A Lead)
 
 **Project**: BUPT International School TA Recruitment System  
 **Date**: 2026-05-21, based on the final `ver_1.0` integration  
@@ -96,4 +96,3 @@ In the final `ver_1.0` product, this work is mainly visible through the Admin da
 - `docs/final_requirement_checklist.md` maps the Admin workload feature to the coursework requirement.
 
 **Review status**: Completed.
-

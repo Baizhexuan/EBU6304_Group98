@@ -1,4 +1,4 @@
-# EBU6304 Project Work Record: L6 Testing, Documentation, and Delivery (Pair A Support)
+﻿# EBU6304 Project Work Record: L6 Testing, Documentation, and Delivery (Pair A Support)
 
 **Project**: BUPT International School TA Recruitment System  
 **Date**: 2026-05-21, based on the final `ver_1.0` integration  
@@ -111,4 +111,3 @@ Pair A's L6 support helped move the project from implementation to final submiss
 - the final report can reference these documents as design, testing, and delivery evidence.
 
 **Review status**: Completed.
-

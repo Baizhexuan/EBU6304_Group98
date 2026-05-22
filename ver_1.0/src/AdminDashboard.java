@@ -627,8 +627,15 @@ public class AdminDashboard extends BaseDashboard {
             if (match == null) {
                 continue;
             }
-            match.status = String.valueOf(applicationsModel.getValueAt(row, 4)).trim().toUpperCase();
-            match.reviewerNote = String.valueOf(applicationsModel.getValueAt(row, 8)).trim();
+            String status = asTrimmedText(applicationsModel.getValueAt(row, 4)).toUpperCase();
+            if (!isAllowedStatus(status, APPLICATION_STATUSES)) {
+                JOptionPane.showMessageDialog(this,
+                        "Application status '" + status + "' is invalid. Allowed: PENDING, SELECTED, REJECTED, WITHDRAWN.",
+                        "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            match.status = status;
+            match.reviewerNote = asTrimmedText(applicationsModel.getValueAt(row, 8));
         }
         FileStorage.saveApplications(applications);
         applicationSnapshot = copyApplications(applications);
@@ -686,7 +693,7 @@ public class AdminDashboard extends BaseDashboard {
             if (match == null) {
                 continue;
             }
-            String moDisplayName = String.valueOf(jobsModel.getValueAt(row, 1)).trim();
+            String moDisplayName = asTrimmedText(jobsModel.getValueAt(row, 1));
             User mo = FileStorage.findUserByDisplayName(moDisplayName);
             if (mo == null || !"MO".equalsIgnoreCase(mo.role)) {
                 JOptionPane.showMessageDialog(this,
@@ -701,13 +708,21 @@ public class AdminDashboard extends BaseDashboard {
                 return;
             }
 
+            String status = asTrimmedText(jobsModel.getValueAt(row, 7)).toUpperCase();
+            if (!isAllowedStatus(status, JOB_STATUSES)) {
+                JOptionPane.showMessageDialog(this,
+                        "Job status '" + status + "' is invalid. Allowed: OPEN, CLOSED.",
+                        "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             match.moId = mo.id;
-            match.title = String.valueOf(jobsModel.getValueAt(row, 2)).trim();
-            match.module = String.valueOf(jobsModel.getValueAt(row, 3)).trim();
-            match.requiredSkills = String.valueOf(jobsModel.getValueAt(row, 4)).trim();
+            match.title = asTrimmedText(jobsModel.getValueAt(row, 2));
+            match.module = asTrimmedText(jobsModel.getValueAt(row, 3));
+            match.requiredSkills = asTrimmedText(jobsModel.getValueAt(row, 4));
             match.maxHours = hours;
-            match.location = String.valueOf(jobsModel.getValueAt(row, 6)).trim();
-            match.status = String.valueOf(jobsModel.getValueAt(row, 7)).trim().toUpperCase();
+            match.location = asTrimmedText(jobsModel.getValueAt(row, 6));
+            match.status = status;
             String previousStatus = previousStatuses.get(match.id);
             if ("OPEN".equalsIgnoreCase(previousStatus) && "CLOSED".equalsIgnoreCase(match.status)) {
                 closedNotifications += NotificationService.notifyJobClosed(match, currentUser);
@@ -735,14 +750,18 @@ public class AdminDashboard extends BaseDashboard {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String path = "data/admin_workload_report_" + timestamp + ".csv";
         try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
-            writer.println("exportedAt," + timestamp);
-            writer.println("provider," + ScoringService.getActiveProvider().getProviderName());
-            writer.println("providerReady," + ScoringService.getActiveProvider().isReady());
+            writer.println(csvLine("exportedAt", timestamp));
+            writer.println(csvLine("provider", ScoringService.getActiveProvider().getProviderName()));
+            writer.println(csvLine("providerReady", String.valueOf(ScoringService.getActiveProvider().isReady())));
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
-                writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","
-                        + workloadModel.getValueAt(row, 2) + "," + workloadModel.getValueAt(row, 3) + ","
-                        + workloadModel.getValueAt(row, 4) + "," + workloadModel.getValueAt(row, 5));
+                writer.println(csvLine(
+                        String.valueOf(workloadModel.getValueAt(row, 0)),
+                        String.valueOf(workloadModel.getValueAt(row, 1)),
+                        String.valueOf(workloadModel.getValueAt(row, 2)),
+                        String.valueOf(workloadModel.getValueAt(row, 3)),
+                        String.valueOf(workloadModel.getValueAt(row, 4)),
+                        String.valueOf(workloadModel.getValueAt(row, 5))));
             }
             JOptionPane.showMessageDialog(this, "Report exported to " + path, "Export Complete",
                     JOptionPane.INFORMATION_MESSAGE);
@@ -781,6 +800,42 @@ public class AdminDashboard extends BaseDashboard {
             return true;
         }
         return text != null && text.toLowerCase().contains(keyword);
+    }
+
+    private boolean isAllowedStatus(String value, String[] allowedValues) {
+        if (ValidationUtils.isBlank(value)) {
+            return false;
+        }
+        for (String allowed : allowedValues) {
+            if (allowed.equalsIgnoreCase(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String asTrimmedText(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    private String csvLine(String... values) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append(csvCell(values[i]));
+        }
+        return builder.toString();
+    }
+
+    private String csvCell(String value) {
+        String safe = value == null ? "" : value;
+        String escaped = safe.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
     }
 
     private String buildWorkloadStatus(int hours) {
