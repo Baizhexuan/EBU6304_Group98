@@ -33,7 +33,7 @@ public class AuthFlowTest {
                         "Fresh username should be available before registration.");
 
                 List<User> users = FileStorage.loadUsers();
-                users.add(new User(FileStorage.nextUserId(), "new_ta", "safePass1", "TA", "New TA"));
+                users.add(new User(FileStorage.nextUserId(), "new_ta", FileStorage.hashPassword("safePass1"), "TA", "New TA"));
                 FileStorage.saveUsers(users);
 
                 TestSupport.assertTrue(authenticate("new_ta", "safePass1") != null,
@@ -54,6 +54,6 @@ public class AuthFlowTest {
         if (user == null) {
             return null;
         }
-        return password.equals(user.password) ? user : null;
+        return FileStorage.hashPassword(password).equals(user.password) ? user : null;
     }
 }

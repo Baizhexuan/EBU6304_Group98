@@ -2,7 +2,7 @@
 
 **项目名称**：BUPT International School TA Recruitment System  
 **记录时间**：2026-05-20  
-**参与人员**：程嘉华 (Cheng Jiahua)  
+**参与人员**：邓博文 (Deng Bowen)  
 **开发阶段**：L6 — 测试、文档与交付层 (Testing, Documentation & Delivery Layer)
 
 ---
@@ -117,5 +117,5 @@
 
 ---
 
-**记录人**：程嘉华  
+**记录人**：邓博文  
 **审核状态**：已完成 ✅

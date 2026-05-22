@@ -4,6 +4,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +26,29 @@ public final class FileStorage {
     private static final int OVERLOAD_LIMIT = 20;
 
     private FileStorage() {
+    }
+
+    /**
+     * Returns the SHA-256 hex digest of the given plain-text password.
+     *
+     * <p>SHA-256 is always available in the Java SE runtime, so this method
+     * never throws a checked exception.</p>
+     *
+     * @param plainText the plain-text password to hash
+     * @return lowercase hex-encoded SHA-256 digest, 64 characters
+     */
+    public static String hashPassword(String plainText) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(plainText.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hashBytes.length * 2);
+            for (byte b : hashBytes) {
+                hex.append(String.format("%02x", b & 0xff));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available in this JVM", e);
+        }
     }
 
     /**
@@ -53,11 +79,11 @@ public final class FileStorage {
         }
         try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,username,password,role,displayName");
-            writer.println("1,admin,admin123,ADMIN,System Admin");
-            writer.println("2,ta1,ta123,TA,Li Ming");
-            writer.println("3,ta2,ta456,TA,Wang Yue");
-            writer.println("4,mo1,mo123,MO,Dr Chen");
-            writer.println("5,mo2,mo456,MO,Prof Zhao");
+            writer.println("1,admin," + hashPassword("admin123") + ",ADMIN,System Admin");
+            writer.println("2,ta1," + hashPassword("ta123") + ",TA,Li Ming");
+            writer.println("3,ta2," + hashPassword("ta456") + ",TA,Wang Yue");
+            writer.println("4,mo1," + hashPassword("mo123") + ",MO,Dr Chen");
+            writer.println("5,mo2," + hashPassword("mo456") + ",MO,Prof Zhao");
         } catch (IOException e) {
             System.err.println("Unable to create users.csv: " + e.getMessage());
         }

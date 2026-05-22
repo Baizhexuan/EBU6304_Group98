@@ -1,7 +1,7 @@
 id,username,password,role,displayName
-1,admin,admin123,ADMIN,System Admin
-2,ta1,ta123,TA,Li Ming
-3,ta2,ta456,TA,Wang Yue
-4,mo1,mo123,MO,Dr Chen
-5,mo2,mo456,MO,Prof Zhao
-6,Yuki,123456,TA,yuki
+1,admin,240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9,ADMIN,System Admin
+2,ta1,21557b9d977113c8d839057b74a45da3e98036ea4b407db024afffb695a83211,TA,Li Ming
+3,ta2,074f45cf0ec916a24152a1836c7f10ec2230c4bfdad23d26300a4bff2debe12c,TA,Wang Yue
+4,mo1,a65accd68f911330575c6bbdca3191c895aa474d7c3c874913ffec5214fe198a,MO,Dr Chen
+5,mo2,4bbdb0dd389767482c4d199e47e73582623a2f3db6fb817fedc38920230da2e1,MO,Prof Zhao
+6,Yuki,8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92,TA,yuki
