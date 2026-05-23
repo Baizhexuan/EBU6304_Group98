@@ -1,3 +1,6 @@
 id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote
-1,2,1,SELECTED,2026-04-05 19:20,100,Matched: java; oop; communication,Strong fit for labs.
+1,2,1,SELECTED,2026-04-05 19:20,100,Matched: java; oop; communication,Reviewed by Dr Chen using RuleBasedSkillScoringProvider
 2,3,3,PENDING,2026-04-06 11:00,67,Matched: python; data structures | Missing: teamwork,Awaiting MO review.
+3,2,2,WITHDRAWN,2026-05-22 23:19,33,"Matched: communication | Missing: organisation, excel | Source: local rule-based scorer",Withdrawn by TA.
+4,2,3,WITHDRAWN,2026-05-22 23:19,0,"Missing: python, data structures, teamwork | Source: local rule-based scorer",Withdrawn by TA.
+5,2,4,WITHDRAWN,2026-05-22 23:20,0,"Missing: sql, problem solving, patience | Source: local rule-based scorer",Withdrawn by TA.

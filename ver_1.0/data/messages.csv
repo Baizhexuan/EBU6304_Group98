@@ -1,0 +1,5 @@
+id,fromUserId,toUserId,jobId,body,status,createdAt
+1,2,5,3,.,UNREAD,2026-05-23 16:55
+2,2,5,3,.,UNREAD,2026-05-23 16:56
+3,2,5,3,.,UNREAD,2026-05-23 16:56
+4,5,2,3,զ�˸�,UNREAD,2026-05-23 16:57

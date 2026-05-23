@@ -1,0 +1,17 @@
+id,userId,title,message,status,createdAt,actionHint
+1,2,Welcome to the TA system,Complete your profile and check open jobs to get started.,READ,2026-04-05 10:00,Open My Profile to complete your details.
+2,2,Application update for Java Lab Assistant,You have been selected for Java Lab Assistant (EBU6304) by Dr Chen.,READ,2026-05-22 23:37,Open My Applications to review the latest status and note.
+3,2,Application update for Java Lab Assistant,You have been selected for Java Lab Assistant (EBU6304) by Dr Chen.,READ,2026-05-22 23:39,Open My Applications to review the latest status and note.
+4,2,Application update for Java Lab Assistant,Your application for Java Lab Assistant (EBU6304) was not selected by Dr Chen.,READ,2026-05-22 23:40,Open My Applications to review the latest status and note.
+5,2,Application update for Java Lab Assistant,You have been selected for Java Lab Assistant (EBU6304) by Dr Chen.,READ,2026-05-22 23:40,Open My Applications to review the latest status and note.
+6,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:48,Open the bell centre to read the message and reply.
+7,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:48,Open the bell centre to read the message and reply.
+8,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:48,Open the bell centre to read the message and reply.
+9,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:49,Open the bell centre to read the message and reply.
+10,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:49,Open the bell centre to read the message and reply.
+11,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:55,Open the bell centre to read the message and reply.
+12,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:56,Open the bell centre to read the message and reply.
+13,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:56,Open the bell centre to read the message and reply.
+14,2,New message from Prof Zhao,Prof Zhao sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:57,Open the bell centre to read the message and reply.
+15,3,Job closed: Python Tutor,Python Tutor (EBU5402) has been closed by Prof Zhao. Check My Applications for the current status before planning further applications.,UNREAD,2026-05-23 17:04,Open My Applications and review other open jobs if needed.
+16,2,Work evaluation for Java Lab Assistant,MO Dr Chen rated your completed work for Java Lab Assistant as 5/5.,UNREAD,2026-05-23 17:23,Open My Applications or the bell centre to review the update.
