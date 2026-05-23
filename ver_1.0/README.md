@@ -1,4 +1,4 @@
-# EBU6304 Group 98 Demo Version 1.12
+# EBU6304 Group 98 Demo Version 1.13
 
 BUPT International School / QMUL Teaching Assistant Recruitment System.
 
@@ -6,38 +6,38 @@ This folder contains the stand-alone Java Swing demo for the EBU6304 group proje
 
 ## Final Submission Position
 
-This `ver_1.0` folder is designed as a self-contained product-demo package. It follows the coursework constraints:
+This `ver_1.0` folder is a self-contained product-demo package:
 
 - stand-alone Java desktop application
+- Java Swing GUI
 - CSV text-file storage only
 - no database
 - role-based workflow for TA, MO, and Admin users
-- explainable AI-assisted matching with an offline fallback path
+- explainable AI-assisted matching with offline fallback
 - bilingual English / Chinese interface for BUPT and QMUL usage
-
-The wider coursework still depends on the final report and Agile evidence, but this folder includes the runnable source code, CSV data, screenshots, test scripts, JavaDoc support, user-facing documentation, and viva preparation notes needed for a strong software demo submission.
+- lightweight regression tests and JavaDoc scripts
 
 ## Latest Feature Scope
 
 ### TA Features
 
 - Register or log in as a TA.
-- Complete and edit a TA profile, including skills, GPA, availability, personal statement, and a locally uploaded CV copy.
+- Complete and edit a TA profile, including skills, GPA, availability, personal statement, and CV path.
 - Browse open jobs with field-based search.
 - View AI-assisted match scores and ranking explanations.
-- Apply for selected jobs.
+- Apply for selected jobs only after profile validation passes.
 - Reapply to the same job after a previous application was `REJECTED` or `WITHDRAWN`.
 - Track application status in `My Applications`.
 - Withdraw only `PENDING` applications.
 - Read notifications and messages through the top-right bell centre.
 - Chat with the relevant MO after an application connects both sides.
 - Send up to three messages before the MO approves the conversation.
-- View reputation-related effects through future match scores.
+- See reputation-related effects through future match scores.
 
 ### MO Features
 
 - Register or log in as a Module Organiser.
-- Post new TA job opportunities.
+- Post new TA job opportunities with weekly-hour validation.
 - Manage open and closed job posts.
 - Review applicants for each job.
 - View current match score, missing skills, profile details, TA reputation, and workload before deciding.
@@ -52,9 +52,9 @@ The wider coursework still depends on the final report and Agile evidence, but t
 - Detect workload risk through `OK`, `NEAR LIMIT`, and `OVERLOAD` states.
 - View AI-style replacement and reallocation recommendations.
 - Ask the AI Assistant about workload, replacement, and allocation risk.
-- Edit global application records.
-- Edit global job records.
-- Export CSV workload reports.
+- Edit global application records with status validation.
+- Review global job ownership while editing job wording, hours, location, and status.
+- Export CSV workload reports with CSV-injection protection.
 - Inspect notifications and message alerts through the bell centre.
 
 ### Cross-Role Features
@@ -63,7 +63,29 @@ The wider coursework still depends on the final report and Agile evidence, but t
 - Top-right bell centre for notifications and TA-MO messages.
 - Wrapping table cells so long titles, skills, locations, and summaries are readable without `...` truncation.
 - Real-time current match scores in TA, MO, and Admin views, aligned with the right-side AI ranking panel.
-- CSV-backed persistence for users, profiles, jobs, applications, notifications, messages, message consent, work evaluations, and TA reputation.
+- AI ranking panels include a generation timestamp so stale recommendations are visible.
+- Notification centre displays the latest 100 notifications to avoid UI lag on large datasets.
+- CSV-backed persistence for users, profiles, jobs, applications, notifications, messages, message consent, work evaluations, TA reputation, and ID counters.
+
+## Security and Validation Updates
+
+Version `1.13` adds the following hardening work:
+
+- passwords are stored as salted SHA-256 hashes instead of plain text
+- old plain-text demo passwords are still accepted once and migrated after login
+- `users.csv` in the submitted data has been migrated to hashed passwords
+- registration rejects passwords shorter than six characters
+- email validation now requires a dotted domain, for example `name@bupt.edu.cn`
+- TA applications re-check email, GPA, CV path, availability, and personal statement before submission
+- MO and Admin job-hour inputs cannot exceed the system workload limit of `20h`
+- Admin can no longer edit a job's MO ownership field
+- Admin status edits reject invalid magic strings outside the allowed status set
+- CSV save/export logic neutralises cells starting with `=`, `+`, `-`, `@`, or tab
+- CSV save operations are synchronized
+- ID allocation uses `data/id_counters.csv` to reduce duplicate-ID risk
+- CSV data files are made owner-readable/writable on a best-effort basis
+- malformed quoted CSV rows print a warning instead of failing silently
+- external AI calls already use connection and read timeouts, so the UI is less likely to hang on slow networks
 
 ## Demo Accounts
 
@@ -75,7 +97,7 @@ The wider coursework still depends on the final report and Agile evidence, but t
 | MO | `mo1` | `mo123` | Dr Chen |
 | MO | `mo2` | `mo456` | Prof Zhao |
 
-Additional TA or MO accounts can be created from the registration screen.
+The visible passwords above are demo login passwords. They are stored in `data/users.csv` as salted hashes.
 
 ## Quick Start
 
@@ -84,19 +106,20 @@ Additional TA or MO accounts can be created from the registration screen.
 From this folder:
 
 ```powershell
-javac -encoding UTF-8 -d bin src\*.java
-java -cp bin Main
+.\compile.ps1
+.\run.ps1
+```
+
+If PowerShell blocks local scripts, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
 ```
 
 Run tests:
 
 ```powershell
-javac -encoding UTF-8 -d bin src\*.java
-java -cp bin SystemSmokeTest
-java -cp bin AuthFlowTest
-java -cp bin WorkflowRulesTest
-java -cp bin CsvPersistenceTest
-java -cp bin PostWorkFeedbackAndMessagingTest
+powershell -ExecutionPolicy Bypass -File .\test.ps1
 ```
 
 ### macOS / Linux
@@ -119,6 +142,8 @@ Run all lightweight regression tests:
 sh test.sh
 ```
 
+`run.sh` calls `sh ./compile.sh`, so it does not require `compile.sh` to have executable permission.
+
 ### Generate JavaDocs
 
 ```bash
@@ -126,19 +151,6 @@ sh javadoc.sh
 ```
 
 Generated output is written to `javadocs/`.
-
-## Recommended Demo Flow
-
-1. Open the application and switch between `English` and `中文`.
-2. Log in as `ta1 / ta123`.
-3. Open `My Profile`, complete profile fields, and save.
-4. Open `Browse Jobs`, search by title or skill, review the AI match ranking, select a job, and apply.
-5. Open `My Applications` to confirm the new `PENDING` application.
-6. Open the bell centre, send TA-MO messages, and observe the three-message pre-approval limit.
-7. Log in as the relevant MO, open the bell centre, and approve the conversation.
-8. Use the MO dashboard to post a job, manage job posts, review applicants, select or reject applications, and rate completed work.
-9. Log in as Admin to monitor workload, inspect AI recommendations, edit application/job records, and export a CSV report.
-10. Return to the TA account to view notifications and updated application state.
 
 ## Matching and Ranking Behaviour
 
@@ -152,7 +164,7 @@ In offline mode, the local rule-based scorer:
 4. Applies any TA reputation penalty to the current display score.
 5. Produces a readable summary showing matched and missing skills.
 
-The TA, MO, and Admin dashboards now display current real-time match scores. This keeps the left-side tables consistent with the right-side AI ranking panels. The stored `matchScore` in `applications.csv` is retained as an application-time historical record and is also used by the post-work reputation mechanism.
+The TA, MO, and Admin dashboards display current real-time match scores. This keeps the left-side tables consistent with the right-side AI ranking panels. The stored `matchScore` in `applications.csv` is retained as an application-time historical record and is also used by the post-work reputation mechanism.
 
 ## Message Consent Rule
 
@@ -218,8 +230,8 @@ All persistent data is stored in CSV files under `data/`:
 - `message_consents.csv`
 - `work_evaluations.csv`
 - `ta_reputations.csv`
+- `id_counters.csv`
 - exported `admin_workload_report_*.csv`
-- local CV copies under `data/cv_uploads/`
 
 No database or external persistence framework is used.
 
@@ -235,12 +247,10 @@ No database or external persistence framework is used.
 - `docs/user_manual.md`: final user manual with screenshot references
 - `docs/ta_recruitment_viva_notes_zh.pdf`: Chinese viva preparation notes
 - `screenshots/`: demo screenshots used by the manual and README
-- `compile.sh`: compile script
-- `run.sh`: GUI launch script
-- `test.sh`: lightweight regression-test script
-- `javadoc.sh`: JavaDoc generation script
+- `compile.ps1`, `run.ps1`, `test.ps1`, `javadoc.ps1`: Windows scripts
+- `compile.sh`, `run.sh`, `test.sh`, `javadoc.sh`: macOS/Linux scripts
 
-Generated runtime files such as `bin/`, `*.class`, local AI keys, uploaded CV copies, and exported workload reports should not be committed. JavaDocs are included in the final software package as code documentation evidence.
+Generated files such as `bin/`, `*.class`, local AI keys, JavaDocs, and exported workload reports should not be committed.
 
 ## Regression Tests
 
@@ -251,8 +261,16 @@ The test suite currently includes:
 - `WorkflowRulesTest`
 - `CsvPersistenceTest`
 - `PostWorkFeedbackAndMessagingTest`
+- `NotificationFlowTest`
+- `ValidationUtilsTest`
+- `MatchingServiceTest`
+- `ModelStateTest`
+- `ScoringServiceTest`
+- `NotificationReadStateTest`
+- `FileStorageLookupTest`
+- `DemoMetadataTest`
 
-The last test covers the newer reputation penalty and message-consent behaviour.
+These tests cover smoke loading, authentication, validation, CSV persistence, workflow rules, matching consistency, notification read-state, message consent, post-work reputation penalties, and ID allocation.
 
 ## Product Screenshots
 
@@ -284,19 +302,17 @@ The last test covers the newer reputation penalty and message-consent behaviour.
 
 ![Admin recommendations](screenshots/admin_recommendations.png)
 
-### Latest Feature Screenshot Slots
+### Latest Feature Screenshots
 
-The following placeholder images mark the new `ver_1.12` features. Replace them with real screenshots using the same filenames after capturing the final GUI.
+The following screenshots show the newer bilingual, bell-centre, conversation-approval, and reputation features.
 
-![Bilingual UI switch placeholder](screenshots/feature_bilingual_ui.svg)
+![Bilingual UI switch](screenshots/feature_bilingual_ui.png)
 
-![Bell centre messages placeholder](screenshots/feature_bell_centre_messages.svg)
+![Bell centre messages](screenshots/feature_bell_centre_messages.png)
 
-![MO conversation approval placeholder](screenshots/feature_mo_conversation_approval.svg)
+![MO conversation approval](screenshots/feature_mo_conversation_approval.png)
 
-![Post-work rating and reputation placeholder](screenshots/feature_reputation_rating.svg)
-
-![Live matching and ranking consistency placeholder](screenshots/feature_live_match_consistency.svg)
+![Post-work rating and reputation](screenshots/feature_reputation_rating.png)
 
 ## Version Notes
 
@@ -313,3 +329,4 @@ The following placeholder images mark the new `ver_1.12` features. Replace them 
 - `ver_1.10`: qwen-plus local config support, plain-text AI prompt rules, copy response action, lightweight regression tests, JavaDoc generation support, and final-delivery documentation
 - `ver_1.11`: faster search and page-refresh behaviour, explicit Search actions for filter toolbars, lighter refresh feedback, and reduced repeated CSV reads across TA, MO, and Admin dashboards
 - `ver_1.12`: bilingual UI, bell-centre notifications and messages, MO-only conversation approval, three-message pre-approval rule, post-work ratings, TA reputation penalties, rejected-application reapply support, wrapping table cells, and real-time match/ranking consistency
+- `ver_1.13`: security and validation hardening, salted password hashes, stricter email/profile checks, Admin job ownership lock, safe CSV export, synchronized CSV saves, ID counters, AI ranking timestamps, notification paging, and cross-platform script/test updates
