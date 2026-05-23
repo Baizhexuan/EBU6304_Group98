@@ -38,6 +38,7 @@ public class NotificationCenterDialog extends JDialog {
     private static final Color SOFT_LINE = new Color(219, 227, 235);
     private static final Color BUBBLE_IN = new Color(247, 249, 252);
     private static final Color BUBBLE_OUT = new Color(225, 239, 255);
+    private static final int NOTIFICATION_PAGE_SIZE = 100;
 
     private final User currentUser;
     private final Runnable afterChange;
@@ -383,8 +384,16 @@ public class NotificationCenterDialog extends JDialog {
         Notification selected = notificationList == null ? null : notificationList.getSelectedValue();
         notificationListModel.clear();
         List<Notification> notifications = NotificationService.getNotificationsForUser(currentUser.id);
-        for (Notification notification : notifications) {
+        int start = Math.max(0, notifications.size() - NOTIFICATION_PAGE_SIZE);
+        for (int i = notifications.size() - 1; i >= start; i--) {
+            Notification notification = notifications.get(i);
             notificationListModel.addElement(notification);
+        }
+        if (statusLabel != null && notifications.size() > NOTIFICATION_PAGE_SIZE) {
+            statusLabel.setText(I18n.isChinese()
+                    ? "显示最新 " + NOTIFICATION_PAGE_SIZE + " 条通知，共 " + notifications.size() + " 条。"
+                    : "Showing latest " + NOTIFICATION_PAGE_SIZE + " of " + notifications.size()
+                            + " notifications.");
         }
         restoreNotificationSelection(selected);
         showSelectedNotification();

@@ -62,6 +62,7 @@ public final class I18n {
     public static void setLanguage(Language language) {
         if (language != null) {
             currentLanguage = language;
+            applySystemButtonLanguage();
         }
     }
 
@@ -75,17 +76,20 @@ public final class I18n {
         panel.putClientProperty("i18n.skip", Boolean.TRUE);
 
         javax.swing.JButton englishButton = new javax.swing.JButton("English");
-        javax.swing.JButton chineseButton = new javax.swing.JButton("中文");
+        javax.swing.JButton chineseButton = new javax.swing.JButton("Chinese");
         englishButton.putClientProperty("i18n.skip", Boolean.TRUE);
         chineseButton.putClientProperty("i18n.skip", Boolean.TRUE);
 
         Runnable refreshStyle = () -> {
             boolean english = currentLanguage == Language.ENGLISH;
+            englishButton.setText(english ? "English" : "英文");
+            chineseButton.setText(english ? "Chinese" : "中文");
             styleLanguageButton(englishButton, english);
             styleLanguageButton(chineseButton, !english);
         };
         englishButton.addActionListener(e -> {
             currentLanguage = Language.ENGLISH;
+            applySystemButtonLanguage();
             refreshStyle.run();
             if (afterChange != null) {
                 afterChange.run();
@@ -93,6 +97,7 @@ public final class I18n {
         });
         chineseButton.addActionListener(e -> {
             currentLanguage = Language.CHINESE;
+            applySystemButtonLanguage();
             refreshStyle.run();
             if (afterChange != null) {
                 afterChange.run();
@@ -263,14 +268,31 @@ public final class I18n {
         BaseDashboard.resizeButtonToFitText(button);
     }
 
+    public static void applySystemButtonLanguage() {
+        boolean chinese = currentLanguage == Language.CHINESE;
+        javax.swing.UIManager.put("OptionPane.okButtonText", chinese ? "确定" : "OK");
+        javax.swing.UIManager.put("OptionPane.cancelButtonText", chinese ? "取消" : "Cancel");
+        javax.swing.UIManager.put("OptionPane.yesButtonText", chinese ? "是" : "Yes");
+        javax.swing.UIManager.put("OptionPane.noButtonText", chinese ? "否" : "No");
+        javax.swing.UIManager.put("FileChooser.openButtonText", chinese ? "打开" : "Open");
+        javax.swing.UIManager.put("FileChooser.cancelButtonText", chinese ? "取消" : "Cancel");
+        javax.swing.UIManager.put("FileChooser.saveButtonText", chinese ? "保存" : "Save");
+        javax.swing.UIManager.put("FileChooser.updateButtonText", chinese ? "更新" : "Update");
+        javax.swing.UIManager.put("FileChooser.helpButtonText", chinese ? "帮助" : "Help");
+        javax.swing.UIManager.put("FileChooser.directoryOpenButtonText", chinese ? "打开" : "Open");
+        javax.swing.UIManager.put("ColorChooser.okText", chinese ? "确定" : "OK");
+        javax.swing.UIManager.put("ColorChooser.cancelText", chinese ? "取消" : "Cancel");
+        javax.swing.UIManager.put("ColorChooser.resetText", chinese ? "重置" : "Reset");
+    }
+
     private static void put(String english, String chinese) {
         EN_TO_ZH.put(english, chinese);
     }
 
     private static void addCommon() {
         put("BUPT International School", "北京邮电大学国际学院");
-        put("BUPT TA Recruitment System", "BUPT TA 招聘系统");
-        put("TA Recruitment System", "TA 招聘系统");
+        put("BUPT TA Recruitment System", "BUPT 助教招聘系统");
+        put("TA Recruitment System", "助教招聘系统");
         put("Account", "账户");
         put("Logout", "退出登录");
         put("Help", "帮助");
@@ -302,6 +324,18 @@ public final class I18n {
         put("Messages", "消息");
         put("Notifications", "通知");
         put("Open notifications and messages", "打开通知和消息");
+        put("Dr Chen", "陈博士");
+        put("Prof Zhao", "赵教授");
+        put("Li Ming", "李明");
+        put("Wang Yue", "王悦");
+        put("Java Lab Assistant", "Java 实验助教");
+        put("Assessment Support TA", "评估支持助教");
+        put("Python Tutor", "Python 辅导助教");
+        put("Database Helper", "数据库助教");
+        put("Java Tutorial TA", "Java 习题课助教");
+        put("Teaching Building 3", "教学楼 3");
+        put("Computer Lab A", "计算机实验室 A");
+        put("Online and marking hub", "线上与批改中心");
         put("Created At", "创建时间");
         put("Action Hint", "操作提示");
         put("Suggested action", "建议操作");
@@ -319,21 +353,21 @@ public final class I18n {
     }
 
     private static void addLoginAndRegistration() {
-        put("TA Portal", "TA 门户");
-        put("MO Dashboard", "MO 工作台");
+        put("TA Portal", "助教门户");
+        put("MO Dashboard", "模块负责人工作台");
         put("Admin Workload", "管理员工作负载");
         put("Account Registration", "账户注册");
         put("Sign In", "登录");
-        put("Access the applicant, module organiser, or administrator workspace.", "进入申请者、Module Organiser 或管理员工作区。");
+        put("Access the applicant, module organiser, or administrator workspace.", "进入申请者、模块负责人或管理员工作区。");
         put("Log In", "登录");
         put("Register", "注册");
-        put("Use a demo account or register a TA/MO account.", "使用演示账户，或注册 TA/MO 账户。");
+        put("Use a demo account or register a TA/MO account.", "使用演示账户，或注册助教/模块负责人账户。");
         put("Demo Access", "演示账户");
         put("Choose a role and continue the recruitment flow from the matching dashboard.", "选择一个角色，并从匹配工作台继续招聘流程。");
-        put("TA applies &rarr; MO reviews &rarr; Admin checks workload", "TA 申请 &rarr; MO 审核 &rarr; Admin 检查工作量");
+        put("TA applies &rarr; MO reviews &rarr; Admin checks workload", "助教申请 &rarr; 模块负责人审核 &rarr; 管理员检查工作量");
         put("Create Demo Account", "创建演示账户");
         put("Create Account", "创建账户");
-        put("Register a TA or MO account for the recruitment portal.", "为招聘系统注册 TA 或 MO 账户。");
+        put("Register a TA or MO account for the recruitment portal.", "为招聘系统注册助教或模块负责人账户。");
         put("Confirm Password", "确认密码");
         put("Display Name", "显示名称");
         put("After registration, sign in and continue from the role dashboard.", "注册后请登录，并从对应角色工作台继续。");
@@ -367,10 +401,10 @@ public final class I18n {
         put("Open Jobs and Match Guidance", "开放岗位与匹配建议");
         put("Browse currently open jobs, filter each major attribute separately, and compare the AI-ready match explanation before applying. Missing skills are surfaced explicitly for decision making.",
                 "浏览当前开放岗位，按主要属性分别筛选，并在申请前对比 AI 匹配解释。缺失技能会直接展示，方便做决定。");
-        put("TA AI Match Ranking", "TA AI 匹配排名");
+        put("TA AI Match Ranking", "助教 AI 匹配排名");
         put("Profile focus:", "资料重点:");
         put("Required skills:", "所需技能:");
-        put("MO/job characteristics:", "MO/岗位特征:");
+        put("MO/job characteristics:", "模块负责人/岗位特征:");
         put("AI summary:", "AI 摘要:");
         put("Availability:", "可工作时间:");
         put("Statement:", "个人陈述:");
@@ -382,9 +416,15 @@ public final class I18n {
         put("Ask AI About Matches", "询问 AI 匹配建议");
         put("Search open jobs", "搜索开放岗位");
         put("Search applications", "搜索申请");
+        put("Application Tracking", "申请跟踪");
+        put("Monitor application outcomes with colour cues, compare earlier AI match details, and withdraw only pending applications. Status updates from MO actions now also generate in-app notifications.",
+                "通过颜色提示查看申请结果，对比此前的 AI 匹配详情，并且只能撤回待处理申请。模块负责人的状态更新也会自动生成应用内通知。");
         put("Application summary will appear here after refresh.", "刷新后会显示申请摘要。");
         put("Withdraw Selected Pending Application", "撤回选中的待处理申请");
         put("Notification summary will appear here after refresh.", "刷新后会显示通知摘要。");
+        put("In-App Notifications", "应用内通知");
+        put("This tab implements US-8 style in-app notifications. MO decisions generate updates automatically so TAs can review unread status changes without leaving the system.",
+                "此页面实现 US-8 应用内通知功能。模块负责人的审核决定会自动生成提醒，助教无需离开系统即可查看未读状态变化。");
         put("Refresh Notifications", "刷新通知");
         put("Mark Selected as Read", "标记选中为已读");
         put("Mark All as Read", "全部标记为已读");
@@ -392,7 +432,7 @@ public final class I18n {
         put("App ID", "申请 ID");
         put("AI Match", "AI 匹配");
         put("Missing Skills", "缺失技能");
-        put("MO Note", "MO 备注");
+        put("MO Note", "模块负责人备注");
         put("Applied At", "申请时间");
         put("Match", "匹配度");
 
@@ -424,7 +464,7 @@ public final class I18n {
         put("Workload Monitor", "工作量监控");
         put("Applications Overview", "申请总览");
         put("Jobs Overview", "岗位总览");
-        put("TA Username", "TA 用户名");
+        put("TA Username", "助教用户名");
         put("Full Name", "姓名");
         put("Selected Jobs", "已选岗位");
         put("AI System Insight and Reallocation Advice", "AI 系统洞察与调配建议");
@@ -435,8 +475,8 @@ public final class I18n {
         put("Search jobs", "搜索岗位");
         put("Recommendation focus", "建议关注点");
         put("Global risk overview", "全局风险概览");
-        put("MO", "MO");
-        put("TA", "TA");
+        put("MO", "模块负责人");
+        put("TA", "助教");
         put("Note", "备注");
         put("OPEN", "开放");
         put("CLOSED", "关闭");
@@ -462,7 +502,7 @@ public final class I18n {
 
     private static void addNotificationsAndMessages() {
         put("Bell Centre", "提醒中心");
-        put("Notifications and TA-MO conversations", "通知与 TA-MO 对话");
+        put("Notifications and TA-MO conversations", "通知与助教-模块负责人对话");
         put("Select a notification", "选择一条通知");
         put("No notifications yet", "暂无通知");
         put("Workflow updates will appear here.", "流程更新会显示在这里。");
@@ -472,7 +512,7 @@ public final class I18n {
         put("All notifications marked as read.", "所有通知已标记为已读。");
         put("Select a conversation", "选择一个对话");
         put("No conversation selected", "未选择对话");
-        put("TA-MO conversations become available after an application connects both sides.", "申请把 TA 和 MO 关联后，对话才会出现在这里。");
+        put("TA-MO conversations become available after an application connects both sides.", "申请把助教和模块负责人关联后，对话才会出现在这里。");
         put("Approve", "同意对话");
         put("Read Incoming", "读取新消息");
         put("Send", "发送");
@@ -484,28 +524,28 @@ public final class I18n {
         put("Them", "对方");
         put("NEW", "新");
         put("Notification marked as read.", "通知已标记为已读。");
-        put("No TA-MO contact is available for this user.", "此用户暂无 TA-MO 联系人。");
+        put("No TA-MO contact is available for this user.", "此用户暂无助教-模块负责人联系人。");
         put("No Contact", "暂无联系人");
         put("Conversation approved. The three-message limit is now lifted for this contact.", "对话已同意，此联系人不再受三条消息限制。");
         put("Remaining pre-approval messages", "同意前剩余可发送消息数");
         put("Conversation approved", "对话已同意");
         put("No notifications are available. Open Messages to view TA-MO conversations.",
-                "当前没有通知。请打开 Messages / 消息 查看 TA-MO 对话。");
+                "当前没有通知。请打开“消息”查看助教-模块负责人对话。");
         put("No notifications are available, so Messages is shown first.",
-                "当前没有通知，因此已优先显示 Messages / 消息 页面。");
+                "当前没有通知，因此已优先显示“消息”页面。");
         put("No TA-MO conversations are available for this account yet.",
-                "当前账号暂时没有可用的 TA-MO 对话。");
+                "当前账号暂时没有可用的助教-模块负责人对话。");
         put("No application-linked conversations were found, so open MO job contacts are shown for demo use.",
-                "没有找到已关联申请的对话，因此系统显示开放岗位的 MO 联系人用于演示。");
+                "没有找到已关联申请的对话，因此系统显示开放岗位的模块负责人联系人用于演示。");
         put("No applicant-linked conversations were found, so TA contacts are shown for demo use.",
-                "没有找到已关联申请的对话，因此系统显示 TA 联系人用于演示。");
+                "没有找到已关联申请的对话，因此系统显示助教联系人用于演示。");
         put("Pre-approval messages left: ", "同意前剩余可发送消息数: ");
-        put("TA is waiting for MO approval. Pre-approval messages left: ", "TA 正在等待 MO 同意对话。同意前剩余可发送消息数: ");
-        put("Waiting for MO approval. Pre-approval messages left: ", "等待 MO 同意对话。同意前剩余可发送消息数: ");
-        put("Only the MO for this job can approve the conversation.", "只有该岗位的 MO 可以同意对话。");
-        put("MO can approve this conversation.", "MO 可以同意开启此对话。");
+        put("TA is waiting for MO approval. Pre-approval messages left: ", "助教正在等待模块负责人同意对话。同意前剩余可发送消息数: ");
+        put("Waiting for MO approval. Pre-approval messages left: ", "等待模块负责人同意对话。同意前剩余可发送消息数: ");
+        put("Only the MO for this job can approve the conversation.", "只有该岗位的模块负责人可以同意对话。");
+        put("MO can approve this conversation.", "模块负责人可以同意开启此对话。");
         put("Send a concise question or approve the conversation when the other side needs a longer discussion.",
-                "可以先发送简短问题；如果需要继续深入沟通，则由 MO 同意开启完整对话。");
+                "可以先发送简短问题；如果需要继续深入沟通，则由模块负责人同意开启完整对话。");
         put("Message text is required.", "消息内容不能为空。");
         put("Recipient not found.", "未找到接收方。");
         put("Conversation consent required. You cannot send more than 3 messages before the other side approves.",
@@ -535,7 +575,10 @@ public final class I18n {
         put(" sent you a message about ", " 发来一条关于 ");
         put("general recruitment conversation", "一般招聘沟通");
         put("Open the bell centre to read the message and reply.", "打开提醒中心阅读消息并回复。");
+        put("Open My Applications or the bell centre to review the update.", "打开“我的申请”或“提醒中心”查看更新。");
         put("Work evaluation for ", "工作评价: ");
+        put("MO Dr", "模块负责人 Dr");
+        put("MO Prof", "模块负责人 Prof");
         put(" rated your completed work for ", " 对你在 ");
         put(" as ", " 的完成工作评分为 ");
         put(" Because the original match score was high but the completion rating was low, your reputation score is now ",
@@ -544,6 +587,11 @@ public final class I18n {
                 "。这是后续匹配的审核信号，不是自动判定违规。");
 
         put("Could we discuss the Java lab role?", "我们可以讨论一下 Java lab 岗位吗？");
+        put("Could you explain the weekly workload?", "可以说明一下每周工作量吗？");
+        put("Should I prepare anything before the interview?", "面试前我需要准备什么吗？");
+        put("hello?", "你好？");
+        put("hello", "你好");
+        put("o ??", "哦？？");
         put("I have a question about timing.", "我想问一下时间安排。");
         put("Please confirm the expected workload.", "请确认预期工作量。");
         put("Fourth message before approval.", "同意前的第四条消息。");
@@ -578,10 +626,6 @@ public final class I18n {
         put("Visible jobs:", "可见岗位:");
         put("Best current match:", "当前最佳匹配:");
         put("Please select a job first.", "请先选择一个岗位。");
-        put("CV uploaded to local demo storage.", "CV 已上传到本地演示存储。");
-        put("CV Uploaded", "CV 上传完成");
-        put("Unable to upload CV:", "无法上传 CV:");
-        put("Upload Error", "上传错误");
         put("Profile Required", "需要完善资料");
         put("You have already applied for this job.", "你已经申请过该岗位。");
         put("Duplicate Application", "重复申请");

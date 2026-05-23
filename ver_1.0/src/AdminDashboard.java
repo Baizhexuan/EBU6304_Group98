@@ -340,14 +340,14 @@ public class AdminDashboard extends BaseDashboard {
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
         panel.add(buildSectionIntro(
                 "Global Job Records",
-                "Edit job ownership, wording, and status at the system level. Per-column filters keep each attribute aligned with its visible column."),
+                "Review job ownership and edit wording, hours, location, or status at the system level. MO ownership is fixed to prevent accidental reassignment."),
                 BorderLayout.NORTH);
 
         jobsModel = new DefaultTableModel(
                 new String[] {"Job ID", "MO", "Title", "Module", "Skills", "Hours", "Location", "Status"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column >= 1;
+                return column >= 2;
             }
         };
         jobsTable = new JTable(jobsModel);
@@ -634,6 +634,7 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void saveApplicationChanges() {
+        stopEditing(applicationsTable);
         List<Application> applications = FileStorage.loadApplications();
         for (int row = 0; row < applicationsModel.getRowCount(); row++) {
             int appId = ValidationUtils.parseInt(String.valueOf(applicationsModel.getValueAt(row, 0)), 0);
@@ -641,7 +642,14 @@ public class AdminDashboard extends BaseDashboard {
             if (match == null) {
                 continue;
             }
-            match.status = String.valueOf(applicationsModel.getValueAt(row, 4)).trim().toUpperCase();
+            String status = String.valueOf(applicationsModel.getValueAt(row, 4)).trim().toUpperCase();
+            if (!isAllowedStatus(status, APPLICATION_STATUSES)) {
+                JOptionPane.showMessageDialog(this,
+                        "Application status '" + status + "' is not valid. Use PENDING, SELECTED, REJECTED, or WITHDRAWN.",
+                        "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            match.status = status;
             match.reviewerNote = String.valueOf(applicationsModel.getValueAt(row, 8)).trim();
         }
         FileStorage.saveApplications(applications);
@@ -688,25 +696,19 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private void saveJobChanges() {
+        stopEditing(jobsTable);
         List<Job> jobs = FileStorage.loadJobs();
         Map<Integer, String> previousStatuses = new HashMap<Integer, String>();
         for (Job job : jobs) {
             previousStatuses.put(job.id, job.status);
         }
         int closedNotifications = 0;
+        int reopenedNotifications = 0;
         for (int row = 0; row < jobsModel.getRowCount(); row++) {
             int jobId = ValidationUtils.parseInt(String.valueOf(jobsModel.getValueAt(row, 0)), 0);
             Job match = findJobById(jobs, jobId);
             if (match == null) {
                 continue;
-            }
-            String moDisplayName = String.valueOf(jobsModel.getValueAt(row, 1)).trim();
-            User mo = FileStorage.findUserByDisplayName(moDisplayName);
-            if (mo == null || !"MO".equalsIgnoreCase(mo.role)) {
-                JOptionPane.showMessageDialog(this,
-                        "MO name '" + moDisplayName + "' is not recognised. Please use an existing MO display name.",
-                        "Validation", JOptionPane.WARNING_MESSAGE);
-                return;
             }
             int hours = ValidationUtils.parseInt(String.valueOf(jobsModel.getValueAt(row, 5)), -1);
             if (hours <= 0) {
@@ -714,17 +716,32 @@ public class AdminDashboard extends BaseDashboard {
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            if (hours > FileStorage.getOverloadLimit()) {
+                JOptionPane.showMessageDialog(this,
+                        "Hours must not exceed " + FileStorage.getOverloadLimit()
+                                + " per week. Split very large workloads into multiple posts.",
+                        "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String status = String.valueOf(jobsModel.getValueAt(row, 7)).trim().toUpperCase();
+            if (!isAllowedStatus(status, JOB_STATUSES)) {
+                JOptionPane.showMessageDialog(this,
+                        "Job status '" + status + "' is not valid. Use OPEN or CLOSED.",
+                        "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-            match.moId = mo.id;
             match.title = String.valueOf(jobsModel.getValueAt(row, 2)).trim();
             match.module = String.valueOf(jobsModel.getValueAt(row, 3)).trim();
             match.requiredSkills = String.valueOf(jobsModel.getValueAt(row, 4)).trim();
             match.maxHours = hours;
             match.location = String.valueOf(jobsModel.getValueAt(row, 6)).trim();
-            match.status = String.valueOf(jobsModel.getValueAt(row, 7)).trim().toUpperCase();
+            match.status = status;
             String previousStatus = previousStatuses.get(match.id);
             if ("OPEN".equalsIgnoreCase(previousStatus) && "CLOSED".equalsIgnoreCase(match.status)) {
                 closedNotifications += NotificationService.notifyJobClosed(match, currentUser);
+            } else if ("CLOSED".equalsIgnoreCase(previousStatus) && "OPEN".equalsIgnoreCase(match.status)) {
+                reopenedNotifications += NotificationService.markJobClosureNotificationsRead(match);
             }
         }
         FileStorage.saveJobs(jobs);
@@ -733,6 +750,9 @@ public class AdminDashboard extends BaseDashboard {
         String savedMessage = "Job updates saved.";
         if (closedNotifications > 0) {
             savedMessage += " Closure notifications sent: " + closedNotifications + ".";
+        }
+        if (reopenedNotifications > 0) {
+            savedMessage += " Old closure notifications marked read: " + reopenedNotifications + ".";
         }
         JOptionPane.showMessageDialog(this, savedMessage, "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshWorkload();
@@ -749,14 +769,18 @@ public class AdminDashboard extends BaseDashboard {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String path = "data/admin_workload_report_" + timestamp + ".csv";
         try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
-            writer.println("exportedAt," + timestamp);
-            writer.println("provider," + ScoringService.getActiveProvider().getProviderName());
-            writer.println("providerReady," + ScoringService.getActiveProvider().isReady());
-            writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
+            writer.println(safeCsvLine("exportedAt", timestamp));
+            writer.println(safeCsvLine("provider", ScoringService.getActiveProvider().getProviderName()));
+            writer.println(safeCsvLine("providerReady", String.valueOf(ScoringService.getActiveProvider().isReady())));
+            writer.println(safeCsvLine("taUsername", "fullName", "email", "selectedJobs", "currentHours", "status"));
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
-                writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","
-                        + workloadModel.getValueAt(row, 2) + "," + workloadModel.getValueAt(row, 3) + ","
-                        + workloadModel.getValueAt(row, 4) + "," + workloadModel.getValueAt(row, 5));
+                writer.println(safeCsvLine(
+                        String.valueOf(workloadModel.getValueAt(row, 0)),
+                        String.valueOf(workloadModel.getValueAt(row, 1)),
+                        String.valueOf(workloadModel.getValueAt(row, 2)),
+                        String.valueOf(workloadModel.getValueAt(row, 3)),
+                        String.valueOf(workloadModel.getValueAt(row, 4)),
+                        String.valueOf(workloadModel.getValueAt(row, 5))));
             }
             JOptionPane.showMessageDialog(this, "Report exported to " + path, "Export Complete",
                     JOptionPane.INFORMATION_MESSAGE);
@@ -784,6 +808,44 @@ public class AdminDashboard extends BaseDashboard {
             return "OK".equalsIgnoreCase(actual);
         }
         return actual != null && actual.toUpperCase().startsWith(filter.toUpperCase());
+    }
+
+    private void stopEditing(JTable table) {
+        if (table != null && table.isEditing()) {
+            table.getCellEditor().stopCellEditing();
+        }
+    }
+
+    private boolean isAllowedStatus(String status, String[] allowedStatuses) {
+        for (String allowed : allowedStatuses) {
+            if (allowed.equalsIgnoreCase(status)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String safeCsvLine(String... values) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append(safeCsvCell(values[i]));
+        }
+        return builder.toString();
+    }
+
+    private String safeCsvCell(String value) {
+        String cleaned = value == null ? "" : value.replace('\n', ' ').replace('\r', ' ');
+        if (!cleaned.isEmpty()) {
+            char first = cleaned.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t') {
+                cleaned = "'" + cleaned;
+            }
+        }
+        boolean quote = cleaned.indexOf(',') >= 0 || cleaned.indexOf('"') >= 0;
+        return quote ? "\"" + cleaned.replace("\"", "\"\"") + "\"" : cleaned;
     }
 
     private String getLower(JTextField field) {

@@ -13,7 +13,7 @@ import java.util.Properties;
  *   <li>{@code ai.properties} in the working directory</li>
  *   <li>Empty string — callers treat this as "not configured" (lowest priority)</li>
  * </ol>
- * <p>The class is not intended to be instantiated.</p>
+ * The class is not intended to be instantiated.</p>
  */
 public final class AIConfig {
     private static final Properties LOCAL_PROPERTIES = loadLocalProperties();

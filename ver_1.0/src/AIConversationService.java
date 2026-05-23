@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
  *       ({@code qwen-plus})</li>
  *   <li><b>responses</b> — the OpenAI Responses API</li>
  * </ul>
- * <p>When no API key is configured the service returns a structured local
+ * When no API key is configured the service returns a structured local
  * fallback answer so the demo remains usable offline.</p>
  */
 public final class AIConversationService {

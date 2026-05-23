@@ -269,11 +269,22 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        if (!FileStorage.passwordMatches(password, matched.password)) {
+        if (!PasswordService.verifyPassword(password, matched.password)) {
             JOptionPane.showMessageDialog(this, I18n.t("Password is incorrect."), I18n.t("Login Failed"),
                     JOptionPane.ERROR_MESSAGE);
             passwordField.setText("");
             return;
+        }
+
+        if (!PasswordService.isHashed(matched.password)) {
+            for (User user : users) {
+                if (user.id == matched.id) {
+                    user.password = PasswordService.hashPassword(password);
+                    matched.password = user.password;
+                    break;
+                }
+            }
+            FileStorage.saveUsers(users);
         }
 
         dispose();

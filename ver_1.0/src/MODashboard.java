@@ -384,6 +384,13 @@ public class MODashboard extends BaseDashboard {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (hours > FileStorage.getOverloadLimit()) {
+            JOptionPane.showMessageDialog(this,
+                    "Weekly hours must not exceed " + FileStorage.getOverloadLimit()
+                            + ". Please split very large workloads into smaller posts.",
+                    "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         List<Job> jobs = FileStorage.loadJobs();
         Job job = new Job();
@@ -459,7 +466,9 @@ public class MODashboard extends BaseDashboard {
                     int notified = NotificationService.notifyJobClosed(job, currentUser);
                     postStatusLabel.setText("Posting status: job '" + job.title + "' is now CLOSED. Notifications sent: " + notified + ".");
                 } else {
-                    postStatusLabel.setText("Posting status: job '" + job.title + "' is now OPEN.");
+                    int updated = NotificationService.markJobClosureNotificationsRead(job);
+                    postStatusLabel.setText("Posting status: job '" + job.title
+                            + "' is now OPEN. Old closure notifications marked read: " + updated + ".");
                 }
                 break;
             }

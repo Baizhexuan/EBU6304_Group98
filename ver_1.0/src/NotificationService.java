@@ -96,6 +96,28 @@ public final class NotificationService {
         return created;
     }
 
+    /**
+     * Marks old closure notices as read when a closed job is reopened.
+     */
+    public static int markJobClosureNotificationsRead(Job job) {
+        if (job == null) {
+            return 0;
+        }
+        List<Notification> notifications = FileStorage.loadNotifications();
+        int updated = 0;
+        String title = "Job closed: " + job.title;
+        for (Notification notification : notifications) {
+            if (notification.isUnread() && title.equalsIgnoreCase(notification.title)) {
+                notification.status = "READ";
+                updated++;
+            }
+        }
+        if (updated > 0) {
+            FileStorage.saveNotifications(notifications);
+        }
+        return updated;
+    }
+
     public static void notifyDirectMessage(User recipient, User sender, Job job) {
         if (recipient == null || sender == null) {
             return;
@@ -113,7 +135,7 @@ public final class NotificationService {
         if (application == null || reviewer == null || job == null) {
             return;
         }
-        String message = "MO " + reviewer.getSafeDisplayName() + " rated your completed work for " + job.title
+        String message = reviewer.getSafeDisplayName() + " rated your completed work for " + job.title
                 + " as " + rating + "/5.";
         if (penaltyApplied) {
             message += " Because the original match score was high but the completion rating was low, your reputation score is now "

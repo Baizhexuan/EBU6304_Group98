@@ -198,7 +198,7 @@ public class RegisterFrame extends JFrame {
             }
         }
 
-        User user = new User(FileStorage.nextUserId(), username, FileStorage.hashPassword(password), role, displayName);
+        User user = new User(FileStorage.nextUserId(), username, PasswordService.hashPassword(password), role, displayName);
         users.add(user);
         FileStorage.saveUsers(users);
 

@@ -5,9 +5,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -444,20 +441,7 @@ public class TADashboard extends BaseDashboard {
     private void chooseCv() {
         JFileChooser chooser = new JFileChooser();
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try {
-                Path selected = chooser.getSelectedFile().toPath();
-                Path uploadDir = new java.io.File(FileStorage.getCvUploadDirectory()).toPath();
-                Files.createDirectories(uploadDir);
-                String safeName = selected.getFileName().toString().replaceAll("[^A-Za-z0-9._-]", "_");
-                Path target = uploadDir.resolve(currentUser.username + "_" + System.currentTimeMillis() + "_" + safeName);
-                Files.copy(selected, target, StandardCopyOption.REPLACE_EXISTING);
-                cvPathField.setText(target.toString());
-                JOptionPane.showMessageDialog(this, I18n.t("CV uploaded to local demo storage."), I18n.t("CV Uploaded"),
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, I18n.t("Unable to upload CV:") + " " + ex.getMessage(), I18n.t("Upload Error"),
-                        JOptionPane.ERROR_MESSAGE);
-            }
+            cvPathField.setText(chooser.getSelectedFile().getAbsolutePath());
         }
     }
 
@@ -492,6 +476,13 @@ public class TADashboard extends BaseDashboard {
                 || ValidationUtils.isBlank(studentIdField.getText()) || ValidationUtils.isBlank(skillsField.getText())) {
             JOptionPane.showMessageDialog(this, "Name, email, student ID and skills are required.", "Validation",
                     JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (ValidationUtils.isBlank(cvPathField.getText()) || ValidationUtils.isBlank(availabilityField.getText())
+                || ValidationUtils.isBlank(statementArea.getText())) {
+            JOptionPane.showMessageDialog(this,
+                    "CV path, availability and personal statement are required before applications.",
+                    "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -533,6 +524,7 @@ public class TADashboard extends BaseDashboard {
 
         JOptionPane.showMessageDialog(this, "Profile saved successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
         refreshJobs();
+        refreshApplications();
         refreshNotifications();
     }
 
@@ -633,6 +625,13 @@ public class TADashboard extends BaseDashboard {
                     "Profile Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        String readinessError = getApplicationReadinessError(profile);
+        if (readinessError != null) {
+            NotificationService.notifyProfileRequired(currentUser);
+            refreshNotifications();
+            JOptionPane.showMessageDialog(this, readinessError, "Profile Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         int modelRow = jobsTable.convertRowIndexToModel(row);
         int jobId = Integer.parseInt(String.valueOf(jobsModel.getValueAt(modelRow, 0)));
@@ -665,6 +664,20 @@ public class TADashboard extends BaseDashboard {
                         + extractMissingSkills(match.summary) + ".",
                 "Application Submitted", JOptionPane.INFORMATION_MESSAGE);
         refreshApplications();
+    }
+
+    private String getApplicationReadinessError(TAProfile profile) {
+        if (!ValidationUtils.isEmail(profile.email)) {
+            return "Your saved email address is invalid. Please update My Profile before applying.";
+        }
+        if (profile.gpa < 0.0 || profile.gpa > 4.0) {
+            return "Your saved GPA is outside the valid 0.0 to 4.0 range. Please update My Profile before applying.";
+        }
+        if (ValidationUtils.isBlank(profile.cvPath) || ValidationUtils.isBlank(profile.availability)
+                || ValidationUtils.isBlank(profile.statement)) {
+            return "Your CV path, availability and personal statement must be completed before applying.";
+        }
+        return null;
     }
 
     private void refreshApplications() {
@@ -746,8 +759,10 @@ public class TADashboard extends BaseDashboard {
                     unread++;
                 }
             }
-            notificationSummaryLabel.setText("Total notifications: " + notifications.size() + " | Unread: " + unread);
-            tabs.setTitleAt(3, unread > 0 ? "Notifications (" + unread + ")" : "Notifications");
+            notificationSummaryLabel.setText(I18n.t("Total notifications:") + " " + notifications.size()
+                    + " | " + I18n.t("Unread:") + " " + unread);
+            String notificationTabTitle = I18n.t("Notifications");
+            tabs.setTitleAt(3, unread > 0 ? notificationTabTitle + " (" + unread + ")" : notificationTabTitle);
             refreshBellBadge();
         } finally {
             endRefreshFeedback();
@@ -757,7 +772,7 @@ public class TADashboard extends BaseDashboard {
     private void markSelectedNotificationAsRead() {
         int row = notificationsTable.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select a notification first.", "Info",
+            JOptionPane.showMessageDialog(this, I18n.t("Please select a notification first."), I18n.t("Info"),
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }

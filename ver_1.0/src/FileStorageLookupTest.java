@@ -32,8 +32,11 @@ public class FileStorageLookupTest {
                 TestSupport.assertTrue(FileStorage.findJobById(1) != null,
                         "Job lookup should find seeded jobs.");
 
-                TestSupport.assertIntEquals(maxUserId() + 1, FileStorage.nextUserId(),
+                int nextUserId = FileStorage.nextUserId();
+                TestSupport.assertIntEquals(maxUserId() + 1, nextUserId,
                         "Next user ID should follow the current maximum user ID.");
+                TestSupport.assertIntEquals(nextUserId + 1, FileStorage.nextUserId(),
+                        "Consecutive user ID allocation should not return a duplicate ID.");
                 TestSupport.assertIntEquals(maxProfileId() + 1, FileStorage.nextProfileId(),
                         "Next profile ID should follow the current maximum profile ID.");
                 TestSupport.assertIntEquals(maxJobId() + 1, FileStorage.nextJobId(),

@@ -1,3 +1,5 @@
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,6 +13,8 @@ import java.util.List;
  * conversation entry point.</p>
  */
 public final class BoardAIInsightsService {
+    private static final DateTimeFormatter GENERATED_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private BoardAIInsightsService() {
     }
 
@@ -45,6 +49,7 @@ public final class BoardAIInsightsService {
 
         StringBuilder builder = new StringBuilder();
         builder.append("TA AI Match Ranking").append('\n');
+        builder.append("Generated at: ").append(generatedAt()).append('\n');
         builder.append("Profile focus: ").append(briefProfileTraits(profile)).append("\n\n");
         int count = Math.min(limit, rankedJobs.size());
         for (int i = 0; i < count; i++) {
@@ -107,6 +112,7 @@ public final class BoardAIInsightsService {
 
         StringBuilder builder = new StringBuilder();
         builder.append("MO AI Applicant Ranking").append('\n');
+        builder.append("Generated at: ").append(generatedAt()).append('\n');
         builder.append("Selected job: ").append(selectedJob.title).append(" / ").append(selectedJob.module).append('\n');
         builder.append("Job characteristics: ").append(buildJobCharacteristics(selectedJob)).append("\n\n");
 
@@ -181,6 +187,7 @@ public final class BoardAIInsightsService {
 
         StringBuilder builder = new StringBuilder();
         builder.append("Admin AI System Overview").append('\n');
+        builder.append("Generated at: ").append(generatedAt()).append('\n');
         builder.append("Users -> Admin: ").append(adminCount)
                 .append(", MO: ").append(moCount)
                 .append(", TA: ").append(taCount).append('\n');
@@ -295,6 +302,10 @@ public final class BoardAIInsightsService {
 
     private static String safe(String value) {
         return value == null || value.trim().isEmpty() ? "N/A" : value.trim();
+    }
+
+    private static String generatedAt() {
+        return LocalDateTime.now().format(GENERATED_FORMATTER);
     }
 
     private static String limit(String value, int max) {

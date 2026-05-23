@@ -36,7 +36,14 @@ public class ValidationUtils {
      * @return {@code true} if the string looks like a valid e-mail address
      */
     public static boolean isEmail(String value) {
-        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+        if (value == null) {
+            return false;
+        }
+        String trimmed = value.trim();
+        if (trimmed.contains("..")) {
+            return false;
+        }
+        return trimmed.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
     }
 
     /**

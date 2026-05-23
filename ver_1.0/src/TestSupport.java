@@ -24,7 +24,8 @@ public final class TestSupport {
             "ta_reputations.csv",
             "work_evaluations.csv",
             "messages.csv",
-            "message_consents.csv"
+            "message_consents.csv",
+            "id_counters.csv"
     };
 
     private TestSupport() {

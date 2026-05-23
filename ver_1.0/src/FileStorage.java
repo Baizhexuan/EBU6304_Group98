@@ -4,11 +4,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Central CSV persistence helper for the stand-alone demo.
@@ -23,15 +26,14 @@ import java.util.List;
  */
 public class FileStorage {
     private static final String DATA_DIR = "data" + File.separator;
-    private static final String CV_UPLOAD_DIR = DATA_DIR + "cv_uploads" + File.separator;
     private static final int OVERLOAD_LIMIT = 20;
+    private static final String ID_COUNTERS_FILE = "id_counters.csv";
 
     /**
      * Ensures the CSV storage directory and seed files exist before the UI or tests access them.
      */
     public static void initialise() {
         new File(DATA_DIR).mkdirs();
-        new File(CV_UPLOAD_DIR).mkdirs();
         ensureUsers();
         ensureProfiles();
         ensureJobs();
@@ -41,6 +43,7 @@ public class FileStorage {
         ensureWorkEvaluations();
         ensureMessages();
         ensureMessageConsents();
+        secureAllDataFiles();
     }
 
     /**
@@ -50,53 +53,6 @@ public class FileStorage {
         return OVERLOAD_LIMIT;
     }
 
-    /**
-     * Returns the local folder used to store CV files selected through the TA profile form.
-     *
-     * @return CV upload directory path
-     */
-    public static String getCvUploadDirectory() {
-        new File(CV_UPLOAD_DIR).mkdirs();
-        return CV_UPLOAD_DIR;
-    }
-
-    /**
-     * Creates a deterministic SHA-256 password hash for registration and login checks.
-     *
-     * @param plainText password entered by the user
-     * @return 64-character lowercase hex hash, or an empty string when input is blank
-     */
-    public static String hashPassword(String plainText) {
-        if (ValidationUtils.isBlank(plainText)) {
-            return "";
-        }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(plainText.getBytes(StandardCharsets.UTF_8));
-            StringBuilder builder = new StringBuilder();
-            for (byte value : bytes) {
-                builder.append(String.format("%02x", value));
-            }
-            return builder.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available in this Java runtime.", e);
-        }
-    }
-
-    /**
-     * Checks a login password against either a new hashed value or legacy plain demo data.
-     *
-     * @param plainText      password entered by the user
-     * @param storedPassword password value loaded from CSV
-     * @return {@code true} when the password matches
-     */
-    public static boolean passwordMatches(String plainText, String storedPassword) {
-        if (storedPassword == null) {
-            return false;
-        }
-        return storedPassword.equals(plainText) || storedPassword.equals(hashPassword(plainText));
-    }
-
     private static void ensureUsers() {
         File file = new File(DATA_DIR + "users.csv");
         if (file.exists()) {
@@ -104,11 +60,11 @@ public class FileStorage {
         }
         try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,username,password,role,displayName");
-            writer.println("1,admin,admin123,ADMIN,System Admin");
-            writer.println("2,ta1,ta123,TA,Li Ming");
-            writer.println("3,ta2,ta456,TA,Wang Yue");
-            writer.println("4,mo1,mo123,MO,Dr Chen");
-            writer.println("5,mo2,mo456,MO,Prof Zhao");
+            writer.println(csvLine("1", "admin", PasswordService.hashPassword("admin123"), "ADMIN", "System Admin"));
+            writer.println(csvLine("2", "ta1", PasswordService.hashPassword("ta123"), "TA", "Li Ming"));
+            writer.println(csvLine("3", "ta2", PasswordService.hashPassword("ta456"), "TA", "Wang Yue"));
+            writer.println(csvLine("4", "mo1", PasswordService.hashPassword("mo123"), "MO", "Dr Chen"));
+            writer.println(csvLine("5", "mo2", PasswordService.hashPassword("mo456"), "MO", "Prof Zhao"));
         } catch (IOException e) {
             System.err.println("Unable to create users.csv: " + e.getMessage());
         }
@@ -249,12 +205,14 @@ public class FileStorage {
     /**
      * Persists the full user list back to {@code data/users.csv}.
      */
-    public static void saveUsers(List<User> users) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "users.csv"))) {
+    public static synchronized void saveUsers(List<User> users) {
+        File file = new File(DATA_DIR + "users.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,username,password,role,displayName");
             for (User user : users) {
                 writer.println(csvLine(String.valueOf(user.id), user.username, user.password, user.role, user.displayName));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save users: " + e.getMessage());
         }
@@ -295,8 +253,9 @@ public class FileStorage {
     /**
      * Saves all TA profiles while preserving commas and empty fields in text columns.
      */
-    public static void saveProfiles(List<TAProfile> profiles) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "profiles.csv"))) {
+    public static synchronized void saveProfiles(List<TAProfile> profiles) {
+        File file = new File(DATA_DIR + "profiles.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement");
             for (TAProfile profile : profiles) {
                 writer.println(csvLine(
@@ -311,6 +270,7 @@ public class FileStorage {
                         profile.availability,
                         profile.statement));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save profiles: " + e.getMessage());
         }
@@ -350,8 +310,9 @@ public class FileStorage {
     /**
      * Saves jobs to CSV for use across MO posting, TA browsing, and admin review screens.
      */
-    public static void saveJobs(List<Job> jobs) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "jobs.csv"))) {
+    public static synchronized void saveJobs(List<Job> jobs) {
+        File file = new File(DATA_DIR + "jobs.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,moId,title,module,description,requiredSkills,maxHours,status,location");
             for (Job job : jobs) {
                 writer.println(csvLine(
@@ -365,6 +326,7 @@ public class FileStorage {
                         job.status,
                         job.location));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save jobs: " + e.getMessage());
         }
@@ -403,8 +365,9 @@ public class FileStorage {
     /**
      * Saves applications while preserving reviewer notes and explainable AI summaries.
      */
-    public static void saveApplications(List<Application> applications) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "applications.csv"))) {
+    public static synchronized void saveApplications(List<Application> applications) {
+        File file = new File(DATA_DIR + "applications.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote");
             for (Application app : applications) {
                 writer.println(csvLine(
@@ -417,6 +380,7 @@ public class FileStorage {
                         app.matchSummary,
                         app.reviewerNote));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save applications: " + e.getMessage());
         }
@@ -454,8 +418,9 @@ public class FileStorage {
     /**
      * Persists notifications generated by MO decisions, profile reminders, and job closures.
      */
-    public static void saveNotifications(List<Notification> notifications) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "notifications.csv"))) {
+    public static synchronized void saveNotifications(List<Notification> notifications) {
+        File file = new File(DATA_DIR + "notifications.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,userId,title,message,status,createdAt,actionHint");
             for (Notification notification : notifications) {
                 writer.println(csvLine(
@@ -467,6 +432,7 @@ public class FileStorage {
                         notification.createdAt,
                         notification.actionHint));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save notifications: " + e.getMessage());
         }
@@ -496,8 +462,9 @@ public class FileStorage {
         return reputations;
     }
 
-    public static void saveTAReputations(List<TAReputation> reputations) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "ta_reputations.csv"))) {
+    public static synchronized void saveTAReputations(List<TAReputation> reputations) {
+        File file = new File(DATA_DIR + "ta_reputations.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("taId,score,penaltyCount,lastUpdated,note");
             for (TAReputation reputation : reputations) {
                 writer.println(csvLine(
@@ -507,6 +474,7 @@ public class FileStorage {
                         reputation.lastUpdated,
                         reputation.note));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save TA reputations: " + e.getMessage());
         }
@@ -540,8 +508,9 @@ public class FileStorage {
         return evaluations;
     }
 
-    public static void saveWorkEvaluations(List<WorkEvaluation> evaluations) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "work_evaluations.csv"))) {
+    public static synchronized void saveWorkEvaluations(List<WorkEvaluation> evaluations) {
+        File file = new File(DATA_DIR + "work_evaluations.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,applicationId,taId,moId,jobId,rating,comment,evaluatedAt,penaltyApplied");
             for (WorkEvaluation evaluation : evaluations) {
                 writer.println(csvLine(
@@ -555,6 +524,7 @@ public class FileStorage {
                         evaluation.evaluatedAt,
                         String.valueOf(evaluation.penaltyApplied)));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save work evaluations: " + e.getMessage());
         }
@@ -586,8 +556,9 @@ public class FileStorage {
         return messages;
     }
 
-    public static void saveMessages(List<MessageRecord> messages) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "messages.csv"))) {
+    public static synchronized void saveMessages(List<MessageRecord> messages) {
+        File file = new File(DATA_DIR + "messages.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,fromUserId,toUserId,jobId,body,status,createdAt");
             for (MessageRecord message : messages) {
                 writer.println(csvLine(
@@ -599,6 +570,7 @@ public class FileStorage {
                         message.status,
                         message.createdAt));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save messages: " + e.getMessage());
         }
@@ -630,8 +602,9 @@ public class FileStorage {
         return consents;
     }
 
-    public static void saveMessageConsents(List<MessageConsent> consents) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "message_consents.csv"))) {
+    public static synchronized void saveMessageConsents(List<MessageConsent> consents) {
+        File file = new File(DATA_DIR + "message_consents.csv");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,userAId,userBId,jobId,approved,requestedBy,updatedAt");
             for (MessageConsent consent : consents) {
                 writer.println(csvLine(
@@ -643,6 +616,7 @@ public class FileStorage {
                         String.valueOf(consent.requestedBy),
                         consent.updatedAt));
             }
+            secureDataFile(file);
         } catch (IOException e) {
             System.err.println("Unable to save message consents: " + e.getMessage());
         }
@@ -702,68 +676,111 @@ public class FileStorage {
         return null;
     }
 
-    public static int nextUserId() {
+    public static synchronized int nextUserId() {
         int max = 0;
         for (User user : loadUsers()) {
             max = Math.max(max, user.id);
         }
-        return max + 1;
+        return nextIdFromCounter("users", max);
     }
 
-    public static int nextProfileId() {
+    public static synchronized int nextProfileId() {
         int max = 0;
         for (TAProfile profile : loadProfiles()) {
             max = Math.max(max, profile.id);
         }
-        return max + 1;
+        return nextIdFromCounter("profiles", max);
     }
 
-    public static int nextJobId() {
+    public static synchronized int nextJobId() {
         int max = 0;
         for (Job job : loadJobs()) {
             max = Math.max(max, job.id);
         }
-        return max + 1;
+        return nextIdFromCounter("jobs", max);
     }
 
-    public static int nextApplicationId() {
+    public static synchronized int nextApplicationId() {
         int max = 0;
         for (Application app : loadApplications()) {
             max = Math.max(max, app.id);
         }
-        return max + 1;
+        return nextIdFromCounter("applications", max);
     }
 
-    public static int nextNotificationId() {
+    public static synchronized int nextNotificationId() {
         int max = 0;
         for (Notification notification : loadNotifications()) {
             max = Math.max(max, notification.id);
         }
-        return max + 1;
+        return nextIdFromCounter("notifications", max);
     }
 
-    public static int nextWorkEvaluationId() {
+    public static synchronized int nextWorkEvaluationId() {
         int max = 0;
         for (WorkEvaluation evaluation : loadWorkEvaluations()) {
             max = Math.max(max, evaluation.id);
         }
-        return max + 1;
+        return nextIdFromCounter("work_evaluations", max);
     }
 
-    public static int nextMessageId() {
+    public static synchronized int nextMessageId() {
         int max = 0;
         for (MessageRecord message : loadMessages()) {
             max = Math.max(max, message.id);
         }
-        return max + 1;
+        return nextIdFromCounter("messages", max);
     }
 
-    public static int nextMessageConsentId() {
+    public static synchronized int nextMessageConsentId() {
         int max = 0;
         for (MessageConsent consent : loadMessageConsents()) {
             max = Math.max(max, consent.id);
         }
-        return max + 1;
+        return nextIdFromCounter("message_consents", max);
+    }
+
+    private static int nextIdFromCounter(String entity, int currentMax) {
+        Map<String, Integer> counters = loadIdCounters();
+        int lastIssued = counters.containsKey(entity) ? counters.get(entity) : currentMax;
+        int next = Math.max(lastIssued, currentMax) + 1;
+        counters.put(entity, next);
+        saveIdCounters(counters);
+        return next;
+    }
+
+    private static Map<String, Integer> loadIdCounters() {
+        Map<String, Integer> counters = new HashMap<String, Integer>();
+        File file = new File(DATA_DIR + ID_COUNTERS_FILE);
+        if (!file.exists()) {
+            return counters;
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                List<String> parts = parseCsvRow(line, 2);
+                if (parts.size() >= 2 && ValidationUtils.notBlank(parts.get(0))) {
+                    counters.put(parts.get(0).trim(), ValidationUtils.parseInt(parts.get(1), 0));
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load ID counters: " + e.getMessage());
+        }
+        return counters;
+    }
+
+    private static void saveIdCounters(Map<String, Integer> counters) {
+        File file = new File(DATA_DIR + ID_COUNTERS_FILE);
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("entity,lastIssuedId");
+            for (Map.Entry<String, Integer> entry : counters.entrySet()) {
+                writer.println(csvLine(entry.getKey(), String.valueOf(entry.getValue())));
+            }
+            secureDataFile(file);
+        } catch (IOException e) {
+            System.err.println("Unable to save ID counters: " + e.getMessage());
+        }
     }
 
     private static List<String> parseCsvRow(String line, int expectedColumns) {
@@ -797,6 +814,9 @@ public class FileStorage {
             }
         }
         values.add(cell.toString());
+        if (quoted) {
+            System.err.println("CSV parse warning: row ended inside a quoted field and may be malformed: " + line);
+        }
         while (values.size() < expectedColumns) {
             values.add("");
         }
@@ -818,11 +838,54 @@ public class FileStorage {
         if (value == null) {
             return "";
         }
-        String cleaned = value.replace('\n', ' ').replace('\r', ' ');
+        String cleaned = neutraliseCsvFormula(value.replace('\n', ' ').replace('\r', ' '));
         boolean shouldQuote = cleaned.indexOf(',') >= 0 || cleaned.indexOf('"') >= 0;
         if (!shouldQuote) {
             return cleaned;
         }
         return "\"" + cleaned.replace("\"", "\"\"") + "\"";
+    }
+
+    private static String neutraliseCsvFormula(String value) {
+        if (value.isEmpty()) {
+            return value;
+        }
+        char first = value.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t') {
+            return "'" + value;
+        }
+        return value;
+    }
+
+    private static void secureAllDataFiles() {
+        File dir = new File(DATA_DIR);
+        File[] files = dir.listFiles((parent, name) -> name.toLowerCase().endsWith(".csv"));
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            secureDataFile(file);
+        }
+    }
+
+    private static void secureDataFile(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        try {
+            file.setReadable(false, false);
+            file.setWritable(false, false);
+            file.setExecutable(false, false);
+            file.setReadable(true, true);
+            file.setWritable(true, true);
+            Set<PosixFilePermission> permissions = EnumSet.of(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE);
+            Files.setPosixFilePermissions(file.toPath(), permissions);
+        } catch (UnsupportedOperationException ignored) {
+            // Windows does not expose POSIX permissions; owner-only flags above are best effort.
+        } catch (IOException | SecurityException ex) {
+            System.err.println("Unable to tighten permissions for " + file.getName() + ": " + ex.getMessage());
+        }
     }
 }

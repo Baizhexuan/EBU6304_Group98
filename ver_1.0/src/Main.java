@@ -24,6 +24,7 @@ public class Main {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) {
             }
+            I18n.applySystemButtonLanguage();
             BaseDashboard.installPrototypeTheme();
             new LoginFrame();
         });
