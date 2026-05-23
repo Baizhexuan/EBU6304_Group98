@@ -229,6 +229,8 @@ public abstract class BaseDashboard extends JFrame {
         if (bellButton == null || currentUser == null) {
             return;
         }
+        // Bell badge = unread workflow notifications + unread incoming chat messages.
+        // This keeps the user aware of both recruitment updates and TA-MO conversation activity.
         int unread = NotificationService.countUnreadForUser(currentUser.id)
                 + MessageService.countUnreadMessagesForUser(currentUser.id);
         bellButton.setText(unread > 0 ? "\uD83D\uDD14 " + unread : "\uD83D\uDD14");

@@ -75,6 +75,21 @@ public class CsvPersistenceTest {
                 TestSupport.assertEquals(notification.actionHint, loadedNotification.actionHint,
                         "Notification action hints should preserve commas.");
 
+                List<MessageRecord> messages = FileStorage.loadMessages();
+                MessageRecord message = new MessageRecord();
+                message.id = FileStorage.nextMessageId();
+                message.fromUserId = csvUser.id;
+                message.toUserId = 4;
+                message.jobId = 1;
+                message.body = "你好，能否说明一下每周工作量？";
+                message.status = "UNREAD";
+                message.createdAt = "2026-05-18 11:20";
+                messages.add(message);
+                FileStorage.saveMessages(messages);
+                MessageRecord loadedMessage = findMessage(message.id);
+                TestSupport.assertEquals(message.body, loadedMessage.body,
+                        "Chinese message bodies should survive a UTF-8 CSV round trip.");
+
                 System.out.println("CsvPersistenceTest passed.");
             }
         });
@@ -96,5 +111,14 @@ public class CsvPersistenceTest {
             }
         }
         throw new IllegalStateException("Notification not found for CSV test.");
+    }
+
+    private static MessageRecord findMessage(int id) {
+        for (MessageRecord message : FileStorage.loadMessages()) {
+            if (message.id == id) {
+                return message;
+            }
+        }
+        throw new IllegalStateException("Message not found for CSV test.");
     }
 }

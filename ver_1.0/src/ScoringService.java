@@ -15,7 +15,9 @@ public final class ScoringService {
      * Delegates one scoring request to the currently active provider.
      */
     public static MatchResult evaluate(TAProfile profile, Job job) {
+        // Step 1: calculate the normal skill-based match score.
         MatchResult baseResult = activeProvider.evaluate(profile, job);
+        // Step 2: adjust the current score if this TA has reputation penalties from past work.
         return ReputationService.applyReputationPenalty(profile, baseResult);
     }
 

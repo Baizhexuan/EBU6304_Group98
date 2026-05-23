@@ -20,7 +20,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 /**
- * Registration frame for creating additional TA or MO demo accounts.
+ * Registration frame for creating additional TA or MO accounts.
  */
 public class RegisterFrame extends JFrame {
     private final LoginFrame loginFrame;
@@ -37,7 +37,7 @@ public class RegisterFrame extends JFrame {
      */
     public RegisterFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
-        setTitle("Create Demo Account");
+        setTitle("Create Account");
         setMinimumSize(new Dimension(760, 560));
         setSize(840, 610);
         setLocationRelativeTo(loginFrame);
@@ -142,7 +142,7 @@ public class RegisterFrame extends JFrame {
     }
 
     private void applyCurrentLanguage() {
-        setTitle(I18n.t("Create Demo Account"));
+        setTitle(I18n.t("Create Account"));
         I18n.applyTo(this);
     }
 

@@ -33,11 +33,11 @@ public class PostWorkFeedbackAndMessagingTest {
 
                 TestSupport.assertTrue(penaltyApplied,
                         "High match plus low completion rating should trigger a reputation penalty.");
-                TestSupport.assertIntEquals(85, ReputationService.getScoreForTa(2),
-                        "First high-match low-rating penalty should reduce reputation by 15 points.");
+                TestSupport.assertIntEquals(70, ReputationService.getScoreForTa(2),
+                        "First high-match low-rating penalty should reduce reputation by 30 points.");
 
                 MatchResult adjusted = ScoringService.evaluate(FileStorage.findProfileByUserId(2), FileStorage.findJobById(1));
-                TestSupport.assertIntEquals(85, adjusted.score,
+                TestSupport.assertIntEquals(70, adjusted.score,
                         "Future match score should be adjusted by the lowered reputation score.");
                 TestSupport.assertContains(adjusted.summary, "Reputation penalty",
                         "Adjusted summary should explain the reputation penalty.");
@@ -58,6 +58,8 @@ public class PostWorkFeedbackAndMessagingTest {
                 MessageSendResult afterApproval = MessageService.sendMessage(ta, 4, 1, "Thanks for approving the chat.");
                 TestSupport.assertTrue(afterApproval.success,
                         "Messages should be allowed after conversation approval.");
+                TestSupport.assertTrue(hasApprovalNotificationForTa(2),
+                        "MO approval should create a notification for the TA.");
                 TestSupport.assertTrue(MessageService.countUnreadMessagesForUser(4) >= 4,
                         "MO should have unread incoming messages from the TA.");
 
@@ -73,5 +75,14 @@ public class PostWorkFeedbackAndMessagingTest {
             }
         }
         throw new IllegalStateException("Expected application not found.");
+    }
+
+    private static boolean hasApprovalNotificationForTa(int taId) {
+        for (Notification notification : NotificationService.getNotificationsForUser(taId)) {
+            if (notification.title != null && notification.title.startsWith("Conversation approved by ")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -20,7 +19,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 /**
- * Entry screen for the stand-alone recruitment demo.
+ * Entry screen for the stand-alone recruitment system.
  *
  * <p>The portal uses the same compact visual structure as the submitted
  * prototype: a school header bar, a neutral workspace, and a focused
@@ -36,8 +35,8 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         setTitle(DemoMetadata.APP_TITLE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(900, 580));
-        setSize(980, 640);
+        setMinimumSize(new Dimension(760, 520));
+        setSize(860, 580);
         setLocationRelativeTo(null);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -52,17 +51,12 @@ public class LoginFrame extends JFrame {
 
         JPanel card = new JPanel(new BorderLayout(0, 18));
         card.setBackground(BaseDashboard.SURFACE_COLOR);
-        card.setPreferredSize(new Dimension(820, 470));
+        card.setPreferredSize(new Dimension(620, 410));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
                 BorderFactory.createEmptyBorder(28, 30, 28, 30)));
         card.add(buildHeader(), BorderLayout.NORTH);
-
-        JPanel body = new JPanel(new GridLayout(1, 2, 24, 0));
-        body.setOpaque(false);
-        body.add(buildSignInPanel());
-        body.add(buildDemoAccessPanel());
-        card.add(body, BorderLayout.CENTER);
+        card.add(buildSignInPanel(), BorderLayout.CENTER);
 
         GridBagConstraints place = new GridBagConstraints();
         place.gridx = 0;
@@ -136,7 +130,7 @@ public class LoginFrame extends JFrame {
         JPanel footer = new JPanel();
         footer.setOpaque(false);
         footer.setLayout(new BoxLayout(footer, BoxLayout.Y_AXIS));
-        JLabel hint = new JLabel("Use a demo account or register a TA/MO account.");
+        JLabel hint = new JLabel("Sign in with your registered account or create a TA/MO account.");
         hint.setFont(BaseDashboard.UI_BODY_FONT);
         hint.setForeground(BaseDashboard.TEXT_MUTED);
         hint.setAlignmentX(LEFT_ALIGNMENT);
@@ -160,56 +154,6 @@ public class LoginFrame extends JFrame {
     private void applyCurrentLanguage() {
         setTitle(I18n.t(DemoMetadata.APP_TITLE));
         I18n.applyTo(this);
-    }
-
-    private JPanel buildDemoAccessPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(248, 250, 253));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
-                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
-
-        JLabel title = new JLabel("Demo Access");
-        title.setFont(BaseDashboard.UI_TITLE_FONT);
-        title.setForeground(new Color(27, 45, 65));
-        title.setAlignmentX(LEFT_ALIGNMENT);
-
-        JLabel note = new JLabel("<html><div style='width:290px;'>Choose a role and continue the recruitment flow from the matching dashboard.</div></html>");
-        note.setFont(BaseDashboard.UI_BODY_FONT);
-        note.setForeground(BaseDashboard.TEXT_MUTED);
-        note.setAlignmentX(LEFT_ALIGNMENT);
-
-        JLabel accounts = new JLabel("<html><div style='width:290px;'>"
-                + "<b>Admin</b>: admin / admin123<br>"
-                + "<b>TA</b>: ta1 / ta123 &nbsp;&nbsp; ta2 / ta456<br>"
-                + "<b>MO</b>: mo1 / mo123 &nbsp;&nbsp; mo2 / mo456"
-                + "</div></html>");
-        accounts.setFont(BaseDashboard.UI_BODY_FONT);
-        accounts.setForeground(new Color(35, 52, 70));
-        accounts.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
-                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
-        accounts.setOpaque(true);
-        accounts.setBackground(BaseDashboard.SURFACE_COLOR);
-        accounts.setAlignmentX(LEFT_ALIGNMENT);
-
-        JLabel flow = new JLabel("<html><div style='width:290px;'>"
-                + "TA applies &rarr; MO reviews &rarr; Admin checks workload"
-                + "</div></html>");
-        flow.setFont(new Font("SansSerif", Font.BOLD, 12));
-        flow.setForeground(BaseDashboard.ACCENT_COLOR);
-        flow.setAlignmentX(LEFT_ALIGNMENT);
-
-        panel.add(title);
-        panel.add(Box.createVerticalStrut(8));
-        panel.add(note);
-        panel.add(Box.createVerticalStrut(14));
-        panel.add(accounts);
-        panel.add(Box.createVerticalStrut(14));
-        panel.add(flow);
-        panel.add(Box.createVerticalGlue());
-        return panel;
     }
 
     private void addFormRow(JPanel form, GridBagConstraints gbc, int row, String label, java.awt.Component field) {

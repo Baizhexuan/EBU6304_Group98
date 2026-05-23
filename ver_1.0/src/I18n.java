@@ -297,7 +297,7 @@ public final class I18n {
         put("Logout", "退出登录");
         put("Help", "帮助");
         put("About This Build", "关于此版本");
-        put("About This Demo", "关于此演示");
+        put("About This Demo", "关于此系统");
         put("About", "关于");
         put("Close", "关闭");
         put("Cancel", "取消");
@@ -361,11 +361,12 @@ public final class I18n {
         put("Access the applicant, module organiser, or administrator workspace.", "进入申请者、模块负责人或管理员工作区。");
         put("Log In", "登录");
         put("Register", "注册");
-        put("Use a demo account or register a TA/MO account.", "使用演示账户，或注册助教/模块负责人账户。");
-        put("Demo Access", "演示账户");
+        put("Use a demo account or register a TA/MO account.", "使用已注册账户，或注册助教/模块负责人账户。");
+        put("Sign in with your registered account or create a TA/MO account.", "使用已注册账户登录，或创建助教/模块负责人账户。");
+        put("Demo Access", "账户入口");
         put("Choose a role and continue the recruitment flow from the matching dashboard.", "选择一个角色，并从匹配工作台继续招聘流程。");
         put("TA applies &rarr; MO reviews &rarr; Admin checks workload", "助教申请 &rarr; 模块负责人审核 &rarr; 管理员检查工作量");
-        put("Create Demo Account", "创建演示账户");
+        put("Create Demo Account", "创建账户");
         put("Create Account", "创建账户");
         put("Register a TA or MO account for the recruitment portal.", "为招聘系统注册助教或模块负责人账户。");
         put("Confirm Password", "确认密码");
@@ -573,8 +574,13 @@ public final class I18n {
         put("Open My Applications and review other open jobs if needed.", "打开“我的申请”，必要时查看其他开放岗位。");
         put("New message from ", "新消息来自 ");
         put(" sent you a message about ", " 发来一条关于 ");
+        put("Conversation approved by ", "对话已由 ");
+        put(" approved your conversation about ", " 同意开启，相关岗位: ");
+        put(". You can now continue the discussion without the three-message limit.",
+                "。现在你可以继续沟通，不再受三条消息限制。");
         put("general recruitment conversation", "一般招聘沟通");
         put("Open the bell centre to read the message and reply.", "打开提醒中心阅读消息并回复。");
+        put("Open the bell centre to continue the conversation.", "打开提醒中心继续对话。");
         put("Open My Applications or the bell centre to review the update.", "打开“我的申请”或“提醒中心”查看更新。");
         put("Work evaluation for ", "工作评价: ");
         put("MO Dr", "模块负责人 Dr");

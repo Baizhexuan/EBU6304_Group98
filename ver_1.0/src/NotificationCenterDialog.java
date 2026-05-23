@@ -30,6 +30,10 @@ import javax.swing.SwingConstants;
 
 /**
  * Shared bell-centre dialog for reminders, workflow notifications, and TA-MO messages.
+ *
+ * <p>Viva explanation: this is the user interface layer of the Bell Centre. It does not decide
+ * whether a message is allowed; it delegates permission checks to {@link MessageService} and
+ * notification data access to {@link NotificationService}.</p>
  */
 public class NotificationCenterDialog extends JDialog {
     private static final Color PAGE_BG = new Color(244, 247, 249);
@@ -38,6 +42,7 @@ public class NotificationCenterDialog extends JDialog {
     private static final Color SOFT_LINE = new Color(219, 227, 235);
     private static final Color BUBBLE_IN = new Color(247, 249, 252);
     private static final Color BUBBLE_OUT = new Color(225, 239, 255);
+    /** Display only the newest notifications so a large CSV file does not freeze the dialog. */
     private static final int NOTIFICATION_PAGE_SIZE = 100;
 
     private final User currentUser;
@@ -372,6 +377,8 @@ public class NotificationCenterDialog extends JDialog {
     }
 
     private void refreshAll() {
+        // One refresh updates both halves of the Bell Centre:
+        // 1. notification list, 2. message contact list, 3. selected conversation panel.
         refreshNotifications();
         refreshContacts();
         renderSelectedConversation();
@@ -384,6 +391,7 @@ public class NotificationCenterDialog extends JDialog {
         Notification selected = notificationList == null ? null : notificationList.getSelectedValue();
         notificationListModel.clear();
         List<Notification> notifications = NotificationService.getNotificationsForUser(currentUser.id);
+        // Notifications are stored oldest-to-newest in CSV. The UI shows newest first.
         int start = Math.max(0, notifications.size() - NOTIFICATION_PAGE_SIZE);
         for (int i = notifications.size() - 1; i >= start; i--) {
             Notification notification = notifications.get(i);
@@ -417,12 +425,15 @@ public class NotificationCenterDialog extends JDialog {
     private void showSelectedNotification() {
         Notification notification = notificationList == null ? null : notificationList.getSelectedValue();
         if (notification == null) {
+            // Empty state for users who have no workflow updates yet.
             notificationTitleLabel.setText(I18n.t("No notifications yet"));
             notificationMetaLabel.setText(I18n.t("Workflow updates will appear here."));
             notificationMessageArea.setText(I18n.t("You are all caught up."));
             notificationActionArea.setText(I18n.t("No action required."));
             return;
         }
+        // Stored notification text remains in English for data consistency; I18n translates it at
+        // display time when the user switches to Chinese.
         notificationTitleLabel.setText(I18n.t(notification.title));
         notificationMetaLabel.setText(notification.createdAt + "  |  " + I18n.t(notification.status));
         notificationMessageArea.setText(I18n.t(notification.message));
@@ -440,6 +451,7 @@ public class NotificationCenterDialog extends JDialog {
         List<Job> jobs = FileStorage.loadJobs();
         List<Application> applications = FileStorage.loadApplications();
         if ("TA".equalsIgnoreCase(currentUser.role)) {
+            // TA view: each application links the TA to the MO who owns that job.
             for (Application app : applications) {
                 if (app.taId != currentUser.id) {
                     continue;
@@ -449,6 +461,7 @@ public class NotificationCenterDialog extends JDialog {
                 addContactIfNew(seen, mo, job);
             }
         } else if ("MO".equalsIgnoreCase(currentUser.role)) {
+            // MO view: each MO sees TAs who applied to that MO's own jobs.
             for (Job job : jobs) {
                 if (job.moId != currentUser.id) {
                     continue;
@@ -461,6 +474,8 @@ public class NotificationCenterDialog extends JDialog {
             }
         }
         if (contactListModel.isEmpty()) {
+            // Demo fallback keeps the feature explorable even when the current account has no
+            // application-linked contacts yet.
             addDemoFallbackContacts(seen, jobs);
         }
         restoreContactSelection(selected);
@@ -551,6 +566,7 @@ public class NotificationCenterDialog extends JDialog {
         ContactItem contact = contactList == null ? null : contactList.getSelectedValue();
         chatStreamPanel.removeAll();
         if (contact == null) {
+            // No contact selected: disable sending and show an explanatory empty state.
             chatTitleLabel.setText(I18n.t("No conversation selected"));
             chatMetaLabel.setText(I18n.t("TA-MO conversations become available after an application connects both sides."));
             approveButton.setEnabled(false);
@@ -564,6 +580,8 @@ public class NotificationCenterDialog extends JDialog {
             return;
         }
 
+        // MessageService owns the business state: approved/not approved, remaining messages, and
+        // whether the current user is allowed to approve.
         boolean approved = MessageService.hasApprovedConsent(currentUser.id, contact.otherUserId, contact.jobId);
         int remaining = MessageService.getRemainingMessagesBeforeConsent(currentUser.id, contact.otherUserId, contact.jobId);
         boolean canApprove = MessageService.canApproveConversation(currentUser, contact.otherUserId, contact.jobId);
@@ -576,6 +594,7 @@ public class NotificationCenterDialog extends JDialog {
                 : I18n.t("Only the MO for this job can approve the conversation."));
         sendButton.setEnabled(true);
 
+        // Re-render the whole conversation from messages.csv so UI state always matches storage.
         List<MessageRecord> messages = conversationMessages(contact);
         if (messages.isEmpty()) {
             addEmptyConversation();
@@ -665,6 +684,8 @@ public class NotificationCenterDialog extends JDialog {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        // The dialog collects the text, but MessageService enforces the three-message limit and
+        // writes the message/notification rows.
         MessageSendResult result = MessageService.sendMessage(currentUser, contact.otherUserId, contact.jobId,
                 messageArea.getText());
         statusLabel.setText(I18n.t(result.message));
@@ -679,10 +700,13 @@ public class NotificationCenterDialog extends JDialog {
         if (contact == null) {
             return;
         }
+        // Approval is intentionally MO-only and job-owner-only. The UI checks here for fast
+        // feedback, and MessageService checks again before changing storage.
         if (!MessageService.canApproveConversation(currentUser, contact.otherUserId, contact.jobId)) {
             statusLabel.setText(I18n.t("Only the MO for this job can approve the conversation."));
             return;
         }
+        // Once approved, the TA receives a notification and future messages are no longer capped.
         boolean approved = MessageService.approveConversation(currentUser.id, contact.otherUserId, contact.jobId);
         statusLabel.setText(I18n.t(approved
                 ? "Conversation approved. The three-message limit is now lifted for this contact."

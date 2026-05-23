@@ -1,9 +1,8 @@
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
@@ -28,6 +27,18 @@ public class FileStorage {
     private static final String DATA_DIR = "data" + File.separator;
     private static final int OVERLOAD_LIMIT = 20;
     private static final String ID_COUNTERS_FILE = "id_counters.csv";
+
+    private static BufferedReader newUtf8Reader(String fileName) throws IOException {
+        return newUtf8Reader(new File(DATA_DIR + fileName));
+    }
+
+    private static BufferedReader newUtf8Reader(File file) throws IOException {
+        return Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
+    }
+
+    private static PrintWriter newUtf8Writer(File file) throws IOException {
+        return new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8));
+    }
 
     /**
      * Ensures the CSV storage directory and seed files exist before the UI or tests access them.
@@ -58,7 +69,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,username,password,role,displayName");
             writer.println(csvLine("1", "admin", PasswordService.hashPassword("admin123"), "ADMIN", "System Admin"));
             writer.println(csvLine("2", "ta1", PasswordService.hashPassword("ta123"), "TA", "Li Ming"));
@@ -75,7 +86,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement");
             writer.println("1,2,Li Ming,li.ming@bupt.edu.cn,2023211001,Java;OOP;Git;Communication,3.7,/demo/cv/li-ming.pdf,Mon PM;Wed PM,Interested in software labs and mentoring first-year students.");
             writer.println("2,3,Wang Yue,wang.yue@bupt.edu.cn,2023211002,Python;Data Structures;SQL;Teamwork,3.8,/demo/cv/wang-yue.pdf,Tue PM;Thu PM,Enjoys lab assistance and data-focused teaching support.");
@@ -89,7 +100,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,moId,title,module,description,requiredSkills,maxHours,status,location");
             writer.println("1,4,Java Lab Assistant,EBU6304,Support Java lab sessions and help with debugging,Java;OOP;Communication,8,OPEN,Teaching Building 3");
             writer.println("2,4,Assessment Support TA,EBU6201,Assist with coursework briefing and marking preparation,Organisation;Communication;Excel,6,OPEN,Online and office hours");
@@ -105,7 +116,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote");
             writer.println("1,2,1,SELECTED,2026-04-05 19:20,100,Matched: java; oop; communication,Strong fit for labs.");
             writer.println("2,3,3,PENDING,2026-04-06 11:00,67,Matched: python; data structures | Missing: teamwork,Awaiting MO review.");
@@ -119,7 +130,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userId,title,message,status,createdAt,actionHint");
             writer.println("1,2,Welcome to the TA system,Complete your profile and check open jobs to get started.,READ,2026-04-05 10:00,Open My Profile to complete your details.");
         } catch (IOException e) {
@@ -132,7 +143,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("taId,score,penaltyCount,lastUpdated,note");
         } catch (IOException e) {
             System.err.println("Unable to create ta_reputations.csv: " + e.getMessage());
@@ -144,7 +155,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,applicationId,taId,moId,jobId,rating,comment,evaluatedAt,penaltyApplied");
         } catch (IOException e) {
             System.err.println("Unable to create work_evaluations.csv: " + e.getMessage());
@@ -156,7 +167,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,fromUserId,toUserId,jobId,body,status,createdAt");
         } catch (IOException e) {
             System.err.println("Unable to create messages.csv: " + e.getMessage());
@@ -168,7 +179,7 @@ public class FileStorage {
         if (file.exists()) {
             return;
         }
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userAId,userBId,jobId,approved,requestedBy,updatedAt");
         } catch (IOException e) {
             System.err.println("Unable to create message_consents.csv: " + e.getMessage());
@@ -180,7 +191,7 @@ public class FileStorage {
      */
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<User>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "users.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("users.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -207,7 +218,7 @@ public class FileStorage {
      */
     public static synchronized void saveUsers(List<User> users) {
         File file = new File(DATA_DIR + "users.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,username,password,role,displayName");
             for (User user : users) {
                 writer.println(csvLine(String.valueOf(user.id), user.username, user.password, user.role, user.displayName));
@@ -223,7 +234,7 @@ public class FileStorage {
      */
     public static List<TAProfile> loadProfiles() {
         List<TAProfile> profiles = new ArrayList<TAProfile>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "profiles.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("profiles.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -255,7 +266,7 @@ public class FileStorage {
      */
     public static synchronized void saveProfiles(List<TAProfile> profiles) {
         File file = new File(DATA_DIR + "profiles.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userId,fullName,email,studentId,skills,gpa,cvPath,availability,statement");
             for (TAProfile profile : profiles) {
                 writer.println(csvLine(
@@ -281,7 +292,7 @@ public class FileStorage {
      */
     public static List<Job> loadJobs() {
         List<Job> jobs = new ArrayList<Job>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "jobs.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("jobs.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -312,7 +323,7 @@ public class FileStorage {
      */
     public static synchronized void saveJobs(List<Job> jobs) {
         File file = new File(DATA_DIR + "jobs.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,moId,title,module,description,requiredSkills,maxHours,status,location");
             for (Job job : jobs) {
                 writer.println(csvLine(
@@ -337,7 +348,7 @@ public class FileStorage {
      */
     public static List<Application> loadApplications() {
         List<Application> applications = new ArrayList<Application>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "applications.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("applications.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -367,7 +378,7 @@ public class FileStorage {
      */
     public static synchronized void saveApplications(List<Application> applications) {
         File file = new File(DATA_DIR + "applications.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,taId,jobId,status,appliedAt,matchScore,matchSummary,reviewerNote");
             for (Application app : applications) {
                 writer.println(csvLine(
@@ -391,7 +402,7 @@ public class FileStorage {
      */
     public static List<Notification> loadNotifications() {
         List<Notification> notifications = new ArrayList<Notification>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "notifications.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("notifications.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -420,7 +431,7 @@ public class FileStorage {
      */
     public static synchronized void saveNotifications(List<Notification> notifications) {
         File file = new File(DATA_DIR + "notifications.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userId,title,message,status,createdAt,actionHint");
             for (Notification notification : notifications) {
                 writer.println(csvLine(
@@ -439,8 +450,10 @@ public class FileStorage {
     }
 
     public static List<TAReputation> loadTAReputations() {
+        // Reads reputation state used by ReputationService.applyReputationPenalty().
+        // Empty file means every TA still has the default 100/100 score.
         List<TAReputation> reputations = new ArrayList<TAReputation>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "ta_reputations.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("ta_reputations.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -463,8 +476,9 @@ public class FileStorage {
     }
 
     public static synchronized void saveTAReputations(List<TAReputation> reputations) {
+        // Persist all reputation rows after an MO rating triggers a penalty.
         File file = new File(DATA_DIR + "ta_reputations.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("taId,score,penaltyCount,lastUpdated,note");
             for (TAReputation reputation : reputations) {
                 writer.println(csvLine(
@@ -481,8 +495,10 @@ public class FileStorage {
     }
 
     public static List<WorkEvaluation> loadWorkEvaluations() {
+        // Work evaluations are the audit trail for MO completion ratings.
+        // ReputationService uses this data to prevent duplicate ratings on one application.
         List<WorkEvaluation> evaluations = new ArrayList<WorkEvaluation>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "work_evaluations.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("work_evaluations.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -509,8 +525,9 @@ public class FileStorage {
     }
 
     public static synchronized void saveWorkEvaluations(List<WorkEvaluation> evaluations) {
+        // Stores the MO's final work rating and whether that rating caused a reputation penalty.
         File file = new File(DATA_DIR + "work_evaluations.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,applicationId,taId,moId,jobId,rating,comment,evaluatedAt,penaltyApplied");
             for (WorkEvaluation evaluation : evaluations) {
                 writer.println(csvLine(
@@ -531,8 +548,10 @@ public class FileStorage {
     }
 
     public static List<MessageRecord> loadMessages() {
+        // Chat history for the Bell Centre. UTF-8 is required so Chinese messages survive
+        // Windows/macOS round trips without becoming garbled.
         List<MessageRecord> messages = new ArrayList<MessageRecord>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "messages.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("messages.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -557,8 +576,9 @@ public class FileStorage {
     }
 
     public static synchronized void saveMessages(List<MessageRecord> messages) {
+        // Writes all chat messages after MessageService appends a new outgoing message.
         File file = new File(DATA_DIR + "messages.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,fromUserId,toUserId,jobId,body,status,createdAt");
             for (MessageRecord message : messages) {
                 writer.println(csvLine(
@@ -577,8 +597,9 @@ public class FileStorage {
     }
 
     public static List<MessageConsent> loadMessageConsents() {
+        // Consent rows record whether the MO has approved a TA-MO-job conversation.
         List<MessageConsent> consents = new ArrayList<MessageConsent>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "message_consents.csv"))) {
+        try (BufferedReader reader = newUtf8Reader("message_consents.csv")) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -603,8 +624,9 @@ public class FileStorage {
     }
 
     public static synchronized void saveMessageConsents(List<MessageConsent> consents) {
+        // Saves approval state. Once approved=true, MessageService stops enforcing the 3-message cap.
         File file = new File(DATA_DIR + "message_consents.csv");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("id,userAId,userBId,jobId,approved,requestedBy,updatedAt");
             for (MessageConsent consent : consents) {
                 writer.println(csvLine(
@@ -755,7 +777,7 @@ public class FileStorage {
         if (!file.exists()) {
             return counters;
         }
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader reader = newUtf8Reader(file)) {
             reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -772,7 +794,7 @@ public class FileStorage {
 
     private static void saveIdCounters(Map<String, Integer> counters) {
         File file = new File(DATA_DIR + ID_COUNTERS_FILE);
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        try (PrintWriter writer = newUtf8Writer(file)) {
             writer.println("entity,lastIssuedId");
             for (Map.Entry<String, Integer> entry : counters.entrySet()) {
                 writer.println(csvLine(entry.getKey(), String.valueOf(entry.getValue())));
@@ -889,3 +911,4 @@ public class FileStorage {
         }
     }
 }
+

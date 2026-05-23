@@ -665,6 +665,8 @@ public class MODashboard extends BaseDashboard {
     }
 
     private void rateSelectedCompletedWork() {
+        // Entry point for the post-work feedback loop. The MO must first select one row in the
+        // applicants table, and only SELECTED applications can receive a completion rating.
         int row = applicantsTable.getSelectedRow();
         if (row < 0) {
             JOptionPane.showMessageDialog(this, "Please select a selected applicant first.", "Info",
@@ -679,6 +681,8 @@ public class MODashboard extends BaseDashboard {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        // One completed work record should be rated once. This prevents repeated penalties from
+        // the same job/application and makes the reputation history fairer.
         if (ReputationService.hasEvaluationForApplication(appId)) {
             JOptionPane.showMessageDialog(this, "This completed work has already been rated.", "Info",
                     JOptionPane.INFORMATION_MESSAGE);
@@ -695,6 +699,8 @@ public class MODashboard extends BaseDashboard {
         if (value == null) {
             return;
         }
+        // The rating is intentionally constrained to 1-5 so the penalty rule can be explained:
+        // ratings 1-2 are low quality; ratings 3-5 do not trigger reputation punishment.
         int rating = ValidationUtils.parseInt(String.valueOf(value), 0);
         if (rating < 1 || rating > 5) {
             JOptionPane.showMessageDialog(this, "Rating must be between 1 and 5.", "Validation",
@@ -717,6 +723,7 @@ public class MODashboard extends BaseDashboard {
             return;
         }
 
+        // Build a persistent evaluation record before applying any reputation change.
         WorkEvaluation evaluation = new WorkEvaluation();
         evaluation.id = FileStorage.nextWorkEvaluationId();
         evaluation.applicationId = application.id;
@@ -727,10 +734,14 @@ public class MODashboard extends BaseDashboard {
         evaluation.comment = comment.trim();
         evaluation.evaluatedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
+        // ReputationService decides whether the rating is serious enough to penalise future
+        // matching. MODashboard only collects the rating and persists the evaluation.
         boolean penaltyApplied = ReputationService.applyCompletedWorkEvaluation(evaluation, application);
         List<WorkEvaluation> evaluations = FileStorage.loadWorkEvaluations();
         evaluations.add(evaluation);
         FileStorage.saveWorkEvaluations(evaluations);
+
+        // Notify the TA whether a normal rating or a penalty-related rating was recorded.
         NotificationService.notifyWorkEvaluation(application, currentUser, job, rating, penaltyApplied,
                 ReputationService.getScoreForTa(application.taId));
 
