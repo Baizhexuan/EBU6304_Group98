@@ -15,6 +15,7 @@ Use this checklist after running the automated tests and before a final demo or 
 - Log in as `ta1 / ta123`.
 - Log in as `mo1 / mo123`.
 - Try an incorrect password and confirm login is rejected.
+- Try registering with a 1-character password and confirm the UI asks for at least 6 characters.
 - Try a duplicate username during registration and confirm it is blocked.
 
 ## TA Workflow

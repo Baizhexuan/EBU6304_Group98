@@ -6,6 +6,8 @@
  * rather than throwing exceptions, keeping UI code concise.</p>
  */
 public class ValidationUtils {
+    /** Minimum password length accepted by the registration workflow. */
+    public static final int MIN_PASSWORD_LENGTH = 6;
 
     /**
      * Returns {@code true} when the string is {@code null} or contains only whitespace.
@@ -35,6 +37,16 @@ public class ValidationUtils {
      */
     public static boolean isEmail(String value) {
         return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    }
+
+    /**
+     * Returns {@code true} when a registration password meets the minimum length rule.
+     *
+     * @param value password text to validate
+     * @return {@code true} if the password has at least {@link #MIN_PASSWORD_LENGTH} characters
+     */
+    public static boolean isValidRegistrationPassword(String value) {
+        return value != null && value.trim().length() >= MIN_PASSWORD_LENGTH;
     }
 
     /**

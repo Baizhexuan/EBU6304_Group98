@@ -39,11 +39,11 @@ This script performs:
 | Test program | Main purpose | Evidence produced |
 | --- | --- | --- |
 | `SystemSmokeTest` | Basic sanity check for seeded data, scoring, notifications, and admin alert generation | Confirms the system starts in a valid seeded state |
-| `AuthFlowTest` | Login credential lookup, blank-input rejection logic, duplicate username detection, and new-user persistence | Confirms registration/login assumptions used by the UI |
+| `AuthFlowTest` | Login credential lookup, blank-input rejection logic, short-password registration rejection, duplicate username detection, and new-user persistence | Confirms registration/login assumptions used by the UI |
 | `WorkflowRulesTest` | Profile completeness, open-job browsing assumptions, application creation, duplicate prevention, MO decision notifications, admin overload alerts, explainable fallback scoring | Confirms the core recruitment workflow and US-8 triggers |
 | `CsvPersistenceTest` | CSV save/load round trips for commas, quotes, and empty values | Confirms the storage layer remains text-based but more robust |
 | `NotificationFlowTest` | Profile-reminder de-duplication, application-decision messaging, read-state transitions, and job-closure alerts | Confirms notification events stay visible without duplicate unread reminders |
-| `ValidationUtilsTest` | Blank checks, email validation, and numeric parse fallback behaviour | Confirms shared form-validation helpers keep stable edge-case behaviour |
+| `ValidationUtilsTest` | Blank checks, email validation, registration password length checks, and numeric parse fallback behaviour | Confirms shared form-validation helpers keep stable edge-case behaviour |
 | `MatchingServiceTest` | Skill tokenisation, duplicate removal, deterministic scoring, and matched/missing summary text | Confirms explainable matching remains deterministic and easy to inspect |
 | `ModelStateTest` | Helper methods on core model objects such as profile completeness, job openness, notification read state, and safe display names | Confirms dashboard-facing state helpers stay stable |
 | `ScoringServiceTest` | Active scoring-provider mode, delegation, readiness summary, and null-provider guard behaviour | Confirms scoring integration remains explainable and offline-safe |
@@ -58,6 +58,7 @@ This script performs:
 - open the app and confirm the login screen renders correctly
 - log in with a seeded demo account
 - open registration and confirm all fields are visible
+- try a password shorter than 6 characters and confirm the UI asks for a longer password
 - try a duplicate username and confirm the UI blocks it
 
 ### TA workflow
@@ -88,6 +89,7 @@ This script performs:
 ## Edge Cases Covered
 
 - blank login input is treated as invalid
+- registration passwords shorter than 6 characters are rejected
 - duplicate usernames are identified case-insensitively
 - incomplete profiles are rejected by workflow rules
 - duplicate active applications are blocked

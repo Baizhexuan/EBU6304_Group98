@@ -1,0 +1,5 @@
+id,moId,title,module,description,requiredSkills,maxHours,status,location
+1,4,Java Lab Assistant,EBU6304,Support Java lab sessions and help with debugging,Java;OOP;Communication,8,OPEN,Teaching Building 3
+2,4,Assessment Support TA,EBU6201,Assist with coursework briefing and marking preparation,Organisation;Communication;Excel,6,OPEN,Online and office hours
+3,5,Python Tutor,EBU5402,Run tutorial support for programming exercises,Python;Data Structures;Teamwork,10,OPEN,Computer Lab A
+4,5,Database Helper,EBU5207,Support SQL lab troubleshooting and sample walkthroughs,SQL;Problem Solving;Patience,7,OPEN,Computer Lab B

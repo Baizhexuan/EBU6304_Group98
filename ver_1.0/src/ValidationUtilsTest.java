@@ -22,6 +22,12 @@ public class ValidationUtilsTest {
                 "Simple university email addresses should be accepted.");
         TestSupport.assertTrue(!ValidationUtils.isEmail("not-an-email"),
                 "Malformed email addresses should be rejected.");
+        TestSupport.assertTrue(!ValidationUtils.isValidRegistrationPassword("a"),
+                "Single-character passwords should be rejected during registration.");
+        TestSupport.assertTrue(!ValidationUtils.isValidRegistrationPassword("abcde"),
+                "Five-character passwords should be rejected during registration.");
+        TestSupport.assertTrue(ValidationUtils.isValidRegistrationPassword("abcdef"),
+                "Six-character passwords should be accepted during registration.");
 
         TestSupport.assertIntEquals(42, ValidationUtils.parseInt("42", -1),
                 "parseInt should return the parsed value for valid integers.");

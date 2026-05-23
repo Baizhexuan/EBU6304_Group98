@@ -178,6 +178,16 @@ public class RegisterFrame extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (!ValidationUtils.isValidRegistrationPassword(password)) {
+            JOptionPane.showMessageDialog(this,
+                    I18n.t("Password must contain at least 6 characters. Please enter a longer password."),
+                    I18n.t("Validation"),
+                    JOptionPane.WARNING_MESSAGE);
+            passwordField.setText("");
+            confirmPasswordField.setText("");
+            passwordField.requestFocusInWindow();
+            return;
+        }
 
         List<User> users = FileStorage.loadUsers();
         for (User user : users) {

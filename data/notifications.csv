@@ -1,0 +1,4 @@
+id,userId,title,message,status,createdAt,actionHint
+1,2,Welcome to the TA system,Complete your profile and check open jobs to get started.,READ,2026-04-05 10:00,Open My Profile to complete your details.
+2,6,Profile completion required,"Please complete your TA profile before applying for jobs. The system needs your skills, GPA, availability and CV path for fair screening.",READ,2026-05-23 12:01,Open My Profile and complete all required fields before submitting applications.
+3,7,Profile completion required,"Please complete your TA profile before applying for jobs. The system needs your skills, GPA, availability and CV path for fair screening.",UNREAD,2026-05-23 18:22,Open My Profile and complete all required fields before submitting applications.

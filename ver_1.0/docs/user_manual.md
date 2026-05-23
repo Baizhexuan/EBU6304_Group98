@@ -187,6 +187,7 @@ When configured, the Admin AI Assistant uses the compatible chat-completions end
 
 ## Common Issues
 
+- `Registration password is rejected`: enter at least 6 characters and repeat the same value in the confirmation field.
 - `Buttons do not show text clearly`: re-run with the local JDK used during development. The project already uses stable Swing button styling for macOS, Windows, and Linux.
 - `No AI answer appears`: check `config/ai.properties` or your environment variables. The dialog should still work in fallback mode.
 - `Data looks changed after testing`: restore the original CSV files from version control or re-seed the app by removing the core CSV files and running `./run.sh` again.

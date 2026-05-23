@@ -22,6 +22,12 @@ public class AuthFlowTest {
                         "Duplicate username checks should be case-insensitive.");
                 TestSupport.assertTrue(FileStorage.findUserByUsername("new_ta") == null,
                         "Fresh username should be available before registration.");
+                TestSupport.assertTrue(!canRegister("short_pw", "a", "a", "Short Password TA"),
+                        "Registration should reject passwords shorter than six characters.");
+                TestSupport.assertTrue(FileStorage.findUserByUsername("short_pw") == null,
+                        "Rejected short-password registration should not create a user.");
+                TestSupport.assertTrue(!canRegister("short_pw2", "abcde", "abcde", "Short Password TA"),
+                        "Registration should reject five-character passwords.");
 
                 List<User> users = FileStorage.loadUsers();
                 users.add(new User(FileStorage.nextUserId(), "new_ta", "safePass1", "TA", "New TA"));
@@ -46,5 +52,19 @@ public class AuthFlowTest {
             return null;
         }
         return password.equals(user.password) ? user : null;
+    }
+
+    private static boolean canRegister(String username, String password, String confirmPassword, String displayName) {
+        if (ValidationUtils.isBlank(username) || ValidationUtils.isBlank(password)
+                || ValidationUtils.isBlank(confirmPassword) || ValidationUtils.isBlank(displayName)) {
+            return false;
+        }
+        if (!password.equals(confirmPassword)) {
+            return false;
+        }
+        if (!ValidationUtils.isValidRegistrationPassword(password)) {
+            return false;
+        }
+        return FileStorage.findUserByUsername(username.trim()) == null;
     }
 }
