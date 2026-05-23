@@ -2,6 +2,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
@@ -33,11 +35,61 @@ public class FileStorage {
     }
 
     private static BufferedReader newUtf8Reader(File file) throws IOException {
-        return Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
+        String stored = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        return new BufferedReader(new StringReader(DataCryptoService.decryptIfNeeded(stored)));
     }
 
     private static PrintWriter newUtf8Writer(File file) throws IOException {
-        return new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8));
+        return new PrintWriter(new CsvFileWriter(file));
+    }
+
+    private static boolean shouldEncryptDataFile(File file) {
+        if (file == null) {
+            return false;
+        }
+        String name = file.getName().toLowerCase();
+        return "users.csv".equals(name)
+                || "profiles.csv".equals(name)
+                || "jobs.csv".equals(name)
+                || "applications.csv".equals(name)
+                || "notifications.csv".equals(name)
+                || "ta_reputations.csv".equals(name)
+                || "work_evaluations.csv".equals(name)
+                || "messages.csv".equals(name)
+                || "message_consents.csv".equals(name)
+                || ID_COUNTERS_FILE.equals(name);
+    }
+
+    private static class CsvFileWriter extends Writer {
+        private final File file;
+        private final StringBuilder buffer = new StringBuilder();
+        private boolean closed;
+
+        private CsvFileWriter(File file) {
+            this.file = file;
+        }
+
+        @Override
+        public void write(char[] cbuf, int off, int len) {
+            buffer.append(cbuf, off, len);
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            String text = buffer.toString();
+            if (shouldEncryptDataFile(file)) {
+                text = DataCryptoService.encrypt(text);
+            }
+            Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     /**
@@ -895,6 +947,12 @@ public class FileStorage {
             return;
         }
         try {
+            if (shouldEncryptDataFile(file)) {
+                String stored = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                if (!DataCryptoService.isEncrypted(stored)) {
+                    Files.write(file.toPath(), DataCryptoService.encrypt(stored).getBytes(StandardCharsets.UTF_8));
+                }
+            }
             file.setReadable(false, false);
             file.setWritable(false, false);
             file.setExecutable(false, false);

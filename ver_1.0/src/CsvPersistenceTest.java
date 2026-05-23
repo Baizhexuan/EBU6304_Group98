@@ -1,3 +1,6 @@
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -7,7 +10,7 @@ public class CsvPersistenceTest {
     public static void main(String[] args) throws Exception {
         TestSupport.withIsolatedData(new TestSupport.CheckedRunnable() {
             @Override
-            public void run() {
+            public void run() throws Exception {
                 FileStorage.initialise();
 
                 List<User> users = FileStorage.loadUsers();
@@ -89,6 +92,12 @@ public class CsvPersistenceTest {
                 MessageRecord loadedMessage = findMessage(message.id);
                 TestSupport.assertEquals(message.body, loadedMessage.body,
                         "Chinese message bodies should survive a UTF-8 CSV round trip.");
+                String rawMessages = new String(Files.readAllBytes(Paths.get("data", "messages.csv")),
+                        StandardCharsets.UTF_8);
+                TestSupport.assertTrue(DataCryptoService.isEncrypted(rawMessages),
+                        "Message CSV should be encrypted at rest.");
+                TestSupport.assertTrue(!rawMessages.contains(message.body),
+                        "Encrypted message CSV should not expose the plain Chinese message body.");
 
                 System.out.println("CsvPersistenceTest passed.");
             }
