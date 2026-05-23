@@ -36,7 +36,8 @@ public final class ValidationUtils {
      * @return {@code true} if the string looks like a valid e-mail address
      */
     public static boolean isEmail(String value) {
-        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+        // Requires at least one dot in the domain part (e.g. rejects "a@b", accepts "a@b.com")
+        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
     }
 
     /**

@@ -7,3 +7,4 @@ ver_1.0/bin/
 ver_1.0/config/ai.properties
 ver_1.0/ai.properties
 ver_1.0/data/admin_workload_report*.csv
+ver_1.0/src/data/
