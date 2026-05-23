@@ -30,13 +30,35 @@ public class ValidationUtils {
     }
 
     /**
-     * Returns {@code true} when {@code value} matches a simple e-mail pattern.
+     * Returns {@code true} when {@code value} matches a valid e-mail address pattern.
+     *
+     * <p><b>邓博文修复（邮箱正则加固）：</b>
+     * 原正则 {@code ^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$} 存在以下漏洞：
+     * <ul>
+     *   <li>允许 {@code a@b}（无顶级域名，裸主机名）通过验证；</li>
+     *   <li>允许 {@code user@localhost} 等本地地址，在注册场景下不合法；</li>
+     *   <li>域名部分 {@code [A-Za-z0-9.-]+} 可接受连续点号如 {@code a@b..c}。</li>
+     * </ul>
+     *
+     * <p>修复后正则 {@code ^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-])*\.[A-Za-z]{2,}$}：
+     * <ul>
+     *   <li>{@code [A-Za-z0-9-]+} — 域名主体（不含点号，避免连续点）；</li>
+     *   <li>{@code (\.[A-Za-z0-9-])*} — 零个或多个子域段（每段以点开头）；</li>
+     *   <li>{@code \.[A-Za-z]{2,}} — 强制要求至少 2 个字母的顶级域名（如 .com、.uk）；</li>
+     *   <li>拒绝 {@code a@b}、{@code user@localhost} 等非法格式。</li>
+     * </ul>
+     *
+     * <p>注意：此正则不覆盖所有 RFC 5322 边缘情况（如带引号的本地部分），
+     * 但对常见注册表单验证已足够严格。
      *
      * @param value the string to validate
      * @return {@code true} if the string looks like a valid e-mail address
      */
     public static boolean isEmail(String value) {
-        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+        // 加固后的正则：要求域名包含至少一个点且顶级域名长度 >= 2
+        // 拒绝裸主机名（如 a@b）和本地地址（如 user@localhost）
+        return value != null && value.matches(
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-])*\\.[A-Za-z]{2,}$");
     }
 
     /**

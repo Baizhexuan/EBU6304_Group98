@@ -532,55 +532,128 @@ public class TADashboard extends BaseDashboard {
         FileStorage.saveUsers(users);
     }
 
+    /**
+     * 刷新职位列表并为每个职位计算 AI 匹配分数。
+     *
+     * <p><b>邓博文修复（SwingWorker 异步重构）：</b>
+     * 原实现在 Event Dispatch Thread（EDT，即 Swing 事件线程）上直接调用
+     * {@link ScoringService#evaluate}。该方法可能执行网络请求或大量计算，
+     * 耗时较长（数十毫秒到数秒），会导致整个 GUI 冻结、按钮无响应。
+     *
+     * <p>解决方案：使用 {@link javax.swing.SwingWorker} 将耗时操作移至后台线程：
+     * <ul>
+     *   <li>{@code doInBackground()}：在后台线程中运行，执行 CSV 读取和
+     *       AI 评分计算，返回行数据列表。调用前先捕获过滤条件（final 变量），
+     *       确保线程安全，避免后台线程直接读取 Swing 组件。</li>
+     *   <li>{@code done()}：回到 EDT 执行，将后台结果填入表格并更新标签。
+     *       通过 {@code get()} 检索结果，同时捕获后台可能抛出的异常。
+     *       使用 {@code finally} 块确保无论成功/失败都调用 endRefreshFeedback()。</li>
+     * </ul>
+     */
     private void refreshJobs() {
+        // 立即在 EDT 上展示"加载中"占位符，防止旧数据残留，给用户即时反馈
         beginRefreshFeedback(jobInsightLabel, jobsModel, jobAiRankingArea, "Refreshing open jobs and match ranking...");
-        try {
-            TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
-            String titleFilter = getLower(jobTitleFilterField);
-            String moduleFilter = getLower(jobModuleFilterField);
-            String skillsFilter = getLower(jobSkillsFilterField);
-            String locationFilter = getLower(jobLocationFilterField);
-            int visibleJobs = 0;
-            int bestScore = -1;
-            String bestJob = "";
-            for (Job job : FileStorage.loadJobs()) {
-                if (!job.isOpen()) {
-                    continue;
+
+        // 在离开 EDT 之前从 Swing 组件中读取过滤值，赋给 final 变量。
+        // SwingWorker 的 doInBackground() 运行在后台线程，不能直接访问 Swing 组件，
+        // final 捕获保证了可见性（Java 内存模型要求）。
+        final TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
+        final String titleFilter    = getLower(jobTitleFilterField);
+        final String moduleFilter   = getLower(jobModuleFilterField);
+        final String skillsFilter   = getLower(jobSkillsFilterField);
+        final String locationFilter = getLower(jobLocationFilterField);
+
+        // 启动 SwingWorker：泛型参数 <List<Object[]>, Void>
+        //   第一个类型 = doInBackground() 的返回值类型（行数据列表）
+        //   第二个类型 = publish()/process() 的中间进度类型（此处不使用进度推送）
+        new javax.swing.SwingWorker<java.util.List<Object[]>, Void>() {
+
+            /**
+             * 在后台线程执行：读取职位数据并计算每个职位的 AI 匹配分数。
+             * 此方法不得访问任何 Swing 组件（线程安全约束）。
+             */
+            @Override
+            protected java.util.List<Object[]> doInBackground() {
+                java.util.List<Object[]> rows = new java.util.ArrayList<>();
+                int bestScore = -1;
+                String bestJob = "";
+
+                for (Job job : FileStorage.loadJobs()) {
+                    if (!job.isOpen()) {
+                        continue; // 跳过已关闭的职位
+                    }
+                    if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
+                        continue; // 不符合过滤条件
+                    }
+                    // ScoringService.evaluate() 为耗时调用（可能涉及 AI 推理），
+                    // 在后台线程执行，确保 UI 不阻塞
+                    MatchResult match = ScoringService.evaluate(profile, job);
+
+                    rows.add(new Object[] {
+                            job.id,
+                            job.title,
+                            job.module,
+                            job.requiredSkills,
+                            job.maxHours,
+                            job.location,
+                            match.score + "%",
+                            extractMissingSkills(match.summary),
+                            match.summary
+                    });
+                    if (match.score > bestScore) {
+                        bestScore = match.score;
+                        bestJob  = job.title + " (" + job.module + ")";
+                    }
                 }
-                if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
-                    continue;
-                }
-                MatchResult match = ScoringService.evaluate(profile, job);
-                jobsModel.addRow(new Object[] {
-                        job.id,
-                        job.title,
-                        job.module,
-                        job.requiredSkills,
-                        job.maxHours,
-                        job.location,
-                        match.score + "%",
-                        extractMissingSkills(match.summary),
-                        match.summary
-                });
-                visibleJobs++;
-                if (match.score > bestScore) {
-                    bestScore = match.score;
-                    bestJob = job.title + " (" + job.module + ")";
+                // 将 bestScore/bestJob 打包到列表末尾传递给 done()
+                rows.add(new Object[] { "_meta_bestScore", bestScore });
+                rows.add(new Object[] { "_meta_bestJob",   bestJob   });
+                return rows;
+            }
+
+            /**
+             * 在 EDT 执行：将后台计算结果填入表格并更新标签。
+             * get() 会重新抛出后台线程中发生的任何异常，需妥善捕获。
+             */
+            @Override
+            protected void done() {
+                try {
+                    java.util.List<Object[]> rows = get(); // 获取后台结果，可能抛出 ExecutionException
+
+                    // 提取元数据行（打包在列表末尾）
+                    Object[] metaBestJob   = rows.remove(rows.size() - 1);
+                    Object[] metaBestScore = rows.remove(rows.size() - 1);
+                    int   bestScore = (int)    metaBestScore[1];
+                    String bestJob  = (String) metaBestJob[1];
+
+                    // 将所有数据行添加到表格模型（此处在 EDT 上，线程安全）
+                    for (Object[] row : rows) {
+                        jobsModel.addRow(row);
+                    }
+
+                    // 更新洞察标签
+                    int visibleJobs = rows.size();
+                    if (visibleJobs == 0) {
+                        jobInsightLabel.setText("No open jobs match the current filters.");
+                    } else {
+                        jobInsightLabel.setText("Visible jobs: " + visibleJobs
+                                + " | Best current match: " + bestJob + " at "
+                                + Math.max(bestScore, 0) + "% via "
+                                + ScoringService.getActiveProvider().getProviderName());
+                    }
+                    if (jobAiRankingArea != null) {
+                        jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
+                        jobAiRankingArea.setCaretPosition(0);
+                    }
+                } catch (Exception ex) {
+                    // 后台线程异常（网络失败、AI 超时等）在此捕获，避免静默失败
+                    jobInsightLabel.setText("Failed to load jobs: " + ex.getMessage());
+                } finally {
+                    // 无论成功/失败都恢复 UI 状态（移除加载指示器、重新启用按钮）
+                    endRefreshFeedback();
                 }
             }
-            if (visibleJobs == 0) {
-                jobInsightLabel.setText("No open jobs match the current filters.");
-            } else {
-                jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
-                        + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
-            }
-            if (jobAiRankingArea != null) {
-                jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
-                jobAiRankingArea.setCaretPosition(0);
-            }
-        } finally {
-            endRefreshFeedback();
-        }
+        }.execute(); // 提交 SwingWorker 到执行器，立即返回，不阻塞 EDT
     }
 
     private void openTaAiAssistantDialog() {

@@ -345,9 +345,22 @@ public class AdminDashboard extends BaseDashboard {
 
         jobsModel = new DefaultTableModel(
                 new String[] {"Job ID", "MO", "Title", "Module", "Skills", "Hours", "Location", "Status"}, 0) {
+            /**
+             * 邓博文修复：限制 Jobs 表格可编辑列范围。
+             *
+             * <p>column 0 = Job ID（系统主键，永远只读）；
+             * column 1 = MO（职位所有者，由 MO 角色自身创建，Admin 不应修改归属，
+             * 防止管理员越权篡改职位所有权，维护数据完整性）；
+             * column >= 2 = 职位属性（标题、模块、技能等，Admin 可合法编辑）。
+             *
+             * <p>原代码 {@code return column >= 1} 允许管理员修改 MO 列，
+             * 修复后改为 {@code return column >= 2}，将 MO 列设为只读。
+             */
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column >= 1;
+                // column 0 = Job ID（只读），column 1 = MO 所有者（只读）
+                // column >= 2 才允许编辑（职位标题、模块、技能、时长、地点、状态）
+                return column >= 2;
             }
         };
         jobsTable = new JTable(jobsModel);
@@ -744,6 +757,33 @@ public class AdminDashboard extends BaseDashboard {
         refreshJobs();
     }
 
+    /**
+     * 邓博文新增：CSV 导出字段注入防护（OWASP A03 注入攻击防御）。
+     *
+     * <p><b>漏洞背景：</b>CSV 注入（又称公式注入）是 OWASP Top 10 A03 类别中的
+     * 一种攻击。当用户可控的字符串以 {@code =}、{@code +}、{@code -}、{@code @}、
+     * {@code |}、{@code %} 开头时，Excel/Google Sheets 等电子表格软件会将其解析
+     * 为公式，可能导致命令执行或数据泄露（如 {@code =CMD|' /C calc'!A0}）。
+     *
+     * <p><b>防护方案：</b>在字段值前添加单引号 {@code '}，使电子表格将其视为
+     * 纯文本字符串，而非可执行公式。这是业界标准防护手段（RFC 4180 兼容）。
+     *
+     * @param value CSV 导出的原始字段值
+     * @return 安全处理后的字段字符串（危险前缀已转义）
+     */
+    private String sanitizeCsvExportField(String value) {
+        if (value == null || value.isEmpty()) {
+            return value == null ? "" : value;
+        }
+        char first = value.charAt(0);
+        // 以下字符会触发电子表格公式解析，必须用单引号前缀转义
+        if (first == '=' || first == '+' || first == '-' || first == '@'
+                || first == '|' || first == '%') {
+            return "'" + value; // 单引号前缀使其变为纯文本
+        }
+        return value;
+    }
+
     private void exportWorkloadReport() {
         refreshWorkload();
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -754,9 +794,16 @@ public class AdminDashboard extends BaseDashboard {
             writer.println("providerReady," + ScoringService.getActiveProvider().isReady());
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
-                writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","
-                        + workloadModel.getValueAt(row, 2) + "," + workloadModel.getValueAt(row, 3) + ","
-                        + workloadModel.getValueAt(row, 4) + "," + workloadModel.getValueAt(row, 5));
+                // 邓博文修复：对每个字段调用 sanitizeCsvExportField()，防止 CSV 公式注入。
+                // 用户名、姓名、邮箱、职位数量、工时、状态 均可能包含用户可控内容，
+                // 全部经过防注入处理再写入 CSV 文件。
+                writer.println(
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 0))) + ","
+                        + sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 1))) + ","
+                        + sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 2))) + ","
+                        + sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 3))) + ","
+                        + sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 4))) + ","
+                        + sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 5))));
             }
             JOptionPane.showMessageDialog(this, "Report exported to " + path, "Export Complete",
                     JOptionPane.INFORMATION_MESSAGE);
