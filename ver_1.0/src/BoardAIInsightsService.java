@@ -14,13 +14,6 @@ public final class BoardAIInsightsService {
     private BoardAIInsightsService() {
     }
 
-    /**
-     * Builds an explainable ranking of open jobs for a TA.
-     *
-     * @param taUser TA user whose profile should be matched
-     * @param limit  maximum number of ranked jobs to include
-     * @return plain-text ranking summary for the TA dashboard
-     */
     public static String buildTaMatchRanking(User taUser, int limit) {
         if (taUser == null) {
             return "No TA context is available.";
@@ -67,12 +60,6 @@ public final class BoardAIInsightsService {
         return builder.toString().trim();
     }
 
-    /**
-     * Builds the context block used when a TA asks for AI assistance.
-     *
-     * @param taUser TA user currently viewing the dashboard
-     * @return compact TA profile and matching context
-     */
     public static String buildTaAiContext(User taUser) {
         TAProfile profile = taUser == null ? null : FileStorage.findProfileByUserId(taUser.id);
         StringBuilder builder = new StringBuilder();
@@ -89,14 +76,6 @@ public final class BoardAIInsightsService {
         return builder.toString();
     }
 
-    /**
-     * Builds an explainable applicant ranking for one MO-owned job.
-     *
-     * @param moUser MO user requesting the ranking
-     * @param jobId  selected job identifier
-     * @param limit  maximum number of applicants to include
-     * @return plain-text applicant ranking summary
-     */
     public static String buildMoApplicantRanking(User moUser, int jobId, int limit) {
         if (moUser == null) {
             return "No MO context is available.";
@@ -150,13 +129,6 @@ public final class BoardAIInsightsService {
         return builder.toString().trim();
     }
 
-    /**
-     * Builds the context block used when an MO asks for AI assistance.
-     *
-     * @param moUser MO user currently viewing the dashboard
-     * @param jobId  selected job identifier
-     * @return compact MO job and applicant context
-     */
     public static String buildMoAiContext(User moUser, int jobId) {
         StringBuilder builder = new StringBuilder();
         builder.append("MO board context\n");
@@ -167,11 +139,6 @@ public final class BoardAIInsightsService {
         return builder.toString();
     }
 
-    /**
-     * Builds an admin-wide system overview for AI explanation panels.
-     *
-     * @return plain-text summary of users, jobs, applications, and workload risk
-     */
     public static String buildAdminSystemOverview() {
         int taCount = 0;
         int moCount = 0;
@@ -231,11 +198,6 @@ public final class BoardAIInsightsService {
         return builder.toString().trim();
     }
 
-    /**
-     * Builds the combined admin context for the Admin AI Assistant.
-     *
-     * @return system overview plus recommendation-service guidance
-     */
     public static String buildAdminAiContext() {
         return buildAdminSystemOverview() + "\n\n" + AdminRecommendationService.buildGlobalAlertSummary();
     }

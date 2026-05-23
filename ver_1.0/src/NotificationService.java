@@ -21,11 +21,6 @@ public final class NotificationService {
 
     /**
      * Creates one notification for a TA after an MO updates an application decision.
-     *
-     * @param application application whose decision changed
-     * @param reviewer    user who performed the review action
-     * @param job         job associated with the application
-     * @param decision    new application decision
      */
     public static void notifyApplicationDecision(Application application, User reviewer, Job job, String decision) {
         if (application == null || reviewer == null || job == null || ValidationUtils.isBlank(decision)) {
@@ -58,8 +53,6 @@ public final class NotificationService {
 
     /**
      * Adds a deduplicated reminder when a TA profile is missing or incomplete.
-     *
-     * @param taUser TA user who needs to complete a profile
      */
     public static void notifyProfileRequired(User taUser) {
         if (taUser == null) {
@@ -74,10 +67,6 @@ public final class NotificationService {
 
     /**
      * Sends closure alerts to TAs with active applications when a job is closed.
-     *
-     * @param job   closed job
-     * @param actor user who closed the job, or {@code null} for a system actor
-     * @return number of new notifications created
      */
     public static int notifyJobClosed(Job job, User actor) {
         if (job == null) {
@@ -107,11 +96,38 @@ public final class NotificationService {
         return created;
     }
 
+    public static void notifyDirectMessage(User recipient, User sender, Job job) {
+        if (recipient == null || sender == null) {
+            return;
+        }
+        String jobLabel = job == null ? "general recruitment conversation" : job.title + " (" + job.module + ")";
+        addNotification(
+                recipient.id,
+                "New message from " + sender.getSafeDisplayName(),
+                sender.getSafeDisplayName() + " sent you a message about " + jobLabel + ".",
+                "Open the bell centre to read the message and reply.");
+    }
+
+    public static void notifyWorkEvaluation(Application application, User reviewer, Job job, int rating,
+            boolean penaltyApplied, int reputationScore) {
+        if (application == null || reviewer == null || job == null) {
+            return;
+        }
+        String message = "MO " + reviewer.getSafeDisplayName() + " rated your completed work for " + job.title
+                + " as " + rating + "/5.";
+        if (penaltyApplied) {
+            message += " Because the original match score was high but the completion rating was low, your reputation score is now "
+                    + reputationScore + "/100. This is a review signal for future matching, not an automatic misconduct decision.";
+        }
+        addNotification(
+                application.taId,
+                "Work evaluation for " + job.title,
+                message,
+                "Open My Applications or the bell centre to review the update.");
+    }
+
     /**
      * Returns all notifications for one user in stored order.
-     *
-     * @param userId user identifier to filter by
-     * @return notifications belonging to the selected user
      */
     public static List<Notification> getNotificationsForUser(int userId) {
         List<Notification> all = FileStorage.loadNotifications();
@@ -126,9 +142,6 @@ public final class NotificationService {
 
     /**
      * Counts unread notifications for badge and summary displays.
-     *
-     * @param userId user identifier to count notifications for
-     * @return unread notification count
      */
     public static int countUnreadForUser(int userId) {
         int unread = 0;
@@ -142,8 +155,6 @@ public final class NotificationService {
 
     /**
      * Marks outstanding profile reminders as resolved after a complete profile is saved.
-     *
-     * @param taUser TA user whose profile reminder should be marked read
      */
     public static void markProfileReminderResolved(User taUser) {
         if (taUser == null) {
@@ -162,8 +173,6 @@ public final class NotificationService {
 
     /**
      * Marks a single notification as read.
-     *
-     * @param notificationId notification identifier to update
      */
     public static void markAsRead(int notificationId) {
         List<Notification> notifications = FileStorage.loadNotifications();
@@ -178,8 +187,6 @@ public final class NotificationService {
 
     /**
      * Marks every stored notification for one user as read.
-     *
-     * @param userId user identifier whose notifications should be updated
      */
     public static void markAllAsRead(int userId) {
         List<Notification> notifications = FileStorage.loadNotifications();
@@ -211,5 +218,19 @@ public final class NotificationService {
         notifications.add(notification);
         FileStorage.saveNotifications(notifications);
         return true;
+    }
+
+    private static void addNotification(int userId, String title, String message, String actionHint) {
+        List<Notification> notifications = FileStorage.loadNotifications();
+        Notification notification = new Notification();
+        notification.id = FileStorage.nextNotificationId();
+        notification.userId = userId;
+        notification.title = title;
+        notification.message = message;
+        notification.status = "UNREAD";
+        notification.createdAt = LocalDateTime.now().format(FORMATTER);
+        notification.actionHint = actionHint;
+        notifications.add(notification);
+        FileStorage.saveNotifications(notifications);
     }
 }

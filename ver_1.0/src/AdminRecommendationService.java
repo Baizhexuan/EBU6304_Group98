@@ -16,8 +16,6 @@ public final class AdminRecommendationService {
 
     /**
      * Summarises the global overload situation for the current CSV snapshot.
-     *
-     * @return human-readable overview of overload risks and operating guidance
      */
     public static String buildGlobalAlertSummary() {
         List<User> users = FileStorage.loadUsers();
@@ -59,9 +57,6 @@ public final class AdminRecommendationService {
 
     /**
      * Builds a TA-specific narrative report suitable for the Admin recommendation panel.
-     *
-     * @param taId identifier of the TA whose workload should be reviewed
-     * @return recommendation report for the selected TA
      */
     public static String buildRecommendationReportForTa(int taId) {
         User ta = FileStorage.findUserById(taId);
@@ -117,8 +112,6 @@ public final class AdminRecommendationService {
 
     /**
      * Returns the checklist shown to admins before approving reallocation changes.
-     *
-     * @return newline-separated admin operating checklist
      */
     public static String buildOperationalChecklist() {
         return "1. Review overload rows first.\n"
@@ -129,9 +122,6 @@ public final class AdminRecommendationService {
 
     /**
      * Produces a concise action memo for one TA based on current selected hours.
-     *
-     * @param taId identifier of the TA to assess
-     * @return short action memo describing the workload response
      */
     public static String buildActionMemoForTa(int taId) {
         int hours = getSelectedHours(taId);

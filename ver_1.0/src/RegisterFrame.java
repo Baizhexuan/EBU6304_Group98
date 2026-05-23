@@ -1,11 +1,10 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -19,13 +18,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import javax.swing.plaf.basic.BasicButtonUI;
 
 /**
  * Registration frame for creating additional TA or MO demo accounts.
- *
- * <p>The workflow stays intentionally lightweight for coursework purposes: it validates basic
- * fields, prevents duplicate usernames, and then stores the new account directly in CSV.</p>
  */
 public class RegisterFrame extends JFrame {
     private final LoginFrame loginFrame;
@@ -36,47 +31,71 @@ public class RegisterFrame extends JFrame {
     private JComboBox<String> roleBox;
 
     /**
-     * Creates a registration form linked back to the login window.
+     * Creates the registration portal.
      *
-     * @param loginFrame login window to return to after successful registration
+     * @param loginFrame login frame to update after registration
      */
     public RegisterFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
         setTitle("Create Demo Account");
-        setMinimumSize(new Dimension(820, 580));
-        setSize(860, 640);
+        setMinimumSize(new Dimension(760, 560));
+        setSize(840, 610);
         setLocationRelativeTo(loginFrame);
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(new Color(245, 242, 235));
-        root.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        root.setBackground(BaseDashboard.APP_BACKGROUND);
+        root.add(BaseDashboard.buildPortalHeader("Account Registration", this::applyCurrentLanguage),
+                BorderLayout.NORTH);
 
-        JPanel card = new JPanel(new BorderLayout(16, 16));
-        card.setBackground(new Color(255, 252, 247));
+        JPanel workspace = new JPanel(new GridBagLayout());
+        workspace.setBackground(BaseDashboard.APP_BACKGROUND);
+        workspace.setBorder(BorderFactory.createEmptyBorder(28, 28, 28, 28));
+
+        JPanel card = new JPanel(new BorderLayout(0, 18));
+        card.setBackground(BaseDashboard.SURFACE_COLOR);
+        card.setPreferredSize(new Dimension(620, 470));
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 228)),
-                BorderFactory.createEmptyBorder(28, 30, 28, 30)));
+                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(26, 28, 26, 28)));
+        card.add(buildHeader(), BorderLayout.NORTH);
+        card.add(buildForm(), BorderLayout.CENTER);
 
+        GridBagConstraints place = new GridBagConstraints();
+        workspace.add(card, place);
+        root.add(workspace, BorderLayout.CENTER);
+        add(root);
+        applyCurrentLanguage();
+        setVisible(true);
+    }
+
+    private JPanel buildHeader() {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+
         JLabel title = new JLabel("Create Account");
-        title.setFont(new Font("SansSerif", Font.BOLD, 26));
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel subtitle = new JLabel(
-                "Register a TA or MO account, then complete the remaining workflow inside the dashboard.");
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        subtitle.setForeground(new Color(88, 96, 102));
-        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        title.setFont(new Font("SansSerif", Font.BOLD, 21));
+        title.setForeground(new Color(27, 45, 65));
+        title.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel subtitle = new JLabel("Register a TA or MO account for the recruitment portal.");
+        subtitle.setFont(BaseDashboard.UI_BODY_FONT);
+        subtitle.setForeground(BaseDashboard.TEXT_MUTED);
+        subtitle.setAlignmentX(LEFT_ALIGNMENT);
         header.add(title);
-        header.add(Box.createVerticalStrut(8));
+        header.add(Box.createVerticalStrut(7));
         header.add(subtitle);
-        card.add(header, BorderLayout.NORTH);
+        return header;
+    }
+
+    private JPanel buildForm() {
+        JPanel wrapper = new JPanel(new BorderLayout(0, 12));
+        wrapper.setOpaque(false);
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(7, 0, 7, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         usernameField = new JTextField(24);
@@ -89,7 +108,7 @@ public class RegisterFrame extends JFrame {
         configureField(passwordField);
         configureField(confirmPasswordField);
         configureField(displayNameField);
-        roleBox.setPreferredSize(new Dimension(280, 40));
+        roleBox.setPreferredSize(new Dimension(280, 34));
 
         addRow(form, gbc, 0, "Username", usernameField);
         addRow(form, gbc, 1, "Password", passwordField);
@@ -97,55 +116,43 @@ public class RegisterFrame extends JFrame {
         addRow(form, gbc, 3, "Display Name", displayNameField);
         addRow(form, gbc, 4, "Role", roleBox);
 
-        JPanel actions = new JPanel(new GridLayout(1, 2, 12, 0));
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
         JButton registerButton = new JButton("Create Account");
         JButton cancelButton = new JButton("Cancel");
-        styleButton(registerButton, new Color(33, 76, 95), Color.WHITE);
-        styleButton(cancelButton, new Color(225, 234, 238), new Color(33, 76, 95));
-        actions.add(registerButton);
+        BaseDashboard.applyButtonStyle(registerButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
+        BaseDashboard.applyButtonStyle(cancelButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
         actions.add(cancelButton);
+        actions.add(registerButton);
 
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 2;
-        form.add(actions, gbc);
-        card.add(form, BorderLayout.CENTER);
+        JLabel footer = new JLabel("After registration, sign in and continue from the role dashboard.");
+        footer.setFont(BaseDashboard.UI_BODY_FONT);
+        footer.setForeground(BaseDashboard.TEXT_MUTED);
 
-        JLabel footer = new JLabel("After registration, sign in and complete the profile or job workflow.");
-        footer.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        footer.setForeground(new Color(88, 96, 102));
-        card.add(footer, BorderLayout.SOUTH);
+        JPanel bottom = new JPanel(new BorderLayout(0, 10));
+        bottom.setOpaque(false);
+        bottom.add(footer, BorderLayout.NORTH);
+        bottom.add(actions, BorderLayout.SOUTH);
+        wrapper.add(form, BorderLayout.CENTER);
+        wrapper.add(bottom, BorderLayout.SOUTH);
 
         registerButton.addActionListener(e -> registerUser());
         cancelButton.addActionListener(e -> dispose());
-        root.add(card, BorderLayout.CENTER);
-        add(root);
-        setVisible(true);
+        return wrapper;
+    }
+
+    private void applyCurrentLanguage() {
+        setTitle(I18n.t("Create Demo Account"));
+        I18n.applyTo(this);
     }
 
     private void configureField(java.awt.Component field) {
-        field.setPreferredSize(new Dimension(280, 40));
-    }
-
-    private void styleButton(JButton button, Color background, Color foreground) {
-        button.setUI(new BasicButtonUI());
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setBorderPainted(true);
-        button.setBackground(background);
-        button.setForeground(foreground);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : new Color(154, 170, 178)),
-                BorderFactory.createEmptyBorder(11, 14, 11, 14)));
-        button.setFont(new Font("SansSerif", Font.BOLD, 14));
+        field.setPreferredSize(new Dimension(280, 34));
     }
 
     private void addRow(JPanel form, GridBagConstraints gbc, int row, String label, java.awt.Component field) {
         gbc.gridx = 0;
         gbc.gridy = row;
-        gbc.gridwidth = 1;
         gbc.weightx = 0;
         form.add(new JLabel(label), gbc);
         gbc.gridx = 1;
@@ -162,11 +169,12 @@ public class RegisterFrame extends JFrame {
 
         if (ValidationUtils.isBlank(username) || ValidationUtils.isBlank(password)
                 || ValidationUtils.isBlank(confirmPassword) || ValidationUtils.isBlank(displayName)) {
-            JOptionPane.showMessageDialog(this, "All fields are required.", "Validation", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18n.t("All fields are required."), I18n.t("Validation"),
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "Password confirmation does not match.", "Validation",
+            JOptionPane.showMessageDialog(this, I18n.t("Password confirmation does not match."), I18n.t("Validation"),
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -174,18 +182,19 @@ public class RegisterFrame extends JFrame {
         List<User> users = FileStorage.loadUsers();
         for (User user : users) {
             if (user.username.equalsIgnoreCase(username)) {
-                JOptionPane.showMessageDialog(this, "Username already exists.", "Validation", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, I18n.t("Username already exists."), I18n.t("Validation"),
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
 
-        User user = new User(FileStorage.nextUserId(), username, FileStorage.hashPassword(password), role, displayName);
+        User user = new User(FileStorage.nextUserId(), username, password, role, displayName);
         users.add(user);
         FileStorage.saveUsers(users);
 
         JOptionPane.showMessageDialog(this,
-                "Account created. Please sign in and complete the remaining workflow in the dashboard.",
-                "Registration Complete", JOptionPane.INFORMATION_MESSAGE);
+                I18n.t("Account created. Please sign in and complete the remaining workflow in the dashboard."),
+                I18n.t("Registration Complete"), JOptionPane.INFORMATION_MESSAGE);
         loginFrame.prefillCredentials(username);
         dispose();
     }

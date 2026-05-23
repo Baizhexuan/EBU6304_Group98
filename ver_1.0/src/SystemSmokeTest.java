@@ -6,9 +6,6 @@
  * functional. A non-zero exit code indicates a broken invariant.</p>
  */
 public class SystemSmokeTest {
-    private SystemSmokeTest() {
-    }
-
     /**
      * Entry point for the smoke test.
      *

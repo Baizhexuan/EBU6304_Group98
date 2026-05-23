@@ -20,30 +20,20 @@ public final class TestSupport {
             "profiles.csv",
             "jobs.csv",
             "applications.csv",
-            "notifications.csv"
+            "notifications.csv",
+            "ta_reputations.csv",
+            "work_evaluations.csv",
+            "messages.csv",
+            "message_consents.csv"
     };
 
     private TestSupport() {
     }
 
-    /**
-     * Callback that can throw checked exceptions while running isolated tests.
-     */
     public interface CheckedRunnable {
-        /**
-         * Executes the test body.
-         *
-         * @throws Exception when the test body fails
-         */
         void run() throws Exception;
     }
 
-    /**
-     * Runs a test action against temporary seed data and restores original CSV files afterwards.
-     *
-     * @param action test body to execute
-     * @throws Exception when setup, execution, or restore fails
-     */
     public static void withIsolatedData(CheckedRunnable action) throws Exception {
         Map<String, String> backup = backupCoreData();
         try {
@@ -54,51 +44,24 @@ public final class TestSupport {
         }
     }
 
-    /**
-     * Asserts that a condition is true.
-     *
-     * @param condition condition to check
-     * @param message   failure message
-     */
     public static void assertTrue(boolean condition, String message) {
         if (!condition) {
             throw new IllegalStateException(message);
         }
     }
 
-    /**
-     * Asserts that two strings are equal.
-     *
-     * @param expected expected value
-     * @param actual   actual value
-     * @param message  failure message prefix
-     */
     public static void assertEquals(String expected, String actual, String message) {
         if (expected == null ? actual != null : !expected.equals(actual)) {
             throw new IllegalStateException(message + " Expected: " + expected + " Actual: " + actual);
         }
     }
 
-    /**
-     * Asserts that two integer values are equal.
-     *
-     * @param expected expected integer
-     * @param actual   actual integer
-     * @param message  failure message prefix
-     */
     public static void assertIntEquals(int expected, int actual, String message) {
         if (expected != actual) {
             throw new IllegalStateException(message + " Expected: " + expected + " Actual: " + actual);
         }
     }
 
-    /**
-     * Asserts that a text value contains a required snippet.
-     *
-     * @param text    text to inspect
-     * @param snippet snippet expected to appear in {@code text}
-     * @param message failure message prefix
-     */
     public static void assertContains(String text, String snippet, String message) {
         if (text == null || !text.contains(snippet)) {
             throw new IllegalStateException(message + " Missing snippet: " + snippet);

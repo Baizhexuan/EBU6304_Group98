@@ -8,26 +8,13 @@
  * follow-up action.</p>
  */
 public class Notification {
-    /** Unique notification identifier. */
     public int id;
-    /** Identifier of the user who should receive the notification. */
     public int userId;
-    /** Short notification heading. */
     public String title;
-    /** Body message shown in the notification panel. */
     public String message;
-    /** Read state, normally {@code UNREAD} or {@code READ}. */
     public String status;
-    /** Human-readable creation timestamp. */
     public String createdAt;
-    /** Suggested follow-up action shown to the user. */
     public String actionHint;
-
-    /**
-     * Creates an empty notification record for CSV population or service assembly.
-     */
-    public Notification() {
-    }
 
     /**
      * Returns {@code true} when the notification has not yet been read by the user.

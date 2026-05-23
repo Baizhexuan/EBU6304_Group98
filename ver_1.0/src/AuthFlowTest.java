@@ -4,15 +4,6 @@ import java.util.List;
  * Lightweight authentication and registration regression checks for final delivery.
  */
 public class AuthFlowTest {
-    private AuthFlowTest() {
-    }
-
-    /**
-     * Runs the authentication flow regression test.
-     *
-     * @param args command-line arguments, not used
-     * @throws Exception if the isolated test data setup fails
-     */
     public static void main(String[] args) throws Exception {
         TestSupport.withIsolatedData(new TestSupport.CheckedRunnable() {
             @Override
@@ -33,7 +24,7 @@ public class AuthFlowTest {
                         "Fresh username should be available before registration.");
 
                 List<User> users = FileStorage.loadUsers();
-                users.add(new User(FileStorage.nextUserId(), "new_ta", FileStorage.hashPassword("safePass1"), "TA", "New TA"));
+                users.add(new User(FileStorage.nextUserId(), "new_ta", "safePass1", "TA", "New TA"));
                 FileStorage.saveUsers(users);
 
                 TestSupport.assertTrue(authenticate("new_ta", "safePass1") != null,
@@ -54,6 +45,6 @@ public class AuthFlowTest {
         if (user == null) {
             return null;
         }
-        return FileStorage.hashPassword(password).equals(user.password) ? user : null;
+        return password.equals(user.password) ? user : null;
     }
 }

@@ -7,9 +7,7 @@
  * missing skills, produced by the active {@link SkillScoringProvider}.</p>
  */
 public class MatchResult {
-    /** Match percentage in the range {@code 0..100}. */
     public int score;
-    /** Human-readable explanation of the score. */
     public String summary;
 
     /**

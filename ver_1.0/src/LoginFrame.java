@@ -1,11 +1,8 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GradientPaint;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -21,13 +18,13 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 
 /**
  * Entry screen for the stand-alone recruitment demo.
  *
- * <p>The frame provides login access to TA, MO, and Admin workflows while keeping the first-run
- * experience suitable for live demonstration on macOS, Windows, and Linux.</p>
+ * <p>The portal uses the same compact visual structure as the submitted
+ * prototype: a school header bar, a neutral workspace, and a focused
+ * sign-in panel for TA, MO, and Admin users.</p>
  */
 public class LoginFrame extends JFrame {
     private JTextField usernameField;
@@ -35,187 +32,200 @@ public class LoginFrame extends JFrame {
 
     /**
      * Constructs and displays the login frame.
-     *
-     * <p>Pre-populates the credential fields with demo values so evaluators
-     * can start the live walkthrough without typing credentials manually.</p>
      */
     public LoginFrame() {
         setTitle(DemoMetadata.APP_TITLE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(980, 620));
-        setSize(1040, 640);
+        setMinimumSize(new Dimension(900, 580));
+        setSize(980, 640);
         setLocationRelativeTo(null);
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(new Color(243, 239, 230));
-        root.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        root.setBackground(BaseDashboard.APP_BACKGROUND);
+        root.add(BaseDashboard.buildPortalHeader("TA Portal  |  MO Dashboard  |  Admin Workload",
+                this::applyCurrentLanguage),
+                BorderLayout.NORTH);
 
-        JPanel shell = new JPanel(new GridLayout(1, 2, 18, 18));
-        shell.setOpaque(false);
+        JPanel workspace = new JPanel(new GridBagLayout());
+        workspace.setBackground(BaseDashboard.APP_BACKGROUND);
+        workspace.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        HeroPanel heroPanel = new HeroPanel();
-        heroPanel.setBorder(BorderFactory.createEmptyBorder(34, 34, 34, 34));
-        heroPanel.setLayout(new BorderLayout(16, 16));
-
-        JLabel eyebrow = new JLabel("BUPT International School");
-        eyebrow.setForeground(new Color(217, 232, 239));
-        eyebrow.setFont(new Font("SansSerif", Font.BOLD, 15));
-
-        JLabel title = new JLabel("Teaching Assistant Recruitment");
-        title.setForeground(Color.WHITE);
-        title.setFont(new Font("Serif", Font.BOLD, 34));
-
-        JLabel subtitle = new JLabel(
-                "<html><div style='width:360px;'>A simple recruitment workspace for applicants, module organisers, and administrators.</div></html>");
-        subtitle.setForeground(new Color(236, 244, 247));
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
-
-        JPanel headline = new JPanel();
-        headline.setOpaque(false);
-        headline.setLayout(new BoxLayout(headline, BoxLayout.Y_AXIS));
-        eyebrow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        headline.add(eyebrow);
-        headline.add(Box.createVerticalStrut(10));
-        headline.add(title);
-        headline.add(Box.createVerticalStrut(12));
-        headline.add(subtitle);
-        heroPanel.add(headline, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel();
-        centerPanel.setOpaque(false);
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        JLabel flowTitle = new JLabel("Core workflow");
-        flowTitle.setForeground(Color.WHITE);
-        flowTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
-        flowTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        centerPanel.add(flowTitle);
-        centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(buildFeatureLine("1. TA creates a profile and applies for open jobs"));
-        centerPanel.add(Box.createVerticalStrut(8));
-        centerPanel.add(buildFeatureLine("2. MO reviews applicants and updates outcomes"));
-        centerPanel.add(Box.createVerticalStrut(8));
-        centerPanel.add(buildFeatureLine("3. Admin monitors workload and recommendations"));
-        heroPanel.add(centerPanel, BorderLayout.CENTER);
-
-        JLabel accounts = new JLabel(
-                "<html><div style='width:360px;'>Demo accounts: admin/admin123, ta1/ta123, ta2/ta456, mo1/mo123, mo2/mo456</div></html>");
-        accounts.setForeground(new Color(223, 237, 242));
-        accounts.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        heroPanel.add(accounts, BorderLayout.SOUTH);
-
-        JPanel card = new JPanel(new BorderLayout(16, 16));
-        card.setBackground(new Color(255, 252, 247));
+        JPanel card = new JPanel(new BorderLayout(0, 18));
+        card.setBackground(BaseDashboard.SURFACE_COLOR);
+        card.setPreferredSize(new Dimension(820, 470));
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 228)),
-                BorderFactory.createEmptyBorder(34, 34, 34, 34)));
+                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(28, 30, 28, 30)));
+        card.add(buildHeader(), BorderLayout.NORTH);
 
+        JPanel body = new JPanel(new GridLayout(1, 2, 24, 0));
+        body.setOpaque(false);
+        body.add(buildSignInPanel());
+        body.add(buildDemoAccessPanel());
+        card.add(body, BorderLayout.CENTER);
+
+        GridBagConstraints place = new GridBagConstraints();
+        place.gridx = 0;
+        place.gridy = 0;
+        workspace.add(card, place);
+        root.add(workspace, BorderLayout.CENTER);
+        add(root);
+        applyCurrentLanguage();
+        setVisible(true);
+    }
+
+    private JPanel buildHeader() {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        JLabel signIn = new JLabel("Sign In", SwingConstants.LEFT);
-        signIn.setFont(new Font("SansSerif", Font.BOLD, 28));
-        signIn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel sub = new JLabel("Access your TA recruitment workspace");
-        sub.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        sub.setForeground(new Color(88, 96, 102));
-        sub.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(signIn);
-        header.add(Box.createVerticalStrut(8));
-        header.add(sub);
-        card.add(header, BorderLayout.NORTH);
+
+        JLabel eyebrow = new JLabel("BUPT TA Recruitment System");
+        eyebrow.setFont(new Font("SansSerif", Font.BOLD, 12));
+        eyebrow.setForeground(BaseDashboard.ACCENT_COLOR);
+        eyebrow.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel title = new JLabel("Sign In");
+        title.setFont(new Font("SansSerif", Font.BOLD, 22));
+        title.setForeground(new Color(27, 45, 65));
+        title.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel summary = new JLabel("Access the applicant, module organiser, or administrator workspace.");
+        summary.setFont(BaseDashboard.UI_BODY_FONT);
+        summary.setForeground(BaseDashboard.TEXT_MUTED);
+        summary.setAlignmentX(LEFT_ALIGNMENT);
+
+        header.add(eyebrow);
+        header.add(Box.createVerticalStrut(7));
+        header.add(title);
+        header.add(Box.createVerticalStrut(6));
+        header.add(summary);
+        return header;
+    }
+
+    private JPanel buildSignInPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 14));
+        panel.setOpaque(false);
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(7, 0, 7, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        form.add(new JLabel("Username"), gbc);
         usernameField = new JTextField(22);
-        usernameField.setPreferredSize(new Dimension(260, 38));
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        form.add(usernameField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        form.add(new JLabel("Password"), gbc);
         passwordField = new JPasswordField(22);
-        passwordField.setPreferredSize(new Dimension(260, 38));
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        form.add(passwordField, gbc);
+        usernameField.setPreferredSize(new Dimension(260, 34));
+        passwordField.setPreferredSize(new Dimension(260, 34));
 
-        JPanel buttonRow = new JPanel(new GridLayout(1, 3, 10, 0));
-        buttonRow.setOpaque(false);
-        JButton loginButton = new JButton("Log in");
+        addFormRow(form, gbc, 0, "Username", usernameField);
+        addFormRow(form, gbc, 1, "Password", passwordField);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actions.setOpaque(false);
+        JButton loginButton = new JButton("Log In");
         JButton registerButton = new JButton("Register");
         JButton aboutButton = new JButton("About");
-        styleButton(loginButton, new Color(33, 76, 95), Color.WHITE);
-        styleButton(registerButton, new Color(255, 252, 247), new Color(33, 76, 95));
-        styleButton(aboutButton, new Color(255, 252, 247), new Color(70, 56, 32));
-        buttonRow.add(loginButton);
-        buttonRow.add(registerButton);
-        buttonRow.add(aboutButton);
+        BaseDashboard.applyButtonStyle(loginButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
+        BaseDashboard.applyButtonStyle(registerButton, BaseDashboard.SOFT_ACCENT, BaseDashboard.ACCENT_COLOR);
+        BaseDashboard.applyButtonStyle(aboutButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
+        actions.add(loginButton);
+        actions.add(registerButton);
+        actions.add(aboutButton);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        form.add(buttonRow, gbc);
-        card.add(form, BorderLayout.CENTER);
+        JPanel footer = new JPanel();
+        footer.setOpaque(false);
+        footer.setLayout(new BoxLayout(footer, BoxLayout.Y_AXIS));
+        JLabel hint = new JLabel("Use a demo account or register a TA/MO account.");
+        hint.setFont(BaseDashboard.UI_BODY_FONT);
+        hint.setForeground(BaseDashboard.TEXT_MUTED);
+        hint.setAlignmentX(LEFT_ALIGNMENT);
+        footer.add(actions);
+        footer.add(Box.createVerticalStrut(10));
+        footer.add(hint);
 
-        JLabel hint = new JLabel("Use a demo account above or create a TA/MO account to explore the flow.",
-                SwingConstants.LEFT);
-        hint.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        hint.setForeground(new Color(88, 96, 102));
-        card.add(hint, BorderLayout.SOUTH);
-
-        shell.add(heroPanel);
-        shell.add(card);
-        root.add(shell, BorderLayout.CENTER);
-        add(root);
+        panel.add(form, BorderLayout.NORTH);
+        panel.add(footer, BorderLayout.CENTER);
 
         loginButton.addActionListener(e -> attemptLogin());
         registerButton.addActionListener(e -> new RegisterFrame(this));
         aboutButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
-                DemoMetadata.buildAboutMessage(),
-                "About This Demo",
+                I18n.t(DemoMetadata.buildAboutMessage()),
+                I18n.t("About This Demo"),
                 JOptionPane.INFORMATION_MESSAGE));
         passwordField.addActionListener(e -> attemptLogin());
-
-        setVisible(true);
+        return panel;
     }
 
-    private JLabel buildFeatureLine(String text) {
-        JLabel label = new JLabel(text);
-        label.setForeground(new Color(241, 247, 249));
-        label.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return label;
+    private void applyCurrentLanguage() {
+        setTitle(I18n.t(DemoMetadata.APP_TITLE));
+        I18n.applyTo(this);
     }
 
-    private void styleButton(JButton button, Color background, Color foreground) {
-        button.setOpaque(true);
-        button.setBackground(background);
-        button.setForeground(foreground);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(foreground.equals(Color.WHITE) ? new Color(23, 55, 69) : new Color(154, 170, 178)),
-                BorderFactory.createEmptyBorder(11, 14, 11, 14)));
-        button.setFont(new Font("SansSerif", Font.BOLD, 13));
+    private JPanel buildDemoAccessPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(new Color(248, 250, 253));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
+
+        JLabel title = new JLabel("Demo Access");
+        title.setFont(BaseDashboard.UI_TITLE_FONT);
+        title.setForeground(new Color(27, 45, 65));
+        title.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel note = new JLabel("<html><div style='width:290px;'>Choose a role and continue the recruitment flow from the matching dashboard.</div></html>");
+        note.setFont(BaseDashboard.UI_BODY_FONT);
+        note.setForeground(BaseDashboard.TEXT_MUTED);
+        note.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel accounts = new JLabel("<html><div style='width:290px;'>"
+                + "<b>Admin</b>: admin / admin123<br>"
+                + "<b>TA</b>: ta1 / ta123 &nbsp;&nbsp; ta2 / ta456<br>"
+                + "<b>MO</b>: mo1 / mo123 &nbsp;&nbsp; mo2 / mo456"
+                + "</div></html>");
+        accounts.setFont(BaseDashboard.UI_BODY_FONT);
+        accounts.setForeground(new Color(35, 52, 70));
+        accounts.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
+        accounts.setOpaque(true);
+        accounts.setBackground(BaseDashboard.SURFACE_COLOR);
+        accounts.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel flow = new JLabel("<html><div style='width:290px;'>"
+                + "TA applies &rarr; MO reviews &rarr; Admin checks workload"
+                + "</div></html>");
+        flow.setFont(new Font("SansSerif", Font.BOLD, 12));
+        flow.setForeground(BaseDashboard.ACCENT_COLOR);
+        flow.setAlignmentX(LEFT_ALIGNMENT);
+
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(note);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(accounts);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(flow);
+        panel.add(Box.createVerticalGlue());
+        return panel;
+    }
+
+    private void addFormRow(JPanel form, GridBagConstraints gbc, int row, String label, java.awt.Component field) {
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        form.add(new JLabel(label), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        form.add(field, gbc);
     }
 
     /**
-     * Pre-fills the username after registration and clears the password field.
+     * Pre-fills the username after a successful registration.
      *
-     * @param username username to place in the login form
+     * @param username registered username
      */
     public void prefillCredentials(String username) {
         usernameField.setText(username);
@@ -228,17 +238,18 @@ public class LoginFrame extends JFrame {
         String password = new String(passwordField.getPassword()).trim();
 
         if (ValidationUtils.isBlank(username) && ValidationUtils.isBlank(password)) {
-            JOptionPane.showMessageDialog(this, "Please enter both username and password.", "Missing Input",
+            JOptionPane.showMessageDialog(this, I18n.t("Please enter both username and password."),
+                    I18n.t("Missing Input"),
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (ValidationUtils.isBlank(username)) {
-            JOptionPane.showMessageDialog(this, "Username cannot be empty.", "Missing Username",
+            JOptionPane.showMessageDialog(this, I18n.t("Username cannot be empty."), I18n.t("Missing Username"),
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (ValidationUtils.isBlank(password)) {
-            JOptionPane.showMessageDialog(this, "Password cannot be empty.", "Missing Password",
+            JOptionPane.showMessageDialog(this, I18n.t("Password cannot be empty."), I18n.t("Missing Password"),
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -253,12 +264,14 @@ public class LoginFrame extends JFrame {
         }
 
         if (matched == null) {
-            JOptionPane.showMessageDialog(this, "Username not found.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18n.t("Username not found."), I18n.t("Login Failed"),
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        if (!matched.password.equals(FileStorage.hashPassword(password))) {
-            JOptionPane.showMessageDialog(this, "Password is incorrect.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+        if (!matched.password.equals(password)) {
+            JOptionPane.showMessageDialog(this, I18n.t("Password is incorrect."), I18n.t("Login Failed"),
+                    JOptionPane.ERROR_MESSAGE);
             passwordField.setText("");
             return;
         }
@@ -280,24 +293,8 @@ public class LoginFrame extends JFrame {
             new AdminDashboard(user);
             return;
         }
-        JOptionPane.showMessageDialog(this, "Unknown role: " + user.role, "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, I18n.t("Unknown role:") + " " + user.role, I18n.t("Error"),
+                JOptionPane.ERROR_MESSAGE);
         new LoginFrame();
-    }
-
-    private static class HeroPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics graphics) {
-            super.paintComponent(graphics);
-            Graphics2D g2 = (Graphics2D) graphics.create();
-            GradientPaint gradient = new GradientPaint(0, 0, new Color(25, 74, 92), getWidth(), getHeight(),
-                    new Color(89, 126, 138));
-            g2.setPaint(gradient);
-            g2.fillRect(0, 0, getWidth(), getHeight());
-            g2.setColor(new Color(255, 255, 255, 28));
-            g2.fillOval(getWidth() - 220, 36, 170, 170);
-            g2.fillOval(40, getHeight() - 170, 210, 210);
-            g2.fillOval(getWidth() / 2 - 60, getHeight() / 2 - 120, 120, 120);
-            g2.dispose();
-        }
     }
 }

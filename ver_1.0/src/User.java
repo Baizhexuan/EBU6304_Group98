@@ -6,15 +6,10 @@
  * {@code MO} (Module Organiser), and {@code ADMIN}.</p>
  */
 public class User {
-    /** Unique user identifier. */
     public int id;
-    /** Login username. */
     public String username;
-    /** Password value used by the demo login flow. */
     public String password;
-    /** Role determining which dashboard the user can access. */
     public String role;
-    /** Human-readable name displayed in the UI. */
     public String displayName;
 
     /** Constructs an empty {@code User} instance used by the CSV deserialiser. */

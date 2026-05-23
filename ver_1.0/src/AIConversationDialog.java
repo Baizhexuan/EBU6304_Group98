@@ -51,7 +51,7 @@ public class AIConversationDialog extends JDialog {
      * @param context         current recruitment data snapshot injected into the AI prompt
      */
     public AIConversationDialog(JFrame owner, String dialogTitle, String heading, String defaultQuestion, String context) {
-        super(owner, dialogTitle, false);
+        super(owner, I18n.t(dialogTitle), false);
         this.context = context;
         setMinimumSize(new Dimension(760, 560));
         setSize(820, 620);
@@ -66,7 +66,7 @@ public class AIConversationDialog extends JDialog {
         JLabel title = new JLabel(heading);
         title.setFont(BaseDashboard.UI_TITLE_FONT);
         statusLabel = new JLabel(AIConversationService.buildStatusText());
-        statusLabel.setForeground(new Color(82, 91, 96));
+        statusLabel.setForeground(BaseDashboard.TEXT_MUTED);
         header.add(title, BorderLayout.NORTH);
         header.add(statusLabel, BorderLayout.SOUTH);
         root.add(header, BorderLayout.NORTH);
@@ -74,13 +74,13 @@ public class AIConversationDialog extends JDialog {
         questionArea = new JTextArea(5, 52);
         questionArea.setLineWrap(true);
         questionArea.setWrapStyleWord(true);
-        questionArea.setText(defaultQuestion);
+        questionArea.setText(I18n.t(defaultQuestion));
         answerArea = new JTextArea();
         answerArea.setEditable(false);
         answerArea.setLineWrap(true);
         answerArea.setWrapStyleWord(true);
         answerArea.setBackground(BaseDashboard.SURFACE_COLOR);
-        answerArea.setText("Ask a question to generate model-backed recruitment guidance. If OPENAI_API_KEY is not set, the dialog will use a local explainable fallback.");
+        answerArea.setText(I18n.t("Ask a question to generate model-backed recruitment guidance. If OPENAI_API_KEY is not set, the dialog will use a local explainable fallback."));
 
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
@@ -94,8 +94,8 @@ public class AIConversationDialog extends JDialog {
         JButton copyButton = new JButton("Copy Response");
         JButton closeButton = new JButton("Close");
         BaseDashboard.applyButtonStyle(askButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-        BaseDashboard.applyButtonStyle(copyButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
-        BaseDashboard.applyButtonStyle(closeButton, new Color(238, 242, 244), BaseDashboard.ACCENT_COLOR);
+        BaseDashboard.applyButtonStyle(copyButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
+        BaseDashboard.applyButtonStyle(closeButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
         actions.add(askButton);
         actions.add(copyButton);
         actions.add(closeButton);
@@ -105,19 +105,20 @@ public class AIConversationDialog extends JDialog {
         copyButton.addActionListener(e -> copyResponse());
         closeButton.addActionListener(e -> dispose());
         add(root);
+        I18n.applyTo(this);
     }
 
     private void copyResponse() {
         StringSelection selection = new StringSelection(answerArea.getText());
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
-        statusLabel.setText("Response copied to clipboard.");
+        statusLabel.setText(I18n.t("Response copied to clipboard."));
     }
 
     private void askModelAsync() {
         final String question = questionArea.getText();
         askButton.setEnabled(false);
-        statusLabel.setText("Requesting model response...");
-        answerArea.setText("Thinking with the current recruitment context...");
+        statusLabel.setText(I18n.t("Requesting model response..."));
+        answerArea.setText(I18n.t("Thinking with the current recruitment context..."));
 
         SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
             @Override
@@ -128,12 +129,12 @@ public class AIConversationDialog extends JDialog {
             @Override
             protected void done() {
                 try {
-                    answerArea.setText(get());
+                    answerArea.setText(I18n.t(get()));
                 } catch (Exception ex) {
-                    answerArea.setText("AI request failed: " + ex.getMessage());
+                    answerArea.setText(I18n.t("AI request failed:") + " " + ex.getMessage());
                 }
                 answerArea.setCaretPosition(0);
-                statusLabel.setText(AIConversationService.buildStatusText());
+                statusLabel.setText(I18n.t(AIConversationService.buildStatusText()));
                 askButton.setEnabled(true);
             }
         };

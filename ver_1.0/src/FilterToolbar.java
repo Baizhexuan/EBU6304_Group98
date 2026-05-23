@@ -38,19 +38,19 @@ public class FilterToolbar extends JPanel {
         super(new BorderLayout(8, 8));
         setOpaque(false);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(214, 220, 224)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+                BorderFactory.createLineBorder(BaseDashboard.BORDER_COLOR),
+                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
 
         JLabel label = new JLabel("Search");
         label.setFont(new Font("SansSerif", Font.BOLD, 12));
         fieldSelector = new JComboBox<String>();
-        fieldSelector.setPreferredSize(new Dimension(150, 34));
+        fieldSelector.setPreferredSize(new Dimension(146, 31));
         searchField = new JTextField(placeholder, 24);
-        searchField.setPreferredSize(new Dimension(260, 34));
+        searchField.setPreferredSize(new Dimension(250, 31));
         searchButton = new JButton("Search");
-        BaseDashboard.applyButtonStyle(searchButton, new Color(214, 234, 239), new Color(33, 76, 95));
+        BaseDashboard.applyButtonStyle(searchButton, BaseDashboard.SOFT_ACCENT, BaseDashboard.ACCENT_COLOR);
         JButton clearButton = new JButton("Clear");
-        BaseDashboard.applyButtonStyle(clearButton, new Color(225, 234, 238), new Color(33, 76, 95));
+        BaseDashboard.applyButtonStyle(clearButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         controls.setOpaque(false);

@@ -4,15 +4,6 @@ import java.util.List;
  * Verifies that CSV persistence preserves commas, quotes, and empty values after save/load cycles.
  */
 public class CsvPersistenceTest {
-    private CsvPersistenceTest() {
-    }
-
-    /**
-     * Runs the CSV persistence regression test.
-     *
-     * @param args command-line arguments, not used
-     * @throws Exception if the isolated test data setup fails
-     */
     public static void main(String[] args) throws Exception {
         TestSupport.withIsolatedData(new TestSupport.CheckedRunnable() {
             @Override

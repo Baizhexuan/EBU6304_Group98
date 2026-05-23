@@ -5,6 +5,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +78,7 @@ public class MODashboard extends BaseDashboard {
         addTab("My Job Posts", createMyJobsPanel());
         addTab("Applicants", createApplicantsPanel());
         installRefreshOnTabSwitch(this::refreshVisibleTab);
+        applyCurrentLanguage();
         setVisible(true);
     }
 
@@ -92,7 +95,7 @@ public class MODashboard extends BaseDashboard {
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(SURFACE_COLOR);
         formPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(219, 224, 228)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(18, 18, 18, 18)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
@@ -199,8 +202,8 @@ public class MODashboard extends BaseDashboard {
         JPanel actions = buildActionRow();
         JButton refreshButton = new JButton("Refresh");
         JButton toggleButton = new JButton("Open / Close Selected Job");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
-        styleActionButton(toggleButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
+        styleActionButton(toggleButton, WARNING_SURFACE, new Color(101, 73, 30));
         actions.add(refreshButton);
         actions.add(toggleButton);
         bottom.add(actions, BorderLayout.EAST);
@@ -231,7 +234,7 @@ public class MODashboard extends BaseDashboard {
         selectorPanel.add(jobSelector);
 
         applicantsModel = new DefaultTableModel(
-                new String[] {"App ID", "TA", "Email", "Skills", "Match", "Missing Skills", "Summary", "Status", "Current Hours"}, 0) {
+                new String[] {"App ID", "TA", "Email", "Skills", "Match", "Missing Skills", "Summary", "Status", "Reputation", "Current Hours"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -242,7 +245,7 @@ public class MODashboard extends BaseDashboard {
         applicantsTable.setDefaultRenderer(Object.class, new MatchRenderer());
         styleTable(applicantsTable);
 
-        JPanel filterPanel = new JPanel(new GridLayout(2, 9, 6, 6));
+        JPanel filterPanel = new JPanel(new GridLayout(2, 10, 6, 6));
         filterPanel.setOpaque(false);
         filterPanel.add(new JLabel("App ID"));
         filterPanel.add(new JLabel("TA"));
@@ -252,6 +255,7 @@ public class MODashboard extends BaseDashboard {
         filterPanel.add(new JLabel("Missing Skills"));
         filterPanel.add(new JLabel("Summary"));
         filterPanel.add(new JLabel("Status"));
+        filterPanel.add(new JLabel("Reputation"));
         filterPanel.add(new JLabel("Current Hours"));
         filterPanel.add(new JLabel(""));
         applicantNameFilterField = new JTextField();
@@ -265,6 +269,7 @@ public class MODashboard extends BaseDashboard {
         filterPanel.add(new JLabel(""));
         applicantStatusFilterField = new JTextField();
         filterPanel.add(applicantStatusFilterField);
+        filterPanel.add(new JLabel(""));
         filterPanel.add(new JLabel(""));
 
         FilterToolbar compactFilter = new FilterToolbar("Search applicants", this::refreshApplicants);
@@ -292,7 +297,7 @@ public class MODashboard extends BaseDashboard {
         JPanel aiPanel = new JPanel(new BorderLayout(6, 6));
         aiPanel.setBackground(SURFACE_COLOR);
         aiPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8)));
         aiPanel.add(new JLabel("AI Applicant Ranking"), BorderLayout.NORTH);
         aiPanel.add(new JScrollPane(applicantAiRankingArea), BorderLayout.CENTER);
@@ -311,18 +316,22 @@ public class MODashboard extends BaseDashboard {
         JPanel buttonRow = buildActionRow();
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
+        JButton rateButton = new JButton("Rate Completed Work");
         JButton aiButton = new JButton("Ask AI About Applicants");
         styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);
-        styleActionButton(rejectButton, new Color(240, 229, 206), new Color(70, 56, 32));
-        styleActionButton(aiButton, new Color(220, 232, 222), new Color(36, 78, 54));
+        styleActionButton(rejectButton, WARNING_SURFACE, new Color(101, 73, 30));
+        styleActionButton(rateButton, SUCCESS_SURFACE, new Color(35, 82, 55));
+        styleActionButton(aiButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         buttonRow.add(acceptButton);
         buttonRow.add(rejectButton);
+        buttonRow.add(rateButton);
         buttonRow.add(aiButton);
         actions.add(buttonRow, BorderLayout.EAST);
         panel.add(actions, BorderLayout.SOUTH);
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
+        rateButton.addActionListener(e -> rateSelectedCompletedWork());
         aiButton.addActionListener(e -> openMoAiAssistantDialog());
         installFieldListener(applicantNameFilterField, this::refreshApplicants);
         installFieldListener(applicantEmailFilterField, this::refreshApplicants);
@@ -440,13 +449,7 @@ public class MODashboard extends BaseDashboard {
         }
 
         int modelRow = myJobsTable.convertRowIndexToModel(row);
-        int jobId = ValidationUtils.parseInt(String.valueOf(myJobsModel.getValueAt(modelRow, 0)), -1);
-        if (jobId <= 0) {
-            JOptionPane.showMessageDialog(this, "Selected job id is invalid. Please refresh and try again.",
-                "Data Error", JOptionPane.WARNING_MESSAGE);
-            refreshMyJobs();
-            return;
-        }
+        int jobId = Integer.parseInt(String.valueOf(myJobsModel.getValueAt(modelRow, 0)));
         List<Job> jobs = FileStorage.loadJobs();
         for (Job job : jobs) {
             if (job.id == jobId) {
@@ -520,12 +523,14 @@ public class MODashboard extends BaseDashboard {
             int rejected = 0;
             int strongestScore = -1;
             String strongestName = "";
+            Job selectedJob = jobsById.get(selectedJobId);
             for (Application app : FileStorage.loadApplications()) {
                 if (app.jobId != selectedJobId) {
                     continue;
                 }
                 User taUser = usersById.get(app.taId);
                 TAProfile profile = profiles.get(app.taId);
+                MatchResult currentMatch = evaluateCurrentMatch(profile, selectedJob, app);
                 String displayName = taUser == null ? "Unknown" : taUser.getSafeDisplayName();
                 String email = profile == null ? "N/A" : profile.email;
                 String skills = profile == null ? "N/A" : profile.skills;
@@ -538,10 +543,11 @@ public class MODashboard extends BaseDashboard {
                         displayName,
                         email,
                         skills,
-                        app.matchScore + "%",
-                        extractMissingSkills(app.matchSummary),
-                        app.matchSummary,
+                        currentMatch.score + "%",
+                        extractMissingSkills(currentMatch.summary),
+                        currentMatch.summary,
                         app.status,
+                        ReputationService.describeReputation(app.taId),
                         selectedHoursByTa.containsKey(app.taId) ? selectedHoursByTa.get(app.taId) : 0
                 });
                 if ("PENDING".equalsIgnoreCase(app.status)) {
@@ -551,8 +557,8 @@ public class MODashboard extends BaseDashboard {
                 } else if ("REJECTED".equalsIgnoreCase(app.status)) {
                     rejected++;
                 }
-                if (app.matchScore > strongestScore) {
-                    strongestScore = app.matchScore;
+                if (currentMatch.score > strongestScore) {
+                    strongestScore = currentMatch.score;
                     strongestName = displayName;
                 }
             }
@@ -570,6 +576,13 @@ public class MODashboard extends BaseDashboard {
         } finally {
             endRefreshFeedback();
         }
+    }
+
+    private MatchResult evaluateCurrentMatch(TAProfile profile, Job job, Application application) {
+        if (profile != null && job != null) {
+            return ScoringService.evaluate(profile, job);
+        }
+        return new MatchResult(application.matchScore, application.matchSummary);
     }
 
     private void openMoAiAssistantDialog() {
@@ -612,14 +625,8 @@ public class MODashboard extends BaseDashboard {
         }
 
         int modelRow = applicantsTable.convertRowIndexToModel(row);
-        int appId = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)), -1);
-        int currentHours = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 8)), 0);
-        if (appId <= 0) {
-            JOptionPane.showMessageDialog(this, "Selected application id is invalid. Please refresh and try again.",
-                "Data Error", JOptionPane.WARNING_MESSAGE);
-            refreshApplicants();
-            return;
-        }
+        int appId = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)));
+        int currentHours = Integer.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 9)));
         Job job = FileStorage.findJobById(selectedJobId);
 
         if ("SELECTED".equals(decision) && job != null && currentHours + job.maxHours > FileStorage.getOverloadLimit()) {
@@ -645,6 +652,86 @@ public class MODashboard extends BaseDashboard {
         FileStorage.saveApplications(applications);
         refreshApplicants();
         postStatusLabel.setText("Posting status: applicant review updated and notification sent.");
+        refreshBellBadge();
+    }
+
+    private void rateSelectedCompletedWork() {
+        int row = applicantsTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Please select a selected applicant first.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        int modelRow = applicantsTable.convertRowIndexToModel(row);
+        int appId = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)), 0);
+        String status = String.valueOf(applicantsModel.getValueAt(modelRow, 7));
+        if (!"SELECTED".equalsIgnoreCase(status)) {
+            JOptionPane.showMessageDialog(this, "Only selected applications can be rated after completed work.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (ReputationService.hasEvaluationForApplication(appId)) {
+            JOptionPane.showMessageDialog(this, "This completed work has already been rated.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        Object value = JOptionPane.showInputDialog(this,
+                "Completion rating for this TA's finished work (1 = very poor, 5 = excellent):",
+                "Rate Completed Work",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                new String[] {"5", "4", "3", "2", "1"},
+                "5");
+        if (value == null) {
+            return;
+        }
+        int rating = ValidationUtils.parseInt(String.valueOf(value), 0);
+        if (rating < 1 || rating > 5) {
+            JOptionPane.showMessageDialog(this, "Rating must be between 1 and 5.", "Validation",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String comment = JOptionPane.showInputDialog(this,
+                "Optional MO comment for this evaluation:",
+                "Completed Work Comment",
+                JOptionPane.QUESTION_MESSAGE);
+        if (comment == null) {
+            comment = "";
+        }
+
+        Application application = findApplicationById(FileStorage.loadApplications(), appId);
+        Job job = application == null ? null : FileStorage.findJobById(application.jobId);
+        if (application == null || job == null) {
+            JOptionPane.showMessageDialog(this, "Application or job data is missing.", "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        WorkEvaluation evaluation = new WorkEvaluation();
+        evaluation.id = FileStorage.nextWorkEvaluationId();
+        evaluation.applicationId = application.id;
+        evaluation.taId = application.taId;
+        evaluation.moId = currentUser.id;
+        evaluation.jobId = application.jobId;
+        evaluation.rating = rating;
+        evaluation.comment = comment.trim();
+        evaluation.evaluatedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+
+        boolean penaltyApplied = ReputationService.applyCompletedWorkEvaluation(evaluation, application);
+        List<WorkEvaluation> evaluations = FileStorage.loadWorkEvaluations();
+        evaluations.add(evaluation);
+        FileStorage.saveWorkEvaluations(evaluations);
+        NotificationService.notifyWorkEvaluation(application, currentUser, job, rating, penaltyApplied,
+                ReputationService.getScoreForTa(application.taId));
+
+        String message = "Completed work rating saved.";
+        if (penaltyApplied) {
+            message += " Reputation penalty applied because the original match score was high but the MO rating was low.";
+        }
+        JOptionPane.showMessageDialog(this, message, "Evaluation Saved", JOptionPane.INFORMATION_MESSAGE);
+        refreshApplicants();
+        refreshBellBadge();
     }
 
     private String getLower(JTextField field) {
@@ -656,6 +743,15 @@ public class MODashboard extends BaseDashboard {
             return true;
         }
         return text != null && text.toLowerCase().contains(keyword);
+    }
+
+    private Application findApplicationById(List<Application> applications, int appId) {
+        for (Application application : applications) {
+            if (application.id == appId) {
+                return application;
+            }
+        }
+        return null;
     }
 
     private String extractMissingSkills(String summary) {
@@ -672,7 +768,7 @@ public class MODashboard extends BaseDashboard {
         return "None";
     }
 
-    private static class MatchRenderer extends DefaultTableCellRenderer {
+    private static class MatchRenderer extends BaseDashboard.WrappingTableCellRenderer {
         @Override
         public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                 boolean hasFocus, int row, int column) {
@@ -680,7 +776,7 @@ public class MODashboard extends BaseDashboard {
                     column);
             if (!isSelected) {
                 String status = String.valueOf(table.getValueAt(row, 7));
-                int hours = ValidationUtils.parseInt(String.valueOf(table.getValueAt(row, 8)), 0);
+                int hours = Integer.parseInt(String.valueOf(table.getValueAt(row, 9)));
                 if ("SELECTED".equalsIgnoreCase(status)) {
                     component.setBackground(new Color(214, 245, 214));
                 } else if ("REJECTED".equalsIgnoreCase(status)) {

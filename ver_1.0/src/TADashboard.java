@@ -22,7 +22,6 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -83,6 +82,7 @@ public class TADashboard extends BaseDashboard {
         addTab("Notifications", createNotificationsPanel());
         installRefreshOnTabSwitch(this::refreshVisibleTab);
         loadProfile();
+        applyCurrentLanguage();
         setVisible(true);
     }
 
@@ -99,7 +99,7 @@ public class TADashboard extends BaseDashboard {
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(SURFACE_COLOR);
         formPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(219, 224, 228)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(18, 18, 18, 18)));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
@@ -220,7 +220,7 @@ public class TADashboard extends BaseDashboard {
         JPanel aiPanel = new JPanel(new BorderLayout(6, 6));
         aiPanel.setBackground(SURFACE_COLOR);
         aiPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8)));
         aiPanel.add(new JLabel("AI Match Ranking"), BorderLayout.NORTH);
         aiPanel.add(new JScrollPane(jobAiRankingArea), BorderLayout.CENTER);
@@ -240,9 +240,9 @@ public class TADashboard extends BaseDashboard {
         JButton refreshButton = new JButton("Refresh");
         JButton applyButton = new JButton("Apply for Selected Job");
         JButton aiButton = new JButton("Ask AI About Matches");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(applyButton, ACCENT_COLOR, Color.WHITE);
-        styleActionButton(aiButton, new Color(220, 232, 222), new Color(36, 78, 54));
+        styleActionButton(aiButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         buttons.add(refreshButton);
         buttons.add(applyButton);
         buttons.add(aiButton);
@@ -324,8 +324,8 @@ public class TADashboard extends BaseDashboard {
         buttonRow.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         JButton withdrawButton = new JButton("Withdraw Selected Pending Application");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
-        styleActionButton(withdrawButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
+        styleActionButton(withdrawButton, WARNING_SURFACE, new Color(101, 73, 30));
         buttonRow.add(refreshButton);
         buttonRow.add(withdrawButton);
         actions.add(buttonRow, BorderLayout.EAST);
@@ -372,9 +372,9 @@ public class TADashboard extends BaseDashboard {
         JButton refreshButton = new JButton("Refresh Notifications");
         JButton markReadButton = new JButton("Mark Selected as Read");
         JButton markAllButton = new JButton("Mark All as Read");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(markReadButton, ACCENT_COLOR, Color.WHITE);
-        styleActionButton(markAllButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(markAllButton, WARNING_SURFACE, new Color(101, 73, 30));
         actions.add(refreshButton);
         actions.add(markReadButton);
         actions.add(markAllButton);
@@ -415,7 +415,7 @@ public class TADashboard extends BaseDashboard {
         rowPanel.setOpaque(false);
         rowPanel.add(cvPathField, BorderLayout.CENTER);
         JButton browseButton = new JButton("Browse");
-        styleActionButton(browseButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(browseButton, SECONDARY_SURFACE, ACCENT_COLOR);
         browseButton.addActionListener(e -> chooseCv());
         rowPanel.add(browseButton, BorderLayout.EAST);
 
@@ -462,7 +462,8 @@ public class TADashboard extends BaseDashboard {
         availabilityField.setText(profile.availability);
         statementArea.setText(profile.statement);
         profileStatusLabel.setText(profile.isComplete()
-                ? "Profile status: ready for applications and AI matching."
+                ? "Profile status: ready for applications and AI matching. Reputation: "
+                        + ReputationService.describeReputation(currentUser.id)
                 : "Profile status: partially complete. Fill all required fields before applying.");
         if (!profile.isComplete()) {
             NotificationService.notifyProfileRequired(currentUser);
@@ -510,7 +511,8 @@ public class TADashboard extends BaseDashboard {
         profile.statement = statementArea.getText().trim();
         FileStorage.saveProfiles(profiles);
         syncDisplayName(profile.fullName);
-        profileStatusLabel.setText("Profile status: saved and ready for AI-assisted job matching.");
+        profileStatusLabel.setText("Profile status: saved and ready for AI-assisted job matching. Reputation: "
+                + ReputationService.describeReputation(currentUser.id));
         NotificationService.markProfileReminderResolved(currentUser);
 
         JOptionPane.showMessageDialog(this, "Profile saved successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
@@ -532,72 +534,53 @@ public class TADashboard extends BaseDashboard {
 
     private void refreshJobs() {
         beginRefreshFeedback(jobInsightLabel, jobsModel, jobAiRankingArea, "Refreshing open jobs and match ranking...");
-        final TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
-        final String titleFilter = getLower(jobTitleFilterField);
-        final String moduleFilter = getLower(jobModuleFilterField);
-        final String skillsFilter = getLower(jobSkillsFilterField);
-        final String locationFilter = getLower(jobLocationFilterField);
-        new SwingWorker<java.util.List<Object[]>, Void>() {
-            @Override
-            protected java.util.List<Object[]> doInBackground() {
-                java.util.List<Object[]> rows = new java.util.ArrayList<>();
-                for (Job job : FileStorage.loadJobs()) {
-                    if (!job.isOpen()) {
-                        continue;
-                    }
-                    if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
-                        continue;
-                    }
-                    MatchResult match = ScoringService.evaluate(profile, job);
-                    rows.add(new Object[] {
-                            job.id,
-                            job.title,
-                            job.module,
-                            job.requiredSkills,
-                            job.maxHours,
-                            job.location,
-                            match.score + "%",
-                            extractMissingSkills(match.summary),
-                            match.summary
-                    });
+        try {
+            TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
+            String titleFilter = getLower(jobTitleFilterField);
+            String moduleFilter = getLower(jobModuleFilterField);
+            String skillsFilter = getLower(jobSkillsFilterField);
+            String locationFilter = getLower(jobLocationFilterField);
+            int visibleJobs = 0;
+            int bestScore = -1;
+            String bestJob = "";
+            for (Job job : FileStorage.loadJobs()) {
+                if (!job.isOpen()) {
+                    continue;
                 }
-                return rows;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    java.util.List<Object[]> rows = get();
-                    int bestScore = -1;
-                    String bestJob = "";
-                    for (Object[] row : rows) {
-                        jobsModel.addRow(row);
-                        int score = ValidationUtils.parseInt(
-                                row[6].toString().replace("%", ""), -1);
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestJob = row[1] + " (" + row[2] + ")";
-                        }
-                    }
-                    if (rows.isEmpty()) {
-                        jobInsightLabel.setText("No open jobs match the current filters.");
-                    } else {
-                        jobInsightLabel.setText("Visible jobs: " + rows.size()
-                                + " | Best current match: " + bestJob + " at "
-                                + Math.max(bestScore, 0) + "% via "
-                                + ScoringService.getActiveProvider().getProviderName());
-                    }
-                    if (jobAiRankingArea != null) {
-                        jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
-                        jobAiRankingArea.setCaretPosition(0);
-                    }
-                } catch (Exception ex) {
-                    jobInsightLabel.setText("Refresh failed: " + ex.getMessage());
-                } finally {
-                    endRefreshFeedback();
+                if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
+                    continue;
+                }
+                MatchResult match = ScoringService.evaluate(profile, job);
+                jobsModel.addRow(new Object[] {
+                        job.id,
+                        job.title,
+                        job.module,
+                        job.requiredSkills,
+                        job.maxHours,
+                        job.location,
+                        match.score + "%",
+                        extractMissingSkills(match.summary),
+                        match.summary
+                });
+                visibleJobs++;
+                if (match.score > bestScore) {
+                    bestScore = match.score;
+                    bestJob = job.title + " (" + job.module + ")";
                 }
             }
-        }.execute();
+            if (visibleJobs == 0) {
+                jobInsightLabel.setText("No open jobs match the current filters.");
+            } else {
+                jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
+                        + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
+            }
+            if (jobAiRankingArea != null) {
+                jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
+                jobAiRankingArea.setCaretPosition(0);
+            }
+        } finally {
+            endRefreshFeedback();
+        }
     }
 
     private void openTaAiAssistantDialog() {
@@ -639,7 +622,7 @@ public class TADashboard extends BaseDashboard {
         int jobId = Integer.parseInt(String.valueOf(jobsModel.getValueAt(modelRow, 0)));
         List<Application> applications = FileStorage.loadApplications();
         for (Application app : applications) {
-            if (app.taId == currentUser.id && app.jobId == jobId && !"WITHDRAWN".equalsIgnoreCase(app.status)) {
+            if (app.taId == currentUser.id && app.jobId == jobId && isActiveApplication(app.status)) {
                 JOptionPane.showMessageDialog(this, "You have already applied for this job.", "Duplicate Application",
                         JOptionPane.WARNING_MESSAGE);
                 return;
@@ -679,6 +662,7 @@ public class TADashboard extends BaseDashboard {
             for (Job job : jobs) {
                 jobsById.put(job.id, job);
             }
+            TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
             int pending = 0;
             int selected = 0;
             int rejected = 0;
@@ -693,13 +677,14 @@ public class TADashboard extends BaseDashboard {
                 if (!contains(jobTitle, jobFilter) || !contains(module, moduleFilter) || !contains(app.status, statusFilter)) {
                     continue;
                 }
+                MatchResult currentMatch = evaluateCurrentMatch(profile, job, app);
                 applicationsModel.addRow(new Object[] {
                         app.id,
                         jobTitle,
                         module,
                         app.status,
                         app.appliedAt,
-                        app.matchScore + "%",
+                        currentMatch.score + "%",
                         app.reviewerNote
                 });
                 if ("PENDING".equalsIgnoreCase(app.status)) {
@@ -718,6 +703,13 @@ public class TADashboard extends BaseDashboard {
         } finally {
             endRefreshFeedback();
         }
+    }
+
+    private MatchResult evaluateCurrentMatch(TAProfile profile, Job job, Application application) {
+        if (profile != null && job != null) {
+            return ScoringService.evaluate(profile, job);
+        }
+        return new MatchResult(application.matchScore, application.matchSummary);
     }
 
     private void refreshNotifications() {
@@ -740,6 +732,7 @@ public class TADashboard extends BaseDashboard {
             }
             notificationSummaryLabel.setText("Total notifications: " + notifications.size() + " | Unread: " + unread);
             tabs.setTitleAt(3, unread > 0 ? "Notifications (" + unread + ")" : "Notifications");
+            refreshBellBadge();
         } finally {
             endRefreshFeedback();
         }
@@ -797,6 +790,10 @@ public class TADashboard extends BaseDashboard {
         return text != null && text.toLowerCase().contains(keyword);
     }
 
+    private boolean isActiveApplication(String status) {
+        return !"WITHDRAWN".equalsIgnoreCase(status) && !"REJECTED".equalsIgnoreCase(status);
+    }
+
     private String extractMissingSkills(String summary) {
         if (ValidationUtils.isBlank(summary)) {
             return "None";
@@ -811,7 +808,7 @@ public class TADashboard extends BaseDashboard {
         return "None";
     }
 
-    private static class StatusRenderer extends DefaultTableCellRenderer {
+    private static class StatusRenderer extends BaseDashboard.WrappingTableCellRenderer {
         @Override
         public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                 boolean hasFocus, int row, int column) {
@@ -833,7 +830,7 @@ public class TADashboard extends BaseDashboard {
         }
     }
 
-    private static class NotificationRenderer extends DefaultTableCellRenderer {
+    private static class NotificationRenderer extends BaseDashboard.WrappingTableCellRenderer {
         @Override
         public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                 boolean hasFocus, int row, int column) {

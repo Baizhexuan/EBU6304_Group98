@@ -4,9 +4,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,35 +18,9 @@ import java.util.List;
  * compact CSV parser/writer that preserves commas, quotes, and empty values while remaining
  * compatible with the earlier plain rows already stored in the repository.</p>
  */
-public final class FileStorage {
+public class FileStorage {
     private static final String DATA_DIR = "data" + File.separator;
     private static final int OVERLOAD_LIMIT = 20;
-
-    private FileStorage() {
-    }
-
-    /**
-     * Returns the SHA-256 hex digest of the given plain-text password.
-     *
-     * <p>SHA-256 is always available in the Java SE runtime, so this method
-     * never throws a checked exception.</p>
-     *
-     * @param plainText the plain-text password to hash
-     * @return lowercase hex-encoded SHA-256 digest, 64 characters
-     */
-    public static String hashPassword(String plainText) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(plainText.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder(hashBytes.length * 2);
-            for (byte b : hashBytes) {
-                hex.append(String.format("%02x", b & 0xff));
-            }
-            return hex.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available in this JVM", e);
-        }
-    }
 
     /**
      * Ensures the CSV storage directory and seed files exist before the UI or tests access them.
@@ -61,12 +32,14 @@ public final class FileStorage {
         ensureJobs();
         ensureApplications();
         ensureNotifications();
+        ensureTAReputations();
+        ensureWorkEvaluations();
+        ensureMessages();
+        ensureMessageConsents();
     }
 
     /**
      * Returns the shared workload threshold used by admin monitoring and recommendation features.
-     *
-     * @return maximum recommended TA workload in hours
      */
     public static int getOverloadLimit() {
         return OVERLOAD_LIMIT;
@@ -79,11 +52,11 @@ public final class FileStorage {
         }
         try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
             writer.println("id,username,password,role,displayName");
-            writer.println("1,admin," + hashPassword("admin123") + ",ADMIN,System Admin");
-            writer.println("2,ta1," + hashPassword("ta123") + ",TA,Li Ming");
-            writer.println("3,ta2," + hashPassword("ta456") + ",TA,Wang Yue");
-            writer.println("4,mo1," + hashPassword("mo123") + ",MO,Dr Chen");
-            writer.println("5,mo2," + hashPassword("mo456") + ",MO,Prof Zhao");
+            writer.println("1,admin,admin123,ADMIN,System Admin");
+            writer.println("2,ta1,ta123,TA,Li Ming");
+            writer.println("3,ta2,ta456,TA,Wang Yue");
+            writer.println("4,mo1,mo123,MO,Dr Chen");
+            writer.println("5,mo2,mo456,MO,Prof Zhao");
         } catch (IOException e) {
             System.err.println("Unable to create users.csv: " + e.getMessage());
         }
@@ -146,10 +119,56 @@ public final class FileStorage {
         }
     }
 
+    private static void ensureTAReputations() {
+        File file = new File(DATA_DIR + "ta_reputations.csv");
+        if (file.exists()) {
+            return;
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("taId,score,penaltyCount,lastUpdated,note");
+        } catch (IOException e) {
+            System.err.println("Unable to create ta_reputations.csv: " + e.getMessage());
+        }
+    }
+
+    private static void ensureWorkEvaluations() {
+        File file = new File(DATA_DIR + "work_evaluations.csv");
+        if (file.exists()) {
+            return;
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("id,applicationId,taId,moId,jobId,rating,comment,evaluatedAt,penaltyApplied");
+        } catch (IOException e) {
+            System.err.println("Unable to create work_evaluations.csv: " + e.getMessage());
+        }
+    }
+
+    private static void ensureMessages() {
+        File file = new File(DATA_DIR + "messages.csv");
+        if (file.exists()) {
+            return;
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("id,fromUserId,toUserId,jobId,body,status,createdAt");
+        } catch (IOException e) {
+            System.err.println("Unable to create messages.csv: " + e.getMessage());
+        }
+    }
+
+    private static void ensureMessageConsents() {
+        File file = new File(DATA_DIR + "message_consents.csv");
+        if (file.exists()) {
+            return;
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("id,userAId,userBId,jobId,approved,requestedBy,updatedAt");
+        } catch (IOException e) {
+            System.err.println("Unable to create message_consents.csv: " + e.getMessage());
+        }
+    }
+
     /**
      * Loads all users from {@code data/users.csv}.
-     *
-     * @return users currently stored in the CSV file
      */
     public static List<User> loadUsers() {
         List<User> users = new ArrayList<User>();
@@ -177,8 +196,6 @@ public final class FileStorage {
 
     /**
      * Persists the full user list back to {@code data/users.csv}.
-     *
-     * @param users users to write to persistent storage
      */
     public static void saveUsers(List<User> users) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "users.csv"))) {
@@ -193,8 +210,6 @@ public final class FileStorage {
 
     /**
      * Loads TA profiles used by the TA dashboard and matching logic.
-     *
-     * @return TA profiles currently stored in the CSV file
      */
     public static List<TAProfile> loadProfiles() {
         List<TAProfile> profiles = new ArrayList<TAProfile>();
@@ -227,8 +242,6 @@ public final class FileStorage {
 
     /**
      * Saves all TA profiles while preserving commas and empty fields in text columns.
-     *
-     * @param profiles TA profiles to write to persistent storage
      */
     public static void saveProfiles(List<TAProfile> profiles) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "profiles.csv"))) {
@@ -253,8 +266,6 @@ public final class FileStorage {
 
     /**
      * Loads all jobs visible to MO, TA, and Admin workflows.
-     *
-     * @return jobs currently stored in the CSV file
      */
     public static List<Job> loadJobs() {
         List<Job> jobs = new ArrayList<Job>();
@@ -286,8 +297,6 @@ public final class FileStorage {
 
     /**
      * Saves jobs to CSV for use across MO posting, TA browsing, and admin review screens.
-     *
-     * @param jobs jobs to write to persistent storage
      */
     public static void saveJobs(List<Job> jobs) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "jobs.csv"))) {
@@ -311,8 +320,6 @@ public final class FileStorage {
 
     /**
      * Loads job applications, including AI match summaries and reviewer notes.
-     *
-     * @return applications currently stored in the CSV file
      */
     public static List<Application> loadApplications() {
         List<Application> applications = new ArrayList<Application>();
@@ -343,8 +350,6 @@ public final class FileStorage {
 
     /**
      * Saves applications while preserving reviewer notes and explainable AI summaries.
-     *
-     * @param applications applications to write to persistent storage
      */
     public static void saveApplications(List<Application> applications) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "applications.csv"))) {
@@ -367,8 +372,6 @@ public final class FileStorage {
 
     /**
      * Loads in-app notifications stored in {@code data/notifications.csv}.
-     *
-     * @return notifications currently stored in the CSV file
      */
     public static List<Notification> loadNotifications() {
         List<Notification> notifications = new ArrayList<Notification>();
@@ -398,8 +401,6 @@ public final class FileStorage {
 
     /**
      * Persists notifications generated by MO decisions, profile reminders, and job closures.
-     *
-     * @param notifications notifications to write to persistent storage
      */
     public static void saveNotifications(List<Notification> notifications) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "notifications.csv"))) {
@@ -419,11 +420,184 @@ public final class FileStorage {
         }
     }
 
+    public static List<TAReputation> loadTAReputations() {
+        List<TAReputation> reputations = new ArrayList<TAReputation>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "ta_reputations.csv"))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                List<String> parts = parseCsvRow(line, 5);
+                if (parts.size() < 5) {
+                    continue;
+                }
+                TAReputation reputation = new TAReputation();
+                reputation.taId = ValidationUtils.parseInt(parts.get(0), 0);
+                reputation.score = ValidationUtils.parseInt(parts.get(1), 100);
+                reputation.penaltyCount = ValidationUtils.parseInt(parts.get(2), 0);
+                reputation.lastUpdated = parts.get(3).trim();
+                reputation.note = parts.get(4).trim();
+                reputations.add(reputation);
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load TA reputations: " + e.getMessage());
+        }
+        return reputations;
+    }
+
+    public static void saveTAReputations(List<TAReputation> reputations) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "ta_reputations.csv"))) {
+            writer.println("taId,score,penaltyCount,lastUpdated,note");
+            for (TAReputation reputation : reputations) {
+                writer.println(csvLine(
+                        String.valueOf(reputation.taId),
+                        String.valueOf(reputation.score),
+                        String.valueOf(reputation.penaltyCount),
+                        reputation.lastUpdated,
+                        reputation.note));
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to save TA reputations: " + e.getMessage());
+        }
+    }
+
+    public static List<WorkEvaluation> loadWorkEvaluations() {
+        List<WorkEvaluation> evaluations = new ArrayList<WorkEvaluation>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "work_evaluations.csv"))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                List<String> parts = parseCsvRow(line, 9);
+                if (parts.size() < 9) {
+                    continue;
+                }
+                WorkEvaluation evaluation = new WorkEvaluation();
+                evaluation.id = ValidationUtils.parseInt(parts.get(0), 0);
+                evaluation.applicationId = ValidationUtils.parseInt(parts.get(1), 0);
+                evaluation.taId = ValidationUtils.parseInt(parts.get(2), 0);
+                evaluation.moId = ValidationUtils.parseInt(parts.get(3), 0);
+                evaluation.jobId = ValidationUtils.parseInt(parts.get(4), 0);
+                evaluation.rating = ValidationUtils.parseInt(parts.get(5), 0);
+                evaluation.comment = parts.get(6).trim();
+                evaluation.evaluatedAt = parts.get(7).trim();
+                evaluation.penaltyApplied = Boolean.parseBoolean(parts.get(8).trim());
+                evaluations.add(evaluation);
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load work evaluations: " + e.getMessage());
+        }
+        return evaluations;
+    }
+
+    public static void saveWorkEvaluations(List<WorkEvaluation> evaluations) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "work_evaluations.csv"))) {
+            writer.println("id,applicationId,taId,moId,jobId,rating,comment,evaluatedAt,penaltyApplied");
+            for (WorkEvaluation evaluation : evaluations) {
+                writer.println(csvLine(
+                        String.valueOf(evaluation.id),
+                        String.valueOf(evaluation.applicationId),
+                        String.valueOf(evaluation.taId),
+                        String.valueOf(evaluation.moId),
+                        String.valueOf(evaluation.jobId),
+                        String.valueOf(evaluation.rating),
+                        evaluation.comment,
+                        evaluation.evaluatedAt,
+                        String.valueOf(evaluation.penaltyApplied)));
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to save work evaluations: " + e.getMessage());
+        }
+    }
+
+    public static List<MessageRecord> loadMessages() {
+        List<MessageRecord> messages = new ArrayList<MessageRecord>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "messages.csv"))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                List<String> parts = parseCsvRow(line, 7);
+                if (parts.size() < 7) {
+                    continue;
+                }
+                MessageRecord message = new MessageRecord();
+                message.id = ValidationUtils.parseInt(parts.get(0), 0);
+                message.fromUserId = ValidationUtils.parseInt(parts.get(1), 0);
+                message.toUserId = ValidationUtils.parseInt(parts.get(2), 0);
+                message.jobId = ValidationUtils.parseInt(parts.get(3), 0);
+                message.body = parts.get(4).trim();
+                message.status = parts.get(5).trim();
+                message.createdAt = parts.get(6).trim();
+                messages.add(message);
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load messages: " + e.getMessage());
+        }
+        return messages;
+    }
+
+    public static void saveMessages(List<MessageRecord> messages) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "messages.csv"))) {
+            writer.println("id,fromUserId,toUserId,jobId,body,status,createdAt");
+            for (MessageRecord message : messages) {
+                writer.println(csvLine(
+                        String.valueOf(message.id),
+                        String.valueOf(message.fromUserId),
+                        String.valueOf(message.toUserId),
+                        String.valueOf(message.jobId),
+                        message.body,
+                        message.status,
+                        message.createdAt));
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to save messages: " + e.getMessage());
+        }
+    }
+
+    public static List<MessageConsent> loadMessageConsents() {
+        List<MessageConsent> consents = new ArrayList<MessageConsent>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_DIR + "message_consents.csv"))) {
+            reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                List<String> parts = parseCsvRow(line, 7);
+                if (parts.size() < 7) {
+                    continue;
+                }
+                MessageConsent consent = new MessageConsent();
+                consent.id = ValidationUtils.parseInt(parts.get(0), 0);
+                consent.userAId = ValidationUtils.parseInt(parts.get(1), 0);
+                consent.userBId = ValidationUtils.parseInt(parts.get(2), 0);
+                consent.jobId = ValidationUtils.parseInt(parts.get(3), 0);
+                consent.approved = Boolean.parseBoolean(parts.get(4).trim());
+                consent.requestedBy = ValidationUtils.parseInt(parts.get(5), 0);
+                consent.updatedAt = parts.get(6).trim();
+                consents.add(consent);
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to load message consents: " + e.getMessage());
+        }
+        return consents;
+    }
+
+    public static void saveMessageConsents(List<MessageConsent> consents) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(DATA_DIR + "message_consents.csv"))) {
+            writer.println("id,userAId,userBId,jobId,approved,requestedBy,updatedAt");
+            for (MessageConsent consent : consents) {
+                writer.println(csvLine(
+                        String.valueOf(consent.id),
+                        String.valueOf(consent.userAId),
+                        String.valueOf(consent.userBId),
+                        String.valueOf(consent.jobId),
+                        String.valueOf(consent.approved),
+                        String.valueOf(consent.requestedBy),
+                        consent.updatedAt));
+            }
+        } catch (IOException e) {
+            System.err.println("Unable to save message consents: " + e.getMessage());
+        }
+    }
+
     /**
      * Finds a user by numeric identifier in the current CSV snapshot.
-     *
-     * @param id user identifier to search for
-     * @return matching user, or {@code null} when absent
      */
     public static User findUserById(int id) {
         for (User user : loadUsers()) {
@@ -436,9 +610,6 @@ public final class FileStorage {
 
     /**
      * Finds a user by username using a case-insensitive comparison to match login behaviour.
-     *
-     * @param username username to search for
-     * @return matching user, or {@code null} when absent
      */
     public static User findUserByUsername(String username) {
         for (User user : loadUsers()) {
@@ -449,12 +620,6 @@ public final class FileStorage {
         return null;
     }
 
-    /**
-     * Finds a user by display name using a case-insensitive comparison.
-     *
-     * @param displayName display name to search for
-     * @return matching user, or {@code null} when absent
-     */
     public static User findUserByDisplayName(String displayName) {
         if (displayName == null) {
             return null;
@@ -467,12 +632,6 @@ public final class FileStorage {
         return null;
     }
 
-    /**
-     * Finds the TA profile associated with a user identifier.
-     *
-     * @param userId user identifier linked to the profile
-     * @return matching profile, or {@code null} when absent
-     */
     public static TAProfile findProfileByUserId(int userId) {
         for (TAProfile profile : loadProfiles()) {
             if (profile.userId == userId) {
@@ -482,12 +641,6 @@ public final class FileStorage {
         return null;
     }
 
-    /**
-     * Finds a job by numeric identifier.
-     *
-     * @param jobId job identifier to search for
-     * @return matching job, or {@code null} when absent
-     */
     public static Job findJobById(int jobId) {
         for (Job job : loadJobs()) {
             if (job.id == jobId) {
@@ -497,11 +650,6 @@ public final class FileStorage {
         return null;
     }
 
-    /**
-     * Calculates the next available user identifier.
-     *
-     * @return one greater than the current maximum user id
-     */
     public static int nextUserId() {
         int max = 0;
         for (User user : loadUsers()) {
@@ -510,11 +658,6 @@ public final class FileStorage {
         return max + 1;
     }
 
-    /**
-     * Calculates the next available TA profile identifier.
-     *
-     * @return one greater than the current maximum profile id
-     */
     public static int nextProfileId() {
         int max = 0;
         for (TAProfile profile : loadProfiles()) {
@@ -523,11 +666,6 @@ public final class FileStorage {
         return max + 1;
     }
 
-    /**
-     * Calculates the next available job identifier.
-     *
-     * @return one greater than the current maximum job id
-     */
     public static int nextJobId() {
         int max = 0;
         for (Job job : loadJobs()) {
@@ -536,11 +674,6 @@ public final class FileStorage {
         return max + 1;
     }
 
-    /**
-     * Calculates the next available application identifier.
-     *
-     * @return one greater than the current maximum application id
-     */
     public static int nextApplicationId() {
         int max = 0;
         for (Application app : loadApplications()) {
@@ -549,15 +682,34 @@ public final class FileStorage {
         return max + 1;
     }
 
-    /**
-     * Calculates the next available notification identifier.
-     *
-     * @return one greater than the current maximum notification id
-     */
     public static int nextNotificationId() {
         int max = 0;
         for (Notification notification : loadNotifications()) {
             max = Math.max(max, notification.id);
+        }
+        return max + 1;
+    }
+
+    public static int nextWorkEvaluationId() {
+        int max = 0;
+        for (WorkEvaluation evaluation : loadWorkEvaluations()) {
+            max = Math.max(max, evaluation.id);
+        }
+        return max + 1;
+    }
+
+    public static int nextMessageId() {
+        int max = 0;
+        for (MessageRecord message : loadMessages()) {
+            max = Math.max(max, message.id);
+        }
+        return max + 1;
+    }
+
+    public static int nextMessageConsentId() {
+        int max = 0;
+        for (MessageConsent consent : loadMessageConsents()) {
+            max = Math.max(max, consent.id);
         }
         return max + 1;
     }

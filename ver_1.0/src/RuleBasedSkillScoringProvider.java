@@ -5,12 +5,6 @@
  * user can see that the recommendation came from local explainable logic.</p>
  */
 public class RuleBasedSkillScoringProvider implements SkillScoringProvider {
-    /**
-     * Creates a deterministic local scoring provider.
-     */
-    public RuleBasedSkillScoringProvider() {
-    }
-
     @Override
     public MatchResult evaluate(TAProfile profile, Job job) {
         MatchResult result = MatchingService.evaluate(profile, job);

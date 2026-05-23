@@ -91,6 +91,7 @@ public class AdminDashboard extends BaseDashboard {
         installRefreshOnTabSwitch(this::refreshVisibleTab);
         installCloseGuard();
         refreshAll();
+        applyCurrentLanguage();
         setVisible(true);
     }
 
@@ -124,9 +125,9 @@ public class AdminDashboard extends BaseDashboard {
         adminSummaryLabel = buildCardLabel("Refreshing admin summary...");
         aiReadinessLabel = buildCardLabel(AIIntegrationPlan.buildReadinessSummary());
         recommendationTitleLabel = buildCardLabel("Recommendation focus: Global risk overview");
-        summaryPanel.add(buildCard("Allocation Overview", adminSummaryLabel, new Color(231, 240, 228)));
-        summaryPanel.add(buildCard("AI Scoring Status", aiReadinessLabel, new Color(225, 236, 241)));
-        summaryPanel.add(buildCard("Recommendation Focus", recommendationTitleLabel, new Color(243, 234, 221)));
+        summaryPanel.add(buildCard("Allocation Overview", adminSummaryLabel, SUCCESS_SURFACE));
+        summaryPanel.add(buildCard("AI Scoring Status", aiReadinessLabel, SOFT_ACCENT));
+        summaryPanel.add(buildCard("Recommendation Focus", recommendationTitleLabel, WARNING_SURFACE));
         panel.add(summaryPanel, BorderLayout.NORTH);
 
         workloadModel = new DefaultTableModel(
@@ -195,7 +196,7 @@ public class AdminDashboard extends BaseDashboard {
         JPanel recommendationPanel = new JPanel(new BorderLayout(8, 8));
         recommendationPanel.setBackground(SURFACE_COLOR);
         recommendationPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
         JLabel recommendationHeader = new JLabel("AI System Insight and Reallocation Advice");
         recommendationHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -221,9 +222,9 @@ public class AdminDashboard extends BaseDashboard {
         JButton recommendationButton = new JButton("Refresh Advice");
         JButton aiDialogButton = new JButton("Ask AI Assistant");
         JButton exportButton = new JButton("Export CSV Report");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
-        styleActionButton(recommendationButton, new Color(240, 229, 206), new Color(70, 56, 32));
-        styleActionButton(aiDialogButton, new Color(220, 232, 222), new Color(36, 78, 54));
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
+        styleActionButton(recommendationButton, WARNING_SURFACE, new Color(101, 73, 30));
+        styleActionButton(aiDialogButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         styleActionButton(exportButton, ACCENT_COLOR, Color.WHITE);
         actions.add(refreshButton);
         actions.add(recommendationButton);
@@ -315,9 +316,9 @@ public class AdminDashboard extends BaseDashboard {
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(saveButton, ACCENT_COLOR, Color.WHITE);
-        styleActionButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(undoButton, WARNING_SURFACE, new Color(101, 73, 30));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -346,8 +347,7 @@ public class AdminDashboard extends BaseDashboard {
                 new String[] {"Job ID", "MO", "Title", "Module", "Skills", "Hours", "Location", "Status"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // column 0 = Job ID (read-only), column 1 = MO ownership (read-only to prevent ownership hijack)
-                return column >= 2;
+                return column >= 1;
             }
         };
         jobsTable = new JTable(jobsModel);
@@ -405,9 +405,9 @@ public class AdminDashboard extends BaseDashboard {
         JButton refreshButton = new JButton("Refresh");
         JButton saveButton = new JButton("Save Changes");
         JButton undoButton = new JButton("Undo Unsaved Changes");
-        styleActionButton(refreshButton, new Color(225, 234, 238), ACCENT_COLOR);
+        styleActionButton(refreshButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(saveButton, ACCENT_COLOR, Color.WHITE);
-        styleActionButton(undoButton, new Color(240, 229, 206), new Color(70, 56, 32));
+        styleActionButton(undoButton, WARNING_SURFACE, new Color(101, 73, 30));
         actions.add(refreshButton);
         actions.add(saveButton);
         actions.add(undoButton);
@@ -437,7 +437,7 @@ public class AdminDashboard extends BaseDashboard {
         JPanel card = new JPanel(new BorderLayout(6, 6));
         card.setBackground(background);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(214, 220, 224)),
+                BorderFactory.createLineBorder(BORDER_COLOR),
                 BorderFactory.createEmptyBorder(10, 12, 10, 12)));
         JLabel heading = new JLabel(title);
         heading.setFont(new Font("SansSerif", Font.BOLD, 14));
@@ -600,10 +600,16 @@ public class AdminDashboard extends BaseDashboard {
             for (Job job : jobs) {
                 jobsById.put(job.id, job);
             }
+            Map<Integer, TAProfile> profilesByTaId = new HashMap<Integer, TAProfile>();
+            for (TAProfile profile : FileStorage.loadProfiles()) {
+                profilesByTaId.put(profile.userId, profile);
+            }
             applicationSnapshot = copyApplications(applications);
             for (Application app : applications) {
                 User ta = usersById.get(app.taId);
                 Job job = jobsById.get(app.jobId);
+                TAProfile profile = profilesByTaId.get(app.taId);
+                MatchResult currentMatch = evaluateCurrentMatch(profile, job, app);
                 String taName = ta == null ? "Unknown" : ta.getSafeDisplayName();
                 String jobTitle = job == null ? "Unknown" : job.title;
                 String module = job == null ? "Unknown" : job.module;
@@ -612,12 +618,19 @@ public class AdminDashboard extends BaseDashboard {
                     continue;
                 }
                 applicationsModel.addRow(new Object[] {app.id, taName, jobTitle, module, app.status, app.appliedAt,
-                        app.matchScore + "%", app.matchSummary, app.reviewerNote});
+                        currentMatch.score + "%", currentMatch.summary, app.reviewerNote});
             }
             applicationsDirty = false;
         } finally {
             endRefreshFeedback();
         }
+    }
+
+    private MatchResult evaluateCurrentMatch(TAProfile profile, Job job, Application application) {
+        if (profile != null && job != null) {
+            return ScoringService.evaluate(profile, job);
+        }
+        return new MatchResult(application.matchScore, application.matchSummary);
     }
 
     private void saveApplicationChanges() {
@@ -628,15 +641,8 @@ public class AdminDashboard extends BaseDashboard {
             if (match == null) {
                 continue;
             }
-            String status = asTrimmedText(applicationsModel.getValueAt(row, 4)).toUpperCase();
-            if (!isAllowedStatus(status, APPLICATION_STATUSES)) {
-                JOptionPane.showMessageDialog(this,
-                        "Application status '" + status + "' is invalid. Allowed: PENDING, SELECTED, REJECTED, WITHDRAWN.",
-                        "Validation", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            match.status = status;
-            match.reviewerNote = asTrimmedText(applicationsModel.getValueAt(row, 8));
+            match.status = String.valueOf(applicationsModel.getValueAt(row, 4)).trim().toUpperCase();
+            match.reviewerNote = String.valueOf(applicationsModel.getValueAt(row, 8)).trim();
         }
         FileStorage.saveApplications(applications);
         applicationSnapshot = copyApplications(applications);
@@ -694,7 +700,7 @@ public class AdminDashboard extends BaseDashboard {
             if (match == null) {
                 continue;
             }
-            String moDisplayName = asTrimmedText(jobsModel.getValueAt(row, 1));
+            String moDisplayName = String.valueOf(jobsModel.getValueAt(row, 1)).trim();
             User mo = FileStorage.findUserByDisplayName(moDisplayName);
             if (mo == null || !"MO".equalsIgnoreCase(mo.role)) {
                 JOptionPane.showMessageDialog(this,
@@ -709,21 +715,13 @@ public class AdminDashboard extends BaseDashboard {
                 return;
             }
 
-            String status = asTrimmedText(jobsModel.getValueAt(row, 7)).toUpperCase();
-            if (!isAllowedStatus(status, JOB_STATUSES)) {
-                JOptionPane.showMessageDialog(this,
-                        "Job status '" + status + "' is invalid. Allowed: OPEN, CLOSED.",
-                        "Validation", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
             match.moId = mo.id;
-            match.title = asTrimmedText(jobsModel.getValueAt(row, 2));
-            match.module = asTrimmedText(jobsModel.getValueAt(row, 3));
-            match.requiredSkills = asTrimmedText(jobsModel.getValueAt(row, 4));
+            match.title = String.valueOf(jobsModel.getValueAt(row, 2)).trim();
+            match.module = String.valueOf(jobsModel.getValueAt(row, 3)).trim();
+            match.requiredSkills = String.valueOf(jobsModel.getValueAt(row, 4)).trim();
             match.maxHours = hours;
-            match.location = asTrimmedText(jobsModel.getValueAt(row, 6));
-            match.status = status;
+            match.location = String.valueOf(jobsModel.getValueAt(row, 6)).trim();
+            match.status = String.valueOf(jobsModel.getValueAt(row, 7)).trim().toUpperCase();
             String previousStatus = previousStatuses.get(match.id);
             if ("OPEN".equalsIgnoreCase(previousStatus) && "CLOSED".equalsIgnoreCase(match.status)) {
                 closedNotifications += NotificationService.notifyJobClosed(match, currentUser);
@@ -751,18 +749,14 @@ public class AdminDashboard extends BaseDashboard {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String path = "data/admin_workload_report_" + timestamp + ".csv";
         try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
-            writer.println(csvLine("exportedAt", timestamp));
-            writer.println(csvLine("provider", ScoringService.getActiveProvider().getProviderName()));
-            writer.println(csvLine("providerReady", String.valueOf(ScoringService.getActiveProvider().isReady())));
+            writer.println("exportedAt," + timestamp);
+            writer.println("provider," + ScoringService.getActiveProvider().getProviderName());
+            writer.println("providerReady," + ScoringService.getActiveProvider().isReady());
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
-                writer.println(csvLine(
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 0))),
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 1))),
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 2))),
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 3))),
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 4))),
-                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 5)))));
+                writer.println(workloadModel.getValueAt(row, 0) + "," + workloadModel.getValueAt(row, 1) + ","
+                        + workloadModel.getValueAt(row, 2) + "," + workloadModel.getValueAt(row, 3) + ","
+                        + workloadModel.getValueAt(row, 4) + "," + workloadModel.getValueAt(row, 5));
             }
             JOptionPane.showMessageDialog(this, "Report exported to " + path, "Export Complete",
                     JOptionPane.INFORMATION_MESSAGE);
@@ -801,61 +795,6 @@ public class AdminDashboard extends BaseDashboard {
             return true;
         }
         return text != null && text.toLowerCase().contains(keyword);
-    }
-
-    private boolean isAllowedStatus(String value, String[] allowedValues) {
-        if (ValidationUtils.isBlank(value)) {
-            return false;
-        }
-        for (String allowed : allowedValues) {
-            if (allowed.equalsIgnoreCase(value)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String asTrimmedText(Object value) {
-        return value == null ? "" : String.valueOf(value).trim();
-    }
-
-    private String csvLine(String... values) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < values.length; i++) {
-            if (i > 0) {
-                builder.append(',');
-            }
-            builder.append(csvCell(values[i]));
-        }
-        return builder.toString();
-    }
-
-    private String csvCell(String value) {
-        String safe = value == null ? "" : value;
-        String escaped = safe.replace("\"", "\"\"");
-        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r")) {
-            return "\"" + escaped + "\"";
-        }
-        return escaped;
-    }
-
-    /**
-     * Sanitises a value before writing it to a CSV export file.
-     * Fields that start with formula-injection trigger characters (=, +, -, @, |, %)
-     * are prefixed with a single-quote so spreadsheet applications treat them as text.
-     *
-     * @param value raw cell value (may be null)
-     * @return sanitised string safe for CSV export
-     */
-    private String sanitizeCsvExportField(String value) {
-        if (value == null || value.isEmpty()) {
-            return value == null ? "" : value;
-        }
-        char first = value.charAt(0);
-        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '|' || first == '%') {
-            return "'" + value;
-        }
-        return value;
     }
 
     private String buildWorkloadStatus(int hours) {
@@ -921,7 +860,7 @@ public class AdminDashboard extends BaseDashboard {
         return copies;
     }
 
-    private static class WorkloadRenderer extends DefaultTableCellRenderer {
+    private static class WorkloadRenderer extends BaseDashboard.WrappingTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                 int row, int column) {

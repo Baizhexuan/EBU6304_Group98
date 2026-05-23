@@ -5,9 +5,7 @@
  * instantiated. Conversions return a caller-supplied fallback on failure
  * rather than throwing exceptions, keeping UI code concise.</p>
  */
-public final class ValidationUtils {
-    private ValidationUtils() {
-    }
+public class ValidationUtils {
 
     /**
      * Returns {@code true} when the string is {@code null} or contains only whitespace.
@@ -36,8 +34,7 @@ public final class ValidationUtils {
      * @return {@code true} if the string looks like a valid e-mail address
      */
     public static boolean isEmail(String value) {
-        // Requires at least one dot in the domain part (e.g. rejects "a@b", accepts "a@b.com")
-        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
+        return value != null && value.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
     }
 
     /**
