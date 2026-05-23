@@ -296,6 +296,11 @@ cp config/ai.properties.example config/ai.properties
 
 然后在 `config/ai.properties` 中填写自己的 key。
 
+api申请URl：
+
+```bash
+https://bailian.console.aliyun.com/cn-beijing?tab=model#/api-key
+```
 也可以使用环境变量：
 
 ```bash
