@@ -6,9 +6,11 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -768,7 +770,7 @@ public class AdminDashboard extends BaseDashboard {
         refreshWorkload();
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String path = "data/admin_workload_report_" + timestamp + ".csv";
-        try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(path), StandardCharsets.UTF_8))) {
             writer.println(safeCsvLine("exportedAt", timestamp));
             writer.println(safeCsvLine("provider", ScoringService.getActiveProvider().getProviderName()));
             writer.println(safeCsvLine("providerReady", String.valueOf(ScoringService.getActiveProvider().isReady())));
