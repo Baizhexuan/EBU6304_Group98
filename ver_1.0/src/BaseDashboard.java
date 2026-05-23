@@ -97,7 +97,7 @@ public abstract class BaseDashboard extends JFrame {
         JMenuItem aboutItem = new JMenuItem("About This Build");
         aboutItem.addActionListener(e -> JOptionPane.showMessageDialog(this,
                 I18n.t(DemoMetadata.buildAboutMessage()),
-                I18n.t("About This Demo"),
+                I18n.t(DemoMetadata.AI_MATCH_HELP_TITLE),
                 JOptionPane.INFORMATION_MESSAGE));
         helpMenu.add(aboutItem);
         bar.add(helpMenu);

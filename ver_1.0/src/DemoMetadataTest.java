@@ -21,8 +21,12 @@ public class DemoMetadataTest {
                 "About message should include the application title.");
         TestSupport.assertContains(about, DemoMetadata.VERSION_LABEL,
                 "About message should include the current version label.");
-        TestSupport.assertContains(about, "Scoring provider:",
-                "About message should include scoring-provider readiness.");
+        TestSupport.assertContains(about, "AI Match compares",
+                "Help message should explain how AI Match works.");
+        TestSupport.assertContains(about, "missing skills",
+                "Help message should mention missing skill explanations.");
+        TestSupport.assertContains(about, "Current AI Match status:",
+                "Help message should include AI Match readiness.");
 
         System.out.println("DemoMetadataTest passed.");
     }

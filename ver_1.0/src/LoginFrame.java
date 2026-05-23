@@ -151,7 +151,7 @@ public class LoginFrame extends JFrame {
         registerButton.addActionListener(e -> new RegisterFrame(this));
         aboutButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
                 I18n.t(DemoMetadata.buildAboutMessage()),
-                I18n.t("About This Demo"),
+                I18n.t(DemoMetadata.AI_MATCH_HELP_TITLE),
                 JOptionPane.INFORMATION_MESSAGE));
         passwordField.addActionListener(e -> attemptLogin());
         return panel;
