@@ -22,6 +22,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -531,53 +532,72 @@ public class TADashboard extends BaseDashboard {
 
     private void refreshJobs() {
         beginRefreshFeedback(jobInsightLabel, jobsModel, jobAiRankingArea, "Refreshing open jobs and match ranking...");
-        try {
-            TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
-            String titleFilter = getLower(jobTitleFilterField);
-            String moduleFilter = getLower(jobModuleFilterField);
-            String skillsFilter = getLower(jobSkillsFilterField);
-            String locationFilter = getLower(jobLocationFilterField);
-            int visibleJobs = 0;
-            int bestScore = -1;
-            String bestJob = "";
-            for (Job job : FileStorage.loadJobs()) {
-                if (!job.isOpen()) {
-                    continue;
+        final TAProfile profile = FileStorage.findProfileByUserId(currentUser.id);
+        final String titleFilter = getLower(jobTitleFilterField);
+        final String moduleFilter = getLower(jobModuleFilterField);
+        final String skillsFilter = getLower(jobSkillsFilterField);
+        final String locationFilter = getLower(jobLocationFilterField);
+        new SwingWorker<java.util.List<Object[]>, Void>() {
+            @Override
+            protected java.util.List<Object[]> doInBackground() {
+                java.util.List<Object[]> rows = new java.util.ArrayList<>();
+                for (Job job : FileStorage.loadJobs()) {
+                    if (!job.isOpen()) {
+                        continue;
+                    }
+                    if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
+                        continue;
+                    }
+                    MatchResult match = ScoringService.evaluate(profile, job);
+                    rows.add(new Object[] {
+                            job.id,
+                            job.title,
+                            job.module,
+                            job.requiredSkills,
+                            job.maxHours,
+                            job.location,
+                            match.score + "%",
+                            extractMissingSkills(match.summary),
+                            match.summary
+                    });
                 }
-                if (!matchesJobFilters(job, titleFilter, moduleFilter, skillsFilter, locationFilter)) {
-                    continue;
-                }
-                MatchResult match = ScoringService.evaluate(profile, job);
-                jobsModel.addRow(new Object[] {
-                        job.id,
-                        job.title,
-                        job.module,
-                        job.requiredSkills,
-                        job.maxHours,
-                        job.location,
-                        match.score + "%",
-                        extractMissingSkills(match.summary),
-                        match.summary
-                });
-                visibleJobs++;
-                if (match.score > bestScore) {
-                    bestScore = match.score;
-                    bestJob = job.title + " (" + job.module + ")";
+                return rows;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    java.util.List<Object[]> rows = get();
+                    int bestScore = -1;
+                    String bestJob = "";
+                    for (Object[] row : rows) {
+                        jobsModel.addRow(row);
+                        int score = ValidationUtils.parseInt(
+                                row[6].toString().replace("%", ""), -1);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestJob = row[1] + " (" + row[2] + ")";
+                        }
+                    }
+                    if (rows.isEmpty()) {
+                        jobInsightLabel.setText("No open jobs match the current filters.");
+                    } else {
+                        jobInsightLabel.setText("Visible jobs: " + rows.size()
+                                + " | Best current match: " + bestJob + " at "
+                                + Math.max(bestScore, 0) + "% via "
+                                + ScoringService.getActiveProvider().getProviderName());
+                    }
+                    if (jobAiRankingArea != null) {
+                        jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
+                        jobAiRankingArea.setCaretPosition(0);
+                    }
+                } catch (Exception ex) {
+                    jobInsightLabel.setText("Refresh failed: " + ex.getMessage());
+                } finally {
+                    endRefreshFeedback();
                 }
             }
-            if (visibleJobs == 0) {
-                jobInsightLabel.setText("No open jobs match the current filters.");
-            } else {
-                jobInsightLabel.setText("Visible jobs: " + visibleJobs + " | Best current match: " + bestJob + " at "
-                        + Math.max(bestScore, 0) + "% via " + ScoringService.getActiveProvider().getProviderName());
-            }
-            if (jobAiRankingArea != null) {
-                jobAiRankingArea.setText(BoardAIInsightsService.buildTaMatchRanking(currentUser, 5));
-                jobAiRankingArea.setCaretPosition(0);
-            }
-        } finally {
-            endRefreshFeedback();
-        }
+        }.execute();
     }
 
     private void openTaAiAssistantDialog() {

@@ -346,7 +346,8 @@ public class AdminDashboard extends BaseDashboard {
                 new String[] {"Job ID", "MO", "Title", "Module", "Skills", "Hours", "Location", "Status"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column >= 1;
+                // column 0 = Job ID (read-only), column 1 = MO ownership (read-only to prevent ownership hijack)
+                return column >= 2;
             }
         };
         jobsTable = new JTable(jobsModel);
@@ -756,12 +757,12 @@ public class AdminDashboard extends BaseDashboard {
             writer.println("taUsername,fullName,email,selectedJobs,currentHours,status");
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
                 writer.println(csvLine(
-                        String.valueOf(workloadModel.getValueAt(row, 0)),
-                        String.valueOf(workloadModel.getValueAt(row, 1)),
-                        String.valueOf(workloadModel.getValueAt(row, 2)),
-                        String.valueOf(workloadModel.getValueAt(row, 3)),
-                        String.valueOf(workloadModel.getValueAt(row, 4)),
-                        String.valueOf(workloadModel.getValueAt(row, 5))));
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 0))),
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 1))),
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 2))),
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 3))),
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 4))),
+                        sanitizeCsvExportField(String.valueOf(workloadModel.getValueAt(row, 5)))));
             }
             JOptionPane.showMessageDialog(this, "Report exported to " + path, "Export Complete",
                     JOptionPane.INFORMATION_MESSAGE);
@@ -836,6 +837,25 @@ public class AdminDashboard extends BaseDashboard {
             return "\"" + escaped + "\"";
         }
         return escaped;
+    }
+
+    /**
+     * Sanitises a value before writing it to a CSV export file.
+     * Fields that start with formula-injection trigger characters (=, +, -, @, |, %)
+     * are prefixed with a single-quote so spreadsheet applications treat them as text.
+     *
+     * @param value raw cell value (may be null)
+     * @return sanitised string safe for CSV export
+     */
+    private String sanitizeCsvExportField(String value) {
+        if (value == null || value.isEmpty()) {
+            return value == null ? "" : value;
+        }
+        char first = value.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '|' || first == '%') {
+            return "'" + value;
+        }
+        return value;
     }
 
     private String buildWorkloadStatus(int hours) {
