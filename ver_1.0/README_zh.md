@@ -356,6 +356,30 @@ config/ai.properties
 data/admin_workload_report*.csv
 ```
 
+## 最新功能截图位
+
+下面这些图片是 `ver_1.12` 新功能的截图占位图。GitHub 上会正常显示这些占位图。等你截取真实 GUI 后，可以用真实截图替换同名文件。
+
+### 中英文界面切换
+
+![中英文界面切换占位图](screenshots/feature_bilingual_ui.svg)
+
+### 铃铛通知和 TA-MO 消息中心
+
+![铃铛消息中心占位图](screenshots/feature_bell_centre_messages.svg)
+
+### MO 同意对话
+
+![MO 同意对话占位图](screenshots/feature_mo_conversation_approval.svg)
+
+### 完成工作评分和信誉分
+
+![完成工作评分和信誉分占位图](screenshots/feature_reputation_rating.svg)
+
+### 实时 Matching 和 Ranking 一致性
+
+![实时 Matching 和 Ranking 一致性占位图](screenshots/feature_live_match_consistency.svg)
+
 ## 主要源码文件说明
 
 - `Main.java`：程序入口
@@ -389,4 +413,3 @@ data/admin_workload_report*.csv
 - `ver_1.10`：qwen-plus 配置、测试脚本、JavaDoc 和交付文档
 - `ver_1.11`：搜索、刷新和 dashboard 响应体验优化
 - `ver_1.12`：中英文 UI、铃铛消息中心、MO 同意对话、三条消息限制、完成工作评分、reputation penalty、rejected 后重新申请、表格换行和实时 matching/ranking 一致性
-

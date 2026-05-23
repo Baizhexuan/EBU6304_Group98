@@ -283,6 +283,20 @@ The last test covers the newer reputation penalty and message-consent behaviour.
 
 ![Admin recommendations](screenshots/admin_recommendations.png)
 
+### Latest Feature Screenshot Slots
+
+The following placeholder images mark the new `ver_1.12` features. Replace them with real screenshots using the same filenames after capturing the final GUI.
+
+![Bilingual UI switch placeholder](screenshots/feature_bilingual_ui.svg)
+
+![Bell centre messages placeholder](screenshots/feature_bell_centre_messages.svg)
+
+![MO conversation approval placeholder](screenshots/feature_mo_conversation_approval.svg)
+
+![Post-work rating and reputation placeholder](screenshots/feature_reputation_rating.svg)
+
+![Live matching and ranking consistency placeholder](screenshots/feature_live_match_consistency.svg)
+
 ## Version Notes
 
 - `ver_1.0`: first complete integrated demo build
