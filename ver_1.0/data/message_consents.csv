@@ -1,2 +1,4 @@
 id,userAId,userBId,jobId,approved,requestedBy,updatedAt
 1,2,5,3,true,2,2026-05-23 16:57
+2,2,4,2,false,2,2026-05-23 21:25
+3,3,5,3,true,3,2026-05-23 21:27

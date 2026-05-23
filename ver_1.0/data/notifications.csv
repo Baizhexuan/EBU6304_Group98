@@ -15,3 +15,15 @@ id,userId,title,message,status,createdAt,actionHint
 14,2,New message from Prof Zhao,Prof Zhao sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 16:57,Open the bell centre to read the message and reply.
 15,3,Job closed: Python Tutor,Python Tutor (EBU5402) has been closed by Prof Zhao. Check My Applications for the current status before planning further applications.,UNREAD,2026-05-23 17:04,Open My Applications and review other open jobs if needed.
 16,2,Work evaluation for Java Lab Assistant,MO Dr Chen rated your completed work for Java Lab Assistant as 5/5.,UNREAD,2026-05-23 17:23,Open My Applications or the bell centre to review the update.
+17,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:14,Open the bell centre to read the message and reply.
+18,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:15,Open the bell centre to read the message and reply.
+19,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:24,Open the bell centre to read the message and reply.
+20,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:24,Open the bell centre to read the message and reply.
+21,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:24,Open the bell centre to read the message and reply.
+22,5,New message from Li Ming,Li Ming sent you a message about Python Tutor (EBU5402).,UNREAD,2026-05-23 21:24,Open the bell centre to read the message and reply.
+23,4,New message from Li Ming,Li Ming sent you a message about Assessment Support TA (EBU6201).,UNREAD,2026-05-23 21:25,Open the bell centre to read the message and reply.
+24,4,New message from Li Ming,Li Ming sent you a message about Assessment Support TA (EBU6201).,UNREAD,2026-05-23 21:26,Open the bell centre to read the message and reply.
+25,4,New message from Li Ming,Li Ming sent you a message about Assessment Support TA (EBU6201).,UNREAD,2026-05-23 21:26,Open the bell centre to read the message and reply.
+26,2,Application update for Python Tutor,You have been selected for Python Tutor (EBU5402) by Prof Zhao.,UNREAD,2026-05-23 21:30,Open My Applications to review the latest status and note.
+27,2,Work evaluation for Python Tutor,MO Prof Zhao rated your completed work for Python Tutor as 5/5.,UNREAD,2026-05-23 21:32,Open My Applications or the bell centre to review the update.
+28,2,Work evaluation for Java Lab Assistant,"Dr Chen rated your completed work for Java Lab Assistant as 1/5. Because the original match score was high but the completion rating was low, your reputation score is now 85/100. This is a review signal for future matching, not an automatic misconduct decision.",UNREAD,2026-05-23 22:54,Open My Applications or the bell centre to review the update.
