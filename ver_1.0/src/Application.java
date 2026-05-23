@@ -8,7 +8,7 @@
  *   <li>{@code REJECTED} — MO rejected this applicant</li>
  *   <li>{@code WITHDRAWN} — TA cancelled the application</li>
  * </ol>
- * The {@code matchScore} and {@code matchSummary} are populated by the
+ * <p>The {@code matchScore} and {@code matchSummary} are populated by the
  * scoring engine when the application is created or refreshed.</p>
  */
 public class Application {

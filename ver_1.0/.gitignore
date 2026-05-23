@@ -1,5 +1,4 @@
 bin/
-javadocs/
 .DS_Store
 src/.DS_Store
 src/models/.DS_Store
@@ -7,3 +6,4 @@ config/ai.properties
 ai.properties
 data/notifications.csv
 data/admin_workload_report*.csv
+data/cv_uploads/

@@ -18,6 +18,7 @@ changing the product workflow.
 - AI provider changes should preserve the offline rule-based fallback path.
 - Notification changes should preserve de-duplication for unread profile reminders.
 - Authentication changes should keep stored passwords hashed.
+- Uploaded CV copies are runtime data under `data/cv_uploads/` and should not be committed.
 
 ## Verification Routine
 

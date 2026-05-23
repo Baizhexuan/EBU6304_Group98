@@ -21,6 +21,7 @@ Use this checklist after running the automated tests and before a final demo or 
 ## TA Workflow
 
 - Open the TA profile page and confirm seeded profile data loads.
+- Choose a CV file and confirm it is copied into `data/cv_uploads/`.
 - Save a complete profile and confirm no reminder remains unread.
 - Attempt to apply with an incomplete profile and confirm the workflow blocks it.
 - Browse open jobs and confirm closed jobs are excluded.
@@ -45,7 +46,8 @@ Use this checklist after running the automated tests and before a final demo or 
 
 ## Data Files
 
-- Review `data/users.csv` for hashed passwords rather than plain text.
+- Review newly registered rows in `data/users.csv` for hashed passwords rather than plain text.
+- Review `data/cv_uploads/` after CV selection to confirm local upload storage.
 - Review `data/jobs.csv` to confirm new jobs are saved as CSV rows.
 - Review `data/applications.csv` to confirm application status transitions persist.
 - Review `data/notifications.csv` to confirm read/unread state persists.

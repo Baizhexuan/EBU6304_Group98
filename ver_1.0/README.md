@@ -22,7 +22,7 @@ The wider coursework still depends on the final report and Agile evidence, but t
 ### TA Features
 
 - Register or log in as a TA.
-- Complete and edit a TA profile, including skills, GPA, availability, personal statement, and CV path.
+- Complete and edit a TA profile, including skills, GPA, availability, personal statement, and a locally uploaded CV copy.
 - Browse open jobs with field-based search.
 - View AI-assisted match scores and ranking explanations.
 - Apply for selected jobs.
@@ -219,6 +219,7 @@ All persistent data is stored in CSV files under `data/`:
 - `work_evaluations.csv`
 - `ta_reputations.csv`
 - exported `admin_workload_report_*.csv`
+- local CV copies under `data/cv_uploads/`
 
 No database or external persistence framework is used.
 
@@ -239,7 +240,7 @@ No database or external persistence framework is used.
 - `test.sh`: lightweight regression-test script
 - `javadoc.sh`: JavaDoc generation script
 
-Generated files such as `bin/`, `*.class`, local AI keys, JavaDocs, and exported workload reports should not be committed.
+Generated runtime files such as `bin/`, `*.class`, local AI keys, uploaded CV copies, and exported workload reports should not be committed. JavaDocs are included in the final software package as code documentation evidence.
 
 ## Regression Tests
 

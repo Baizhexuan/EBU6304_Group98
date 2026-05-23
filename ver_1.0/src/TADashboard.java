@@ -5,6 +5,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -441,7 +444,20 @@ public class TADashboard extends BaseDashboard {
     private void chooseCv() {
         JFileChooser chooser = new JFileChooser();
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            cvPathField.setText(chooser.getSelectedFile().getAbsolutePath());
+            try {
+                Path selected = chooser.getSelectedFile().toPath();
+                Path uploadDir = new java.io.File(FileStorage.getCvUploadDirectory()).toPath();
+                Files.createDirectories(uploadDir);
+                String safeName = selected.getFileName().toString().replaceAll("[^A-Za-z0-9._-]", "_");
+                Path target = uploadDir.resolve(currentUser.username + "_" + System.currentTimeMillis() + "_" + safeName);
+                Files.copy(selected, target, StandardCopyOption.REPLACE_EXISTING);
+                cvPathField.setText(target.toString());
+                JOptionPane.showMessageDialog(this, I18n.t("CV uploaded to local demo storage."), I18n.t("CV Uploaded"),
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, I18n.t("Unable to upload CV:") + " " + ex.getMessage(), I18n.t("Upload Error"),
+                        JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 

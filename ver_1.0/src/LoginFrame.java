@@ -269,7 +269,7 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        if (!matched.password.equals(password)) {
+        if (!FileStorage.passwordMatches(password, matched.password)) {
             JOptionPane.showMessageDialog(this, I18n.t("Password is incorrect."), I18n.t("Login Failed"),
                     JOptionPane.ERROR_MESSAGE);
             passwordField.setText("");

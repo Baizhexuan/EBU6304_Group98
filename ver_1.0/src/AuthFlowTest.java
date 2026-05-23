@@ -30,11 +30,14 @@ public class AuthFlowTest {
                         "Registration should reject five-character passwords.");
 
                 List<User> users = FileStorage.loadUsers();
-                users.add(new User(FileStorage.nextUserId(), "new_ta", "safePass1", "TA", "New TA"));
+                users.add(new User(FileStorage.nextUserId(), "new_ta", FileStorage.hashPassword("safePass1"), "TA", "New TA"));
                 FileStorage.saveUsers(users);
 
                 TestSupport.assertTrue(authenticate("new_ta", "safePass1") != null,
                         "Newly registered account should authenticate.");
+                User newUser = FileStorage.findUserByUsername("new_ta");
+                TestSupport.assertTrue(newUser != null && !newUser.password.equals("safePass1"),
+                        "Newly registered passwords should be stored as hashes.");
                 TestSupport.assertTrue(FileStorage.findUserByUsername("NEW_TA") != null,
                         "Saved usernames should still be found case-insensitively.");
 
@@ -51,7 +54,7 @@ public class AuthFlowTest {
         if (user == null) {
             return null;
         }
-        return password.equals(user.password) ? user : null;
+        return FileStorage.passwordMatches(password, user.password) ? user : null;
     }
 
     private static boolean canRegister(String username, String password, String confirmPassword, String displayName) {

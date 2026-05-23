@@ -6,8 +6,8 @@ This checklist maps the current `ver_1.0` demo to the final coursework expectati
 | --- | --- | --- | --- | --- |
 | Stand-alone Java application | `src/Main.java`, Swing frames and dashboards | Run `./run.sh` and navigate login -> TA/MO/Admin flows | `SystemSmokeTest`, manual demo | No web deployment variant is included |
 | Text-file persistence only | `src/FileStorage.java`, `data/*.csv` | Show data files updating after profile save, application, or notification events | `CsvPersistenceTest` | CSV is intentionally simple and not a full enterprise persistence layer |
-| TA can create applicant profile | `src/TADashboard.java`, `src/TAProfile.java` | Log in as TA, open `My Profile`, save a complete profile | `WorkflowRulesTest`, manual TA flow | No file upload storage beyond local CV path reference |
-| TA can record CV details | `src/TADashboard.java` with `JFileChooser` | Use the CV browse button and save the chosen path | Manual TA flow | CV contents are not parsed or validated |
+| TA can create applicant profile | `src/TADashboard.java`, `src/TAProfile.java` | Log in as TA, open `My Profile`, save a complete profile | `WorkflowRulesTest`, manual TA flow | CV contents are stored as local demo files rather than uploaded to a remote server |
+| TA can upload CV | `src/TADashboard.java` with `JFileChooser`, `data/cv_uploads/` runtime folder | Use the CV browse button and confirm the selected file is copied into local demo storage | Manual TA flow | CV contents are not parsed or validated |
 | TA can browse available jobs | `src/TADashboard.java`, `src/FilterToolbar.java` | Open `Browse Jobs`, use both toolbar and aligned filters | `WorkflowRulesTest`, manual TA flow | Search is UI-driven, not full-text ranked |
 | TA can apply for jobs | `src/TADashboard.java`, `src/Application.java` | Apply to an open job and verify the new row in `My Applications` | `WorkflowRulesTest` | No multi-step approval workflow beyond status updates |
 | TA can check application status | `src/TADashboard.java` | Open `My Applications` and show status, note, and withdraw action | Manual TA flow | No separate notification center outside the app |

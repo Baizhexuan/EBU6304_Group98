@@ -578,6 +578,10 @@ public final class I18n {
         put("Visible jobs:", "可见岗位:");
         put("Best current match:", "当前最佳匹配:");
         put("Please select a job first.", "请先选择一个岗位。");
+        put("CV uploaded to local demo storage.", "CV 已上传到本地演示存储。");
+        put("CV Uploaded", "CV 上传完成");
+        put("Unable to upload CV:", "无法上传 CV:");
+        put("Upload Error", "上传错误");
         put("Profile Required", "需要完善资料");
         put("You have already applied for this job.", "你已经申请过该岗位。");
         put("Duplicate Application", "重复申请");

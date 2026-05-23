@@ -4,6 +4,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +23,7 @@ import java.util.List;
  */
 public class FileStorage {
     private static final String DATA_DIR = "data" + File.separator;
+    private static final String CV_UPLOAD_DIR = DATA_DIR + "cv_uploads" + File.separator;
     private static final int OVERLOAD_LIMIT = 20;
 
     /**
@@ -27,6 +31,7 @@ public class FileStorage {
      */
     public static void initialise() {
         new File(DATA_DIR).mkdirs();
+        new File(CV_UPLOAD_DIR).mkdirs();
         ensureUsers();
         ensureProfiles();
         ensureJobs();
@@ -43,6 +48,53 @@ public class FileStorage {
      */
     public static int getOverloadLimit() {
         return OVERLOAD_LIMIT;
+    }
+
+    /**
+     * Returns the local folder used to store CV files selected through the TA profile form.
+     *
+     * @return CV upload directory path
+     */
+    public static String getCvUploadDirectory() {
+        new File(CV_UPLOAD_DIR).mkdirs();
+        return CV_UPLOAD_DIR;
+    }
+
+    /**
+     * Creates a deterministic SHA-256 password hash for registration and login checks.
+     *
+     * @param plainText password entered by the user
+     * @return 64-character lowercase hex hash, or an empty string when input is blank
+     */
+    public static String hashPassword(String plainText) {
+        if (ValidationUtils.isBlank(plainText)) {
+            return "";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(plainText.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+            for (byte value : bytes) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available in this Java runtime.", e);
+        }
+    }
+
+    /**
+     * Checks a login password against either a new hashed value or legacy plain demo data.
+     *
+     * @param plainText      password entered by the user
+     * @param storedPassword password value loaded from CSV
+     * @return {@code true} when the password matches
+     */
+    public static boolean passwordMatches(String plainText, String storedPassword) {
+        if (storedPassword == null) {
+            return false;
+        }
+        return storedPassword.equals(plainText) || storedPassword.equals(hashPassword(plainText));
     }
 
     private static void ensureUsers() {

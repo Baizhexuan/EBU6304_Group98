@@ -28,6 +28,13 @@ public class ValidationUtilsTest {
                 "Five-character passwords should be rejected during registration.");
         TestSupport.assertTrue(ValidationUtils.isValidRegistrationPassword("abcdef"),
                 "Six-character passwords should be accepted during registration.");
+        String hashedPassword = FileStorage.hashPassword("abcdef");
+        TestSupport.assertTrue(hashedPassword.length() == 64,
+                "SHA-256 password hashes should contain 64 hex characters.");
+        TestSupport.assertTrue(FileStorage.passwordMatches("abcdef", hashedPassword),
+                "Password matcher should accept hashed registration passwords.");
+        TestSupport.assertTrue(FileStorage.passwordMatches("ta123", "ta123"),
+                "Password matcher should keep legacy demo accounts usable.");
 
         TestSupport.assertIntEquals(42, ValidationUtils.parseInt("42", -1),
                 "parseInt should return the parsed value for valid integers.");
