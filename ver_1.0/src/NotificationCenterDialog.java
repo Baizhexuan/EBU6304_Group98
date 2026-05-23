@@ -43,6 +43,8 @@ public class NotificationCenterDialog extends JDialog {
     private final Runnable afterChange;
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentCards = new JPanel(cardLayout);
+    private JButton notificationsNavButton;
+    private JButton messagesNavButton;
 
     private DefaultListModel<Notification> notificationListModel;
     private JList<Notification> notificationList;
@@ -81,6 +83,7 @@ public class NotificationCenterDialog extends JDialog {
         add(statusLabel, BorderLayout.SOUTH);
 
         refreshAll();
+        chooseInitialView();
         applyCurrentLanguage();
     }
 
@@ -132,22 +135,13 @@ public class NotificationCenterDialog extends JDialog {
         rail.setBackground(PAGE_BG);
         rail.setPreferredSize(new Dimension(150, 0));
 
-        JButton notificationsButton = new JButton("Notifications");
-        JButton messagesButton = new JButton("Messages");
-        BaseDashboard.applyButtonStyle(notificationsButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-        BaseDashboard.applyButtonStyle(messagesButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
-        notificationsButton.addActionListener(e -> {
-            cardLayout.show(contentCards, "notifications");
-            BaseDashboard.applyButtonStyle(notificationsButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-            BaseDashboard.applyButtonStyle(messagesButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
-        });
-        messagesButton.addActionListener(e -> {
-            cardLayout.show(contentCards, "messages");
-            BaseDashboard.applyButtonStyle(messagesButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
-            BaseDashboard.applyButtonStyle(notificationsButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
-        });
-        rail.add(notificationsButton);
-        rail.add(messagesButton);
+        notificationsNavButton = new JButton("Notifications");
+        messagesNavButton = new JButton("Messages");
+        notificationsNavButton.addActionListener(e -> showNotificationsView());
+        messagesNavButton.addActionListener(e -> showMessagesView());
+        showNotificationsView();
+        rail.add(notificationsNavButton);
+        rail.add(messagesNavButton);
 
         contentCards.setBackground(PAGE_BG);
         contentCards.add(buildNotificationsView(), "notifications");
@@ -156,6 +150,35 @@ public class NotificationCenterDialog extends JDialog {
         root.add(rail, BorderLayout.WEST);
         root.add(contentCards, BorderLayout.CENTER);
         return root;
+    }
+
+    private void showNotificationsView() {
+        cardLayout.show(contentCards, "notifications");
+        BaseDashboard.applyButtonStyle(notificationsNavButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
+        BaseDashboard.applyButtonStyle(messagesNavButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
+        if (statusLabel != null && notificationListModel != null && notificationListModel.isEmpty()) {
+            statusLabel.setText(I18n.t("No notifications are available. Open Messages to view TA-MO conversations."));
+        }
+    }
+
+    private void showMessagesView() {
+        cardLayout.show(contentCards, "messages");
+        BaseDashboard.applyButtonStyle(messagesNavButton, BaseDashboard.ACCENT_COLOR, Color.WHITE);
+        BaseDashboard.applyButtonStyle(notificationsNavButton, BaseDashboard.SECONDARY_SURFACE, BaseDashboard.ACCENT_COLOR);
+        if (statusLabel != null && contactListModel != null && contactListModel.isEmpty()) {
+            statusLabel.setText(I18n.t("No TA-MO conversations are available for this account yet."));
+        }
+    }
+
+    private void chooseInitialView() {
+        boolean hasNotifications = notificationListModel != null && !notificationListModel.isEmpty();
+        boolean hasContacts = contactListModel != null && !contactListModel.isEmpty();
+        if (!hasNotifications && hasContacts) {
+            showMessagesView();
+            statusLabel.setText(I18n.t("No notifications are available, so Messages is shown first."));
+        } else {
+            showNotificationsView();
+        }
     }
 
     private JPanel buildNotificationsView() {
@@ -428,7 +451,40 @@ public class NotificationCenterDialog extends JDialog {
                 }
             }
         }
+        if (contactListModel.isEmpty()) {
+            addDemoFallbackContacts(seen, jobs);
+        }
         restoreContactSelection(selected);
+    }
+
+    private void addDemoFallbackContacts(Set<String> seen, List<Job> jobs) {
+        if ("TA".equalsIgnoreCase(currentUser.role)) {
+            for (Job job : jobs) {
+                if (!job.isOpen()) {
+                    continue;
+                }
+                addContactIfNew(seen, FileStorage.findUserById(job.moId), job);
+            }
+            if (!contactListModel.isEmpty() && statusLabel != null) {
+                statusLabel.setText(I18n.t("No application-linked conversations were found, so open MO job contacts are shown for demo use."));
+            }
+            return;
+        }
+        if ("MO".equalsIgnoreCase(currentUser.role)) {
+            for (Job job : jobs) {
+                if (job.moId != currentUser.id) {
+                    continue;
+                }
+                for (User user : FileStorage.loadUsers()) {
+                    if ("TA".equalsIgnoreCase(user.role)) {
+                        addContactIfNew(seen, user, job);
+                    }
+                }
+            }
+            if (!contactListModel.isEmpty() && statusLabel != null) {
+                statusLabel.setText(I18n.t("No applicant-linked conversations were found, so TA contacts are shown for demo use."));
+            }
+        }
     }
 
     private void restoreContactSelection(ContactItem previous) {
@@ -491,6 +547,9 @@ public class NotificationCenterDialog extends JDialog {
             approveButton.setEnabled(false);
             approveButton.setVisible("MO".equalsIgnoreCase(currentUser.role));
             sendButton.setEnabled(false);
+            if (contactListModel == null || contactListModel.isEmpty()) {
+                statusLabel.setText(I18n.t("No TA-MO conversations are available for this account yet."));
+            }
             addEmptyConversation();
             refreshChatPanel();
             return;

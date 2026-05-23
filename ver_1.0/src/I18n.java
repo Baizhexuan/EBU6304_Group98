@@ -489,6 +489,16 @@ public final class I18n {
         put("Conversation approved. The three-message limit is now lifted for this contact.", "对话已同意，此联系人不再受三条消息限制。");
         put("Remaining pre-approval messages", "同意前剩余可发送消息数");
         put("Conversation approved", "对话已同意");
+        put("No notifications are available. Open Messages to view TA-MO conversations.",
+                "当前没有通知。请打开 Messages / 消息 查看 TA-MO 对话。");
+        put("No notifications are available, so Messages is shown first.",
+                "当前没有通知，因此已优先显示 Messages / 消息 页面。");
+        put("No TA-MO conversations are available for this account yet.",
+                "当前账号暂时没有可用的 TA-MO 对话。");
+        put("No application-linked conversations were found, so open MO job contacts are shown for demo use.",
+                "没有找到已关联申请的对话，因此系统显示开放岗位的 MO 联系人用于演示。");
+        put("No applicant-linked conversations were found, so TA contacts are shown for demo use.",
+                "没有找到已关联申请的对话，因此系统显示 TA 联系人用于演示。");
         put("Pre-approval messages left: ", "同意前剩余可发送消息数: ");
         put("TA is waiting for MO approval. Pre-approval messages left: ", "TA 正在等待 MO 同意对话。同意前剩余可发送消息数: ");
         put("Waiting for MO approval. Pre-approval messages left: ", "等待 MO 同意对话。同意前剩余可发送消息数: ");
@@ -600,16 +610,10 @@ public final class I18n {
         put("Thinking with the current recruitment context...", "正在结合当前招聘上下文思考...");
         put("AI request failed:", "AI 请求失败:");
         put("Teaching Assistant Recruitment Demo", "助教招聘演示系统");
-        put("AI Match Guide", "AI Match 使用说明");
-        put("AI Match compares a TA profile with each open job by reading the TA skills and the job's required skills.",
-                "AI Match 会读取 TA 个人资料中的技能和岗位要求技能，并比较 TA 与每个开放岗位的匹配程度。");
-        put("Use the match score to see overall fit, then read the explanation to check matched skills and missing skills.",
-                "先查看匹配分了解整体适配度，再阅读解释中的已匹配技能和缺失技能。");
-        put("TA users can review the ranking before applying. MO users can compare applicants for a job. Admin users can inspect workload and replacement recommendations.",
-                "TA 可在申请前查看岗位推荐排序；MO 可比较某个岗位下的申请者；Admin 可查看工作量和替补推荐。");
-        put("If no external AI key is configured, the system uses the local explainable rule-based scorer, so the matching feature still works offline.",
-                "如果未配置外部 AI key，系统会使用本地可解释的规则评分器，因此离线时匹配功能仍可使用。");
-        put("Current AI Match status:", "当前 AI Match 状态:");
+        put("Current focus: faster page refresh, cleaner search interactions, board-level AI matching support, and smoother final-demo responsiveness.",
+                "当前重点: 更快的页面刷新、更清晰的搜索交互、管理层 AI 匹配支持，以及更流畅的最终演示响应。");
+        put("Planned next steps: package the final report, capture polished screenshots, and submit the final software bundle with documentation and tests.",
+                "后续计划: 打包最终报告、截取精修截图，并提交包含文档和测试的最终软件包。");
         put("Scoring provider:", "评分提供方:");
         put("Mode:", "模式:");
         put("Provider ready:", "提供方可用:");
