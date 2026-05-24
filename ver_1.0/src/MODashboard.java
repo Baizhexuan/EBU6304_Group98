@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Desktop;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
@@ -319,16 +320,19 @@ public class MODashboard extends BaseDashboard {
         JPanel buttonRow = buildActionRow();
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
+        JButton viewCvButton = new JButton("View CV PDF");
         JButton downloadCvButton = new JButton("Download CV PDF");
         JButton rateButton = new JButton("Rate Completed Work");
         JButton aiButton = new JButton("Ask AI About Applicants");
         styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);
         styleActionButton(rejectButton, WARNING_SURFACE, new Color(101, 73, 30));
+        styleActionButton(viewCvButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(downloadCvButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(rateButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         styleActionButton(aiButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         buttonRow.add(acceptButton);
         buttonRow.add(rejectButton);
+        buttonRow.add(viewCvButton);
         buttonRow.add(downloadCvButton);
         buttonRow.add(rateButton);
         buttonRow.add(aiButton);
@@ -337,6 +341,7 @@ public class MODashboard extends BaseDashboard {
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
+        viewCvButton.addActionListener(e -> viewSelectedApplicantCv());
         downloadCvButton.addActionListener(e -> downloadSelectedApplicantCv());
         rateButton.addActionListener(e -> rateSelectedCompletedWork());
         aiButton.addActionListener(e -> openMoAiAssistantDialog());
@@ -609,6 +614,58 @@ public class MODashboard extends BaseDashboard {
                 "Which applicant is the strongest fit for the selected job, and what risks should I review before deciding?",
                 BoardAIInsightsService.buildMoAiContext(currentUser, getSelectedJobId()));
         dialog.setVisible(true);
+    }
+
+    private void viewSelectedApplicantCv() {
+        int row = applicantsTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, I18n.t("Please select an applicant row first."),
+                    I18n.t("Info"), JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (!Desktop.isDesktopSupported()) {
+            JOptionPane.showMessageDialog(this,
+                    "Desktop PDF preview is not supported on this machine. Please use Download CV PDF instead.",
+                    I18n.t("Info"), JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int modelRow = applicantsTable.convertRowIndexToModel(row);
+        int appId = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)), 0);
+        Application application = findApplicationById(FileStorage.loadApplications(), appId);
+        if (application == null) {
+            JOptionPane.showMessageDialog(this, I18n.t("Application data is missing."),
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        TAProfile profile = FileStorage.findProfileByUserId(application.taId);
+        File cvFile = resolveApplicantOriginalCv(profile);
+        if (cvFile == null) {
+            JOptionPane.showMessageDialog(this,
+                    "No original applicant PDF was found in the stored CV path. Please use Download CV PDF instead.",
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            Desktop.getDesktop().open(cvFile);
+            applicantSummaryLabel.setText("Opened original CV PDF: " + cvFile.getName());
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to open CV PDF: " + ex.getMessage(),
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private File resolveApplicantOriginalCv(TAProfile profile) {
+        if (profile == null || ValidationUtils.isBlank(profile.cvPath)) {
+            return null;
+        }
+        File file = new File(profile.cvPath.trim());
+        if (file.isFile() && file.getName().toLowerCase().endsWith(".pdf")) {
+            return file;
+        }
+        return null;
     }
 
     private void downloadSelectedApplicantCv() {
