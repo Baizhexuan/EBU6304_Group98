@@ -17,6 +17,10 @@ public final class MessageService {
     private MessageService() {
     }
 
+    public static int getMaxMessagesWithoutConsent() {
+        return MAX_MESSAGES_WITHOUT_CONSENT;
+    }
+
     public static MessageSendResult sendMessage(User sender, int toUserId, int jobId, String body) {
         // Basic validation: empty messages are rejected before any CSV data is modified.
         if (sender == null || ValidationUtils.isBlank(body)) {

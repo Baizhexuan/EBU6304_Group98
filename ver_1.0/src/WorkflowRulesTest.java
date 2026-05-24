@@ -10,6 +10,11 @@ public class WorkflowRulesTest {
             public void run() {
                 FileStorage.initialise();
                 ScoringService.setActiveProvider(new RuleBasedSkillScoringProvider());
+                String rules = SystemRulesService.buildDetailedRules();
+                TestSupport.assertContains(rules, "Workload limit: " + FileStorage.getOverloadLimit() + "h",
+                        "Admin-visible rules should include the workload limit.");
+                TestSupport.assertContains(rules, "Reputation penalty trigger",
+                        "Admin-visible rules should explain the reputation penalty trigger.");
 
                 TAProfile existingProfile = FileStorage.findProfileByUserId(2);
                 TestSupport.assertTrue(existingProfile != null && existingProfile.isComplete(),

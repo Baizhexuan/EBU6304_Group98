@@ -116,6 +116,13 @@ public class FileStorage {
         return OVERLOAD_LIMIT;
     }
 
+    /**
+     * Returns the warning threshold used before a TA becomes formally overloaded.
+     */
+    public static int getNearLimitThreshold() {
+        return OVERLOAD_LIMIT - 2;
+    }
+
     private static void ensureUsers() {
         File file = new File(DATA_DIR + "users.csv");
         if (file.exists()) {

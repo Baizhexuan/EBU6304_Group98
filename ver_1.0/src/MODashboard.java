@@ -5,6 +5,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -316,14 +319,17 @@ public class MODashboard extends BaseDashboard {
         JPanel buttonRow = buildActionRow();
         JButton acceptButton = new JButton("Select Applicant");
         JButton rejectButton = new JButton("Reject Applicant");
+        JButton downloadCvButton = new JButton("Download CV PDF");
         JButton rateButton = new JButton("Rate Completed Work");
         JButton aiButton = new JButton("Ask AI About Applicants");
         styleActionButton(acceptButton, ACCENT_COLOR, Color.WHITE);
         styleActionButton(rejectButton, WARNING_SURFACE, new Color(101, 73, 30));
+        styleActionButton(downloadCvButton, SECONDARY_SURFACE, ACCENT_COLOR);
         styleActionButton(rateButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         styleActionButton(aiButton, SUCCESS_SURFACE, new Color(35, 82, 55));
         buttonRow.add(acceptButton);
         buttonRow.add(rejectButton);
+        buttonRow.add(downloadCvButton);
         buttonRow.add(rateButton);
         buttonRow.add(aiButton);
         actions.add(buttonRow, BorderLayout.EAST);
@@ -331,6 +337,7 @@ public class MODashboard extends BaseDashboard {
 
         acceptButton.addActionListener(e -> reviewSelectedApplicant("SELECTED"));
         rejectButton.addActionListener(e -> reviewSelectedApplicant("REJECTED"));
+        downloadCvButton.addActionListener(e -> downloadSelectedApplicantCv());
         rateButton.addActionListener(e -> rateSelectedCompletedWork());
         aiButton.addActionListener(e -> openMoAiAssistantDialog());
         installFieldListener(applicantNameFilterField, this::refreshApplicants);
@@ -602,6 +609,81 @@ public class MODashboard extends BaseDashboard {
                 "Which applicant is the strongest fit for the selected job, and what risks should I review before deciding?",
                 BoardAIInsightsService.buildMoAiContext(currentUser, getSelectedJobId()));
         dialog.setVisible(true);
+    }
+
+    private void downloadSelectedApplicantCv() {
+        int row = applicantsTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, I18n.t("Please select an applicant row first."),
+                    I18n.t("Info"), JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int modelRow = applicantsTable.convertRowIndexToModel(row);
+        int appId = ValidationUtils.parseInt(String.valueOf(applicantsModel.getValueAt(modelRow, 0)), 0);
+        Application application = findApplicationById(FileStorage.loadApplications(), appId);
+        if (application == null) {
+            JOptionPane.showMessageDialog(this, I18n.t("Application data is missing."),
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        TAProfile profile = FileStorage.findProfileByUserId(application.taId);
+        if (profile == null) {
+            JOptionPane.showMessageDialog(this, I18n.t("Applicant profile data is missing."),
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        User taUser = FileStorage.findUserById(application.taId);
+        Job job = FileStorage.findJobById(application.jobId);
+        MatchResult currentMatch = evaluateCurrentMatch(profile, job, application);
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(I18n.t("Download CV PDF"));
+        chooser.setSelectedFile(new File(buildCvPdfFileName(taUser, profile, job, application)));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File target = PdfExportService.ensurePdfExtension(chooser.getSelectedFile());
+        if (target.exists()) {
+            int choice = JOptionPane.showConfirmDialog(this,
+                    I18n.t("The selected PDF already exists. Replace it?"),
+                    I18n.t("Overwrite Existing PDF"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (choice != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        try {
+            boolean copiedOriginal = PdfExportService.exportApplicantCv(target, taUser, profile, application, job,
+                    currentMatch);
+            String prefix = copiedOriginal ? "Original CV PDF exported to " : "Generated CV summary PDF exported to ";
+            JOptionPane.showMessageDialog(this, I18n.t(prefix) + target.getAbsolutePath(),
+                    I18n.t("Export Complete"), JOptionPane.INFORMATION_MESSAGE);
+            applicantSummaryLabel.setText(I18n.t("CV PDF exported to ") + target.getName());
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, I18n.t("Failed to export CV PDF: ") + ex.getMessage(),
+                    I18n.t("CV Export Error"), JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String buildCvPdfFileName(User taUser, TAProfile profile, Job job, Application application) {
+        String name = profile != null && ValidationUtils.notBlank(profile.fullName)
+                ? profile.fullName
+                : (taUser == null ? "applicant" : taUser.getSafeDisplayName());
+        String jobLabel = job == null ? "job_" + application.jobId : job.title;
+        return "CV_" + safeFilePart(name) + "_" + safeFilePart(jobLabel) + ".pdf";
+    }
+
+    private String safeFilePart(String value) {
+        String cleaned = value == null ? "" : value.trim().replaceAll("[^A-Za-z0-9._-]+", "_")
+                .replaceAll("_+", "_");
+        cleaned = cleaned.replaceAll("^_+|_+$", "");
+        return cleaned.isEmpty() ? "unknown" : cleaned;
     }
 
     private int getSelectedJobId() {

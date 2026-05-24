@@ -10,7 +10,7 @@ public final class DemoMetadata {
     /** Full subtitle shown in the about dialog. */
     public static final String APP_SUBTITLE = "Teaching Assistant Recruitment Demo";
     /** Current version string shown in the menu bar. */
-    public static final String VERSION_LABEL = "ver_1.11";
+    public static final String VERSION_LABEL = "ver_1.15";
     /** User-facing title for the AI matching help dialog. */
     public static final String AI_MATCH_HELP_TITLE = "AI Match Guide";
     /** User-facing instruction text for the AI matching help dialog. */

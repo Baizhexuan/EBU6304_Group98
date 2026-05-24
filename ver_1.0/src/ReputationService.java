@@ -26,6 +26,26 @@ public final class ReputationService {
     private ReputationService() {
     }
 
+    public static int getDefaultScore() {
+        return DEFAULT_SCORE;
+    }
+
+    public static int getMinimumScore() {
+        return MIN_SCORE;
+    }
+
+    public static int getHighMatchThreshold() {
+        return HIGH_MATCH_THRESHOLD;
+    }
+
+    public static int getLowRatingThreshold() {
+        return LOW_RATING_THRESHOLD;
+    }
+
+    public static int getPenaltyPoints() {
+        return HIGH_MATCH_LOW_RATING_PENALTY;
+    }
+
     public static MatchResult applyReputationPenalty(TAProfile profile, MatchResult baseResult) {
         if (profile == null || baseResult == null) {
             return baseResult;

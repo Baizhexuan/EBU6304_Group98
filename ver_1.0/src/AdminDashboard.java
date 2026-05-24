@@ -45,6 +45,7 @@ import javax.swing.table.DefaultTableModel;
 public class AdminDashboard extends BaseDashboard {
     private static final String[] APPLICATION_STATUSES = {"PENDING", "SELECTED", "REJECTED", "WITHDRAWN"};
     private static final String[] JOB_STATUSES = {"OPEN", "CLOSED"};
+    private static final int SUMMARY_CARD_TEXT_WIDTH = 245;
 
     private JTable workloadTable;
     private DefaultTableModel workloadModel;
@@ -55,6 +56,7 @@ public class AdminDashboard extends BaseDashboard {
     private JLabel adminSummaryLabel;
     private JLabel aiReadinessLabel;
     private JLabel recommendationTitleLabel;
+    private JLabel systemRulesLabel;
     private JTextArea recommendationArea;
     private JTextArea systemInsightArea;
 
@@ -122,14 +124,16 @@ public class AdminDashboard extends BaseDashboard {
         panel.setBackground(APP_BACKGROUND);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
-        JPanel summaryPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        JPanel summaryPanel = new JPanel(new GridLayout(1, 4, 10, 10));
         summaryPanel.setOpaque(false);
         adminSummaryLabel = buildCardLabel("Refreshing admin summary...");
         aiReadinessLabel = buildCardLabel(AIIntegrationPlan.buildReadinessSummary());
         recommendationTitleLabel = buildCardLabel("Recommendation focus: Global risk overview");
+        systemRulesLabel = buildCardLabel(SystemRulesService.buildCompactSummary());
         summaryPanel.add(buildCard("Allocation Overview", adminSummaryLabel, SUCCESS_SURFACE));
         summaryPanel.add(buildCard("AI Scoring Status", aiReadinessLabel, SOFT_ACCENT));
         summaryPanel.add(buildCard("Recommendation Focus", recommendationTitleLabel, WARNING_SURFACE));
+        summaryPanel.add(buildCard("System Rules", systemRulesLabel, SECONDARY_SURFACE));
         panel.add(summaryPanel, BorderLayout.NORTH);
 
         workloadModel = new DefaultTableModel(
@@ -430,9 +434,13 @@ public class AdminDashboard extends BaseDashboard {
     }
 
     private JLabel buildCardLabel(String text) {
-        JLabel label = new JLabel("<html><div style='width:300px;'>" + text + "</div></html>");
+        JLabel label = new JLabel(cardHtml(text));
         label.setFont(new Font("SansSerif", Font.PLAIN, 12));
         return label;
+    }
+
+    private String cardHtml(String text) {
+        return "<html><div style='width:" + SUMMARY_CARD_TEXT_WIDTH + "px;'>" + text + "</div></html>";
     }
 
     private JPanel buildCard(String title, JLabel content, Color background) {
@@ -525,14 +533,18 @@ public class AdminDashboard extends BaseDashboard {
                 workloadModel.addRow(new Object[] {user.username, fullName, email, selectedJobs, currentHours, status});
             }
 
-            adminSummaryLabel.setText("<html><div style='width:300px;'>Visible TAs: " + taCount
+            adminSummaryLabel.setText(cardHtml("Visible TAs: " + taCount
                     + " | Total allocated hours: " + totalHours
                     + " | Overload cases: " + overloadCount
-                    + " | Overload limit: " + FileStorage.getOverloadLimit() + "h</div></html>");
-            aiReadinessLabel.setText("<html><div style='width:300px;'>" + AIIntegrationPlan.buildReadinessSummary()
-                    + " | Explainability: score, missing skills, projected-load reasoning, and board-level ranking summaries are displayed in the UI.</div></html>");
+                    + " | Overload limit: " + FileStorage.getOverloadLimit() + "h"));
+            aiReadinessLabel.setText(cardHtml(AIIntegrationPlan.buildReadinessSummary()
+                    + " | Explainability: score, missing skills, projected-load reasoning, and board-level ranking summaries are displayed in the UI."));
+            if (systemRulesLabel != null) {
+                systemRulesLabel.setText(cardHtml(I18n.t(SystemRulesService.buildCompactSummary())));
+            }
             if (systemInsightArea != null) {
-                systemInsightArea.setText(BoardAIInsightsService.buildAdminSystemOverview());
+                systemInsightArea.setText(I18n.t(SystemRulesService.buildDetailedRules())
+                        + "\n" + BoardAIInsightsService.buildAdminSystemOverview());
                 systemInsightArea.setCaretPosition(0);
             }
             if (workloadModel.getRowCount() > 0 && workloadTable.getSelectedRow() < 0) {
@@ -550,7 +562,7 @@ public class AdminDashboard extends BaseDashboard {
         }
         int selectedRow = workloadTable == null ? -1 : workloadTable.getSelectedRow();
         if (selectedRow < 0 || selectedRow >= workloadModel.getRowCount()) {
-            recommendationTitleLabel.setText("<html><div style='width:300px;'>Recommendation focus: Global risk overview</div></html>");
+            recommendationTitleLabel.setText(cardHtml("Recommendation focus: Global risk overview"));
             recommendationArea.setText(AdminRecommendationService.buildGlobalAlertSummary());
             recommendationArea.setCaretPosition(0);
             return;
@@ -562,7 +574,7 @@ public class AdminDashboard extends BaseDashboard {
             recommendationArea.setCaretPosition(0);
             return;
         }
-        recommendationTitleLabel.setText("<html><div style='width:300px;'>Recommendation focus: " + user.getSafeDisplayName() + "</div></html>");
+        recommendationTitleLabel.setText(cardHtml("Recommendation focus: " + user.getSafeDisplayName()));
         recommendationArea.setText(AdminRecommendationService.buildRecommendationReportForTa(user.id));
         recommendationArea.setCaretPosition(0);
     }
@@ -774,6 +786,15 @@ public class AdminDashboard extends BaseDashboard {
             writer.println(safeCsvLine("exportedAt", timestamp));
             writer.println(safeCsvLine("provider", ScoringService.getActiveProvider().getProviderName()));
             writer.println(safeCsvLine("providerReady", String.valueOf(ScoringService.getActiveProvider().isReady())));
+            writer.println(safeCsvLine("workloadLimitHours", String.valueOf(FileStorage.getOverloadLimit())));
+            writer.println(safeCsvLine("nearLimitWarningHours", String.valueOf(FileStorage.getNearLimitThreshold())));
+            writer.println(safeCsvLine("preApprovalMessageLimit",
+                    String.valueOf(MessageService.getMaxMessagesWithoutConsent())));
+            writer.println(safeCsvLine("reputationPenaltyTrigger",
+                    "match>=" + ReputationService.getHighMatchThreshold() + "% and rating<="
+                            + ReputationService.getLowRatingThreshold() + "/5"));
+            writer.println(safeCsvLine("reputationPenaltyPoints",
+                    "-" + ReputationService.getPenaltyPoints()));
             writer.println(safeCsvLine("taUsername", "fullName", "email", "selectedJobs", "currentHours", "status"));
             for (int row = 0; row < workloadModel.getRowCount(); row++) {
                 writer.println(safeCsvLine(
@@ -865,7 +886,7 @@ public class AdminDashboard extends BaseDashboard {
         if (hours > FileStorage.getOverloadLimit()) {
             return "OVERLOAD - review allocation immediately";
         }
-        if (hours >= FileStorage.getOverloadLimit() - 2) {
+        if (hours >= FileStorage.getNearLimitThreshold()) {
             return "NEAR LIMIT - monitor closely";
         }
         return "OK";
